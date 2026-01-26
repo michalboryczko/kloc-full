@@ -22,7 +22,7 @@ Source Code → SCIP Index → SoT JSON → Queries/MCP
 
 ```bash
 # Clone this meta repo
-git clone git@github.com:michalboryczko/kloc-full.git
+git clone https://github.com/michalboryczko/kloc-full.git
 cd kloc-full
 
 # Fetch all component repos
@@ -34,6 +34,19 @@ cd kloc-full
 # Binaries are now in bin/
 ./bin/kloc-mapper --help
 ./bin/kloc-cli --help
+./bin/scip-php --help
+```
+
+## Selective Setup/Build
+
+```bash
+# Setup only specific repo
+./setup.sh kloc-cli
+./setup.sh scip-php
+
+# Build only specific repo
+./build.sh kloc-cli
+./build.sh scip-php
 ```
 
 ## Usage Pipeline

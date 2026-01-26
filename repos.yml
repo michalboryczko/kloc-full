@@ -17,5 +17,5 @@ repos:
   - name: scip-php
     url: https://github.com/michalboryczko/scip-php.git
     build: build/build.sh
-    binary: build/scip-php
+    binary: bin/scip-php
     description: PHP SCIP indexer
