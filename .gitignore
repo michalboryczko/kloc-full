@@ -1,0 +1,27 @@
+# Subproject directories (fetched by setup.sh)
+kloc-cli/
+kloc-mapper/
+scip-php/
+
+# Artifacts
+artifacts/
+
+# Build outputs (binaries copied here)
+bin/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# Claude/AI working files
+.claude/
+CLAUDE.md
+docs/
+progress/
+PROGRESS.md
+build/
+context7-docs.zip
