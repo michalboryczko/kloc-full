@@ -52,19 +52,35 @@ cd kloc-full
 ## Usage Pipeline
 
 ```bash
-# 1. Index your PHP project (using scip-php or other SCIP indexer)
-scip-php index --output artifacts/scip.index
+# 1. Index your PHP project
+./bin/scip-php -d /path/to/your/php-project -o index.scip
 
-# 2. Convert to SoT JSON
-./bin/kloc-mapper map -s artifacts/scip.index -o artifacts/sot.json
+# 2. Convert SCIP index to SoT JSON
+./bin/kloc-mapper map -s index.scip -o sot.json --pretty
 
 # 3. Query the codebase
-./bin/kloc-cli context "UserService::createUser" --sot artifacts/sot.json --impl
-./bin/kloc-cli deps "UserController" --sot artifacts/sot.json --depth 2
-./bin/kloc-cli usages "User" --sot artifacts/sot.json
+./bin/kloc-cli context "UserService::createUser" --sot sot.json --impl
+./bin/kloc-cli deps "UserController" --sot sot.json --depth 2
+./bin/kloc-cli usages "User" --sot sot.json
 
 # 4. Or use MCP server for AI integration
-./bin/kloc-cli mcp-server --sot artifacts/sot.json
+./bin/kloc-cli mcp-server --sot sot.json
+```
+
+### Full Example
+
+```bash
+# Index a Symfony project
+./bin/scip-php -d ~/projects/my-symfony-app -o my-app.scip
+
+# Convert to queryable format
+./bin/kloc-mapper map -s my-app.scip -o my-app-sot.json
+
+# Find all usages of a service
+./bin/kloc-cli usages "App\\Service\\PaymentService" --sot my-app-sot.json --depth 2
+
+# Get context with interface implementations
+./bin/kloc-cli context "PaymentServiceInterface::process" --sot my-app-sot.json --impl
 ```
 
 ## Directory Structure
