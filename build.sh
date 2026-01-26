@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build all KLOC binaries and copy to bin/
+# Build all KLOC binaries using repos.yml config
 # Run setup.sh first to ensure repos are cloned
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -13,38 +13,43 @@ mkdir -p "$BIN_DIR"
 echo "Building all KLOC binaries..."
 echo ""
 
-# Build kloc-cli
-if [ -d "kloc-cli" ]; then
-    echo "=== Building kloc-cli ==="
-    (cd kloc-cli && ./build.sh)
-    cp kloc-cli/dist/kloc-cli "$BIN_DIR/"
-    echo "Copied kloc-cli to bin/"
-    echo ""
-else
-    echo "Warning: kloc-cli/ not found. Run ./setup.sh first."
-fi
+# Parse repos.yml and build each repo
+name=""
+build_script=""
+binary_path=""
 
-# Build kloc-mapper
-if [ -d "kloc-mapper" ]; then
-    echo "=== Building kloc-mapper ==="
-    (cd kloc-mapper && ./build.sh)
-    cp kloc-mapper/dist/kloc-mapper "$BIN_DIR/"
-    echo "Copied kloc-mapper to bin/"
-    echo ""
-else
-    echo "Warning: kloc-mapper/ not found. Run ./setup.sh first."
-fi
+while IFS= read -r line; do
+    if [[ "$line" =~ ^[[:space:]]*-[[:space:]]*name:[[:space:]]*(.+)$ ]]; then
+        name="${BASH_REMATCH[1]}"
+        build_script=""
+        binary_path=""
+    elif [[ "$line" =~ ^[[:space:]]*build:[[:space:]]*(.+)$ ]]; then
+        build_script="${BASH_REMATCH[1]}"
+    elif [[ "$line" =~ ^[[:space:]]*binary:[[:space:]]*(.+)$ ]]; then
+        binary_path="${BASH_REMATCH[1]}"
 
-# Build scip-php (when available)
-# if [ -d "scip-php" ]; then
-#     echo "=== Building scip-php ==="
-#     (cd scip-php && ./build.sh)
-#     cp scip-php/dist/scip-php "$BIN_DIR/"
-#     echo "Copied scip-php to bin/"
-#     echo ""
-# fi
+        # We have all info, build this repo
+        if [ -n "$name" ] && [ -n "$build_script" ] && [ -n "$binary_path" ]; then
+            if [ -d "$name" ]; then
+                echo "=== Building $name ==="
+                (cd "$name" && $build_script)
+
+                if [ -f "$name/$binary_path" ]; then
+                    cp "$name/$binary_path" "$BIN_DIR/"
+                    echo "Copied $name to bin/"
+                else
+                    echo "Warning: Binary not found at $name/$binary_path"
+                fi
+                echo ""
+            else
+                echo "Warning: $name/ not found. Run ./setup.sh first."
+                echo ""
+            fi
+        fi
+    fi
+done < repos.yml
 
 echo "=== Build complete ==="
 echo ""
 echo "Binaries available in $BIN_DIR:"
-ls -la "$BIN_DIR"
+ls -la "$BIN_DIR" 2>/dev/null || echo "(empty)"

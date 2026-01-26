@@ -16,7 +16,7 @@ Source Code → SCIP Index → SoT JSON → Queries/MCP
 |------------|-------------|
 | [kloc-mapper](https://github.com/michalboryczko/kloc-mapper) | Converts SCIP indexes to Source-of-Truth (SoT) JSON |
 | [kloc-cli](https://github.com/michalboryczko/kloc-cli) | CLI for querying SoT JSON (deps, usages, context, inherit) |
-| scip-php (coming) | PHP SCIP indexer |
+| [scip-php](https://github.com/michalboryczko/scip-php) | PHP SCIP indexer |
 
 ## Quick Start
 

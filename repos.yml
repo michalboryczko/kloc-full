@@ -1,15 +1,21 @@
 # KLOC project repositories
-# Used by setup.sh to clone all related repos
+# Used by setup.sh and build.sh
 
 repos:
   - name: kloc-cli
     url: git@github.com:michalboryczko/kloc-cli.git
+    build: ./build.sh
+    binary: dist/kloc-cli
     description: CLI for querying KLOC Source-of-Truth JSON
 
   - name: kloc-mapper
     url: git@github.com:michalboryczko/kloc-mapper.git
+    build: ./build.sh
+    binary: dist/kloc-mapper
     description: SCIP to SoT JSON mapper
 
-  # - name: scip-php
-  #   url: git@github.com:michalboryczko/scip-php.git
-  #   description: PHP SCIP indexer
+  - name: scip-php
+    url: git@github.com:michalboryczko/scip-php.git
+    build: build/build.sh
+    binary: build/scip-php
+    description: PHP SCIP indexer
