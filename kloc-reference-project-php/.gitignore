@@ -1,0 +1,23 @@
+# Dependencies
+/vendor/
+
+# Symfony cache
+/var/
+
+# Environment
+.env.local
+.env.*.local
+
+# SCIP generated files (regeneratable)
+index.scip
+calls.json
+index.kloc
+
+# Composer lock (optional in libraries, committed in apps)
+# composer.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

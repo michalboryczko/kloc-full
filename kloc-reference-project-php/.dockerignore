@@ -1,0 +1,25 @@
+# Dependencies
+vendor/
+
+# Cache
+var/
+.php-cs-fixer.cache
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Docker
+docker-compose.override.yml
+
+# SCIP artifacts
+*.scip
+index.scip
+calls.json
+index.kloc

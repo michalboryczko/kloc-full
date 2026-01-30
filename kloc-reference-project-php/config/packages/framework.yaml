@@ -1,0 +1,23 @@
+# see https://symfony.com/doc/current/reference/configuration/framework.html
+framework:
+    secret: '%env(APP_SECRET)%'
+
+    # Enable validation
+    validation:
+        enabled: true
+        enable_attributes: true
+
+    # Enable serializer
+    serializer:
+        enabled: true
+
+    # Enable property access
+    property_access: ~
+
+    # Disable sessions (API-only project)
+    session:
+        enabled: false
+
+    # PHP attributes for controllers
+    annotations:
+        enabled: false

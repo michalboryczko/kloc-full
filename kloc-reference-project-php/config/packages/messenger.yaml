@@ -1,0 +1,10 @@
+framework:
+    messenger:
+        # Use sync transport for development/demo purposes
+        # No external message broker required
+        transports:
+            sync: 'sync://'
+
+        routing:
+            # Route all messages to sync transport
+            'App\Ui\Messenger\Message\OrderCreatedMessage': sync

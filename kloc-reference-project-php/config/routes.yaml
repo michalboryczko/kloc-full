@@ -1,0 +1,6 @@
+# Import controller routes using PHP attributes
+controllers:
+    resource:
+        path: ../src/Ui/Rest/Controller/
+        namespace: App\Ui\Rest\Controller
+    type: attribute
