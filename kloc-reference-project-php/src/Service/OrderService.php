@@ -5,42 +5,40 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Component\EmailSenderInterface;
+use App\Component\InventoryCheckerInterface;
+use App\Dto\CreateOrderInput;
+use App\Dto\OrderOutput;
 use App\Entity\Order;
 use App\Repository\OrderRepository;
-use App\Ui\Rest\Request\CreateOrderRequest;
-use App\Ui\Rest\Response\OrderListResponse;
-use App\Ui\Rest\Response\OrderResponse;
+use App\Ui\Messenger\Message\OrderCreatedMessage;
 use DateTimeImmutable;
+use Symfony\Component\Messenger\MessageBusInterface;
 
-/**
- * Service for order business logic.
- *
- * Coordinates between repository and components.
- */
 final readonly class OrderService
 {
     public function __construct(
         private OrderRepository $orderRepository,
         private EmailSenderInterface $emailSender,
+        private InventoryCheckerInterface $inventoryChecker,
+        private MessageBusInterface $messageBus,
     ) {
     }
 
-    public function createOrder(CreateOrderRequest $request): OrderResponse
+    public function createOrder(CreateOrderInput $input): OrderOutput
     {
-        // Create order entity
+        $this->inventoryChecker->checkAvailability($input->productId, $input->quantity);
+
         $order = new Order(
-            id: 0, // Will be assigned by repository
-            customerEmail: $request->customerEmail,
-            productId: $request->productId,
-            quantity: $request->quantity,
+            id: 0,
+            customerEmail: $input->customerEmail,
+            productId: $input->productId,
+            quantity: $input->quantity,
             status: 'pending',
             createdAt: new DateTimeImmutable(),
         );
 
-        // Save to repository
         $savedOrder = $this->orderRepository->save($order);
 
-        // Send confirmation email via component
         $this->emailSender->send(
             to: $savedOrder->customerEmail,
             subject: 'Order Confirmation #' . $savedOrder->id,
@@ -52,10 +50,19 @@ final readonly class OrderService
             ),
         );
 
-        return OrderResponse::fromEntity($savedOrder);
+        $this->messageBus->dispatch(new OrderCreatedMessage($savedOrder->id));
+
+        return new OrderOutput(
+            id: $savedOrder->id,
+            customerEmail: $savedOrder->customerEmail,
+            productId: $savedOrder->productId,
+            quantity: $savedOrder->quantity,
+            status: $savedOrder->status,
+            createdAt: $savedOrder->createdAt,
+        );
     }
 
-    public function getOrder(int $id): ?OrderResponse
+    public function getOrder(int $id): ?OrderOutput
     {
         $order = $this->orderRepository->findById($id);
 
@@ -63,21 +70,13 @@ final readonly class OrderService
             return null;
         }
 
-        return OrderResponse::fromEntity($order);
-    }
-
-    public function listOrders(): OrderListResponse
-    {
-        $orders = $this->orderRepository->findAll();
-
-        $orderResponses = array_map(
-            fn(Order $order) => OrderResponse::fromEntity($order),
-            $orders,
-        );
-
-        return new OrderListResponse(
-            orders: $orderResponses,
-            total: count($orderResponses),
+        return new OrderOutput(
+            id: $order->id,
+            customerEmail: $order->customerEmail,
+            productId: $order->productId,
+            quantity: $order->quantity,
+            status: $order->status,
+            createdAt: $order->createdAt,
         );
     }
 }

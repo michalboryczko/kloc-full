@@ -7,11 +7,6 @@ namespace App\Service;
 use App\Component\EmailSenderInterface;
 use App\Repository\OrderRepository;
 
-/**
- * Service for sending notifications about orders.
- *
- * Uses EmailSender component for sending emails.
- */
 final readonly class NotificationService
 {
     public function __construct(
@@ -20,9 +15,6 @@ final readonly class NotificationService
     ) {
     }
 
-    /**
-     * Notify about order creation (called from async handler).
-     */
     public function notifyOrderCreated(int $orderId): void
     {
         $order = $this->orderRepository->findById($orderId);
@@ -31,7 +23,6 @@ final readonly class NotificationService
             return;
         }
 
-        // Send follow-up notification email
         $this->emailSender->send(
             to: $order->customerEmail,
             subject: 'Order #' . $order->id . ' is being processed',

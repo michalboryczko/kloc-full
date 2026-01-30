@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Entity;
+namespace App\Dto;
 
 use DateTimeImmutable;
 
-final readonly class Order
+final readonly class OrderOutput
 {
     public function __construct(
         public int $id,

@@ -7,12 +7,6 @@ namespace App\Repository;
 use App\Entity\Order;
 use DateTimeImmutable;
 
-/**
- * In-memory repository for Order entities.
- *
- * Stores orders in a static array for demo purposes.
- * No database required.
- */
 final class OrderRepository
 {
     /** @var array<int, Order> */
@@ -32,9 +26,7 @@ final class OrderRepository
         return self::$orders[$id] ?? null;
     }
 
-    /**
-     * @return array<Order>
-     */
+    /** @return array<Order> */
     public function findAll(): array
     {
         return array_values(self::$orders);
@@ -42,7 +34,6 @@ final class OrderRepository
 
     public function save(Order $order): Order
     {
-        // If order has id 0, assign a new id
         if ($order->id === 0) {
             $newOrder = new Order(
                 id: self::$nextId++,
@@ -62,9 +53,6 @@ final class OrderRepository
         return $order;
     }
 
-    /**
-     * Seed repository with mock data on first access.
-     */
     private function seedIfNeeded(): void
     {
         if (self::$seeded) {
@@ -73,7 +61,6 @@ final class OrderRepository
 
         self::$seeded = true;
 
-        // Seed with sample orders
         $this->save(new Order(
             id: 0,
             customerEmail: 'john.doe@example.com',
