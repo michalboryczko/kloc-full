@@ -1,10 +1,14 @@
 # Calls and Data Flow Tracking
 
+**JSON Schema**: [`calls-schema.json`](./calls-schema.json) | **Quick Reference**: [`calls-schema-docs.md`](./calls-schema-docs.md)
+
 ## Overview
 
 The `calls.json` file tracks all operations and values in PHP code, enabling complete data flow analysis. The format separates **values** (data holders) from **calls** (operations).
 
-**Key principle**: Every call that produces a value also creates a corresponding **result value**. This ensures `receiver_value_id` and argument `value_id` always reference values, never calls.
+**Key principles**:
+1. Every call that produces a value also creates a corresponding **result value**. This ensures `receiver_value_id` and argument `value_id` always reference values, never calls.
+2. Each variable (parameter, local) has **one value entry** at its declaration/assignment site. Multiple usages of the same variable all reference this single value ID.
 
 Each entry has:
 - A unique `id` based on source position (`file:line:col`)
@@ -15,7 +19,7 @@ Each entry has:
 
 ```json
 {
-  "version": "3.1",
+  "version": "3.2",
   "project_root": "/absolute/path/to/project",
   "values": [
     { "id": "...", "kind": "parameter", "symbol": "...", "type": "..." },
@@ -100,6 +104,44 @@ scip-php composer . App/Service#process().local$user@25  // re-assignment
 ```
 
 For re-assignments, each assignment gets a unique symbol (different `@line`).
+
+### One Value Per Declaration Rule
+
+**Critical**: Each variable (parameter or local) has exactly **one value entry** at its declaration or assignment site. Multiple usages of the same variable within the method body all reference this single value ID via `receiver_value_id`.
+
+```php
+public function process(Order $order): void  // Parameter declared at line 10
+{
+    $order->validate();     // line 12: receiver_value_id = "10:24" (declaration)
+    $order->save();         // line 13: receiver_value_id = "10:24" (same)
+    $order->notify();       // line 14: receiver_value_id = "10:24" (same)
+}
+```
+
+**Values array** (correct):
+```json
+[
+  {"id": "file.php:10:24", "kind": "parameter", "symbol": "...#process().($order)", "type": "...Order#"}
+]
+```
+
+**Calls array** (all reference the same value):
+```json
+[
+  {"id": "file.php:12:11", "kind": "method", "callee": "...#validate().", "receiver_value_id": "file.php:10:24"},
+  {"id": "file.php:13:11", "kind": "method", "callee": "...#save().", "receiver_value_id": "file.php:10:24"},
+  {"id": "file.php:14:11", "kind": "method", "callee": "...#notify().", "receiver_value_id": "file.php:10:24"}
+]
+```
+
+**Wrong** (DO NOT create value entries for each usage):
+```json
+[
+  {"id": "file.php:12:4", "kind": "parameter", "symbol": "...($order)"},
+  {"id": "file.php:13:4", "kind": "parameter", "symbol": "...($order)"},
+  {"id": "file.php:14:4", "kind": "parameter", "symbol": "...($order)"}
+]
+```
 
 ## Calls
 
@@ -219,13 +261,6 @@ class NotificationService
     "source_call_id": "src/Service.php:9:30"
   },
   {
-    "id": "src/Service.php:11:14",
-    "kind": "local",
-    "symbol": "...#notify().local$profile@9",
-    "type": "...Profile#",
-    "location": {"file": "src/Service.php", "line": 11, "col": 14}
-  },
-  {
     "id": "src/Service.php:11:25",
     "kind": "result",
     "type": "...string#",
@@ -274,7 +309,7 @@ class NotificationService
     "callee": "...Profile#email.",
     "return_type": "...string#",
     "location": {"file": "src/Service.php", "line": 11, "col": 25},
-    "receiver_value_id": "src/Service.php:11:14"
+    "receiver_value_id": "src/Service.php:9:8"
   },
   {
     "id": "src/Service.php:11:4",
@@ -313,17 +348,17 @@ $msg -> contact -> getProfile()
 
 sendEmail( $profile -> email,   $priority )
     │          │         │          │
-    │          │         │          └─► value (parameter)
+    │          │         │          └─► value (parameter) at 5:40
     │          │         │
     │          │         └─► call (access) ──► result value (string#)
     │          │                  ↑                    │
     │          │       receiver_value_id         source_call_id
     │          │                  │
-    │          └─► value (local) ─┘
+    │          └─► value (local) at 9:8 (same as declaration)
     │
     └─► call (function)
           ├─► arguments[0].value_id → result value "11:25" (string#)
-          └─► arguments[1].value_id → value "11:40" (parameter)
+          └─► arguments[1].value_id → value (parameter) at 5:40
 ```
 
 ## Tracing Data Flow

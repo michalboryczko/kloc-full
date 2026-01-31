@@ -72,8 +72,9 @@ This iteration implements the v3 schema changes:
 **Result**: 67 cases with 180+ individual entries demonstrating all requirements.
 
 ### Step 12: Commit changes
-**Status**: pending
+**Status**: done
 **Description**: Commit all changes with descriptive message.
+**Result**: scip-php commits (7eda448, 0c49463) and kloc commit (bed4309)
 
 ## Statistics
 
