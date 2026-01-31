@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         executionOrder="depends,defects"
+         cacheDirectory=".phpunit.cache"
+         requireCoverageMetadata="false"
+         beStrictAboutCoverageMetadata="false">
+    <testsuites>
+        <testsuite name="smoke">
+            <file>tests/SmokeTest.php</file>
+        </testsuite>
+        <testsuite name="integrity">
+            <directory>tests/Integrity</directory>
+        </testsuite>
+        <testsuite name="reference">
+            <directory>tests/Reference</directory>
+        </testsuite>
+        <testsuite name="chain">
+            <directory>tests/Chain</directory>
+        </testsuite>
+        <testsuite name="argument">
+            <directory>tests/Argument</directory>
+        </testsuite>
+        <testsuite name="default">
+            <directory>tests</directory>
+            <exclude>tests/SmokeTest.php</exclude>
+            <exclude>tests/Integrity</exclude>
+            <exclude>tests/Reference</exclude>
+            <exclude>tests/Chain</exclude>
+            <exclude>tests/Argument</exclude>
+        </testsuite>
+    </testsuites>
+
+    <php>
+        <ini name="error_reporting" value="-1"/>
+        <ini name="display_errors" value="On"/>
+        <ini name="display_startup_errors" value="On"/>
+    </php>
+</phpunit>
