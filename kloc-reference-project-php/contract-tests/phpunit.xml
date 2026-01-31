@@ -17,19 +17,19 @@
         <testsuite name="reference">
             <directory>tests/Reference</directory>
         </testsuite>
-        <testsuite name="chain">
-            <directory>tests/Chain</directory>
-        </testsuite>
         <testsuite name="argument">
             <directory>tests/Argument</directory>
+        </testsuite>
+        <testsuite name="chain">
+            <directory>tests/Chain</directory>
         </testsuite>
         <testsuite name="default">
             <directory>tests</directory>
             <exclude>tests/SmokeTest.php</exclude>
             <exclude>tests/Integrity</exclude>
             <exclude>tests/Reference</exclude>
-            <exclude>tests/Chain</exclude>
             <exclude>tests/Argument</exclude>
+            <exclude>tests/Chain</exclude>
         </testsuite>
     </testsuites>
 

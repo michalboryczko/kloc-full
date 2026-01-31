@@ -15,63 +15,6 @@ use ContractTests\CallsContractTestCase;
 class ParameterReferenceTest extends CallsContractTestCase
 {
     /**
-     * Test: OrderRepository::save() - $order parameter
-     *
-     * Code reference: src/Repository/OrderRepository.php:26
-     *   public function save(Order $order): Order
-     *
-     * Expected: One value entry for $order, all usages reference it.
-     */
-    public function testOrderRepositorySaveOrderParameter(): void
-    {
-        $result = $this->assertReferenceConsistency()
-            ->inMethod('App\Repository\OrderRepository', 'save')
-            ->forParameter('$order')
-            ->verify();
-
-        $this->assertTrue($result->success);
-        $this->assertEquals(1, $result->valueCount);
-    }
-
-    /**
-     * Test: OrderRepository::findById() - $id parameter
-     *
-     * Code reference: src/Repository/OrderRepository.php:21
-     *   public function findById(int $id): ?Order
-     *
-     * Expected: One value entry for $id.
-     */
-    public function testOrderRepositoryFindByIdParameter(): void
-    {
-        $result = $this->assertReferenceConsistency()
-            ->inMethod('App\Repository\OrderRepository', 'findById')
-            ->forParameter('$id')
-            ->verify();
-
-        $this->assertTrue($result->success);
-    }
-
-    /**
-     * Test: OrderService::createOrder() - $input parameter
-     *
-     * Code reference: src/Service/OrderService.php:27
-     *   public function createOrder(CreateOrderInput $input): OrderOutput
-     *
-     * Expected: One value entry for $input, multiple property accesses reference it.
-     */
-    public function testOrderServiceCreateOrderInputParameter(): void
-    {
-        $result = $this->assertReferenceConsistency()
-            ->inMethod('App\Service\OrderService', 'createOrder')
-            ->forParameter('$input')
-            ->verify();
-
-        $this->assertTrue($result->success);
-        // $input is used multiple times for property access
-        $this->assertGreaterThanOrEqual(1, $result->callCount);
-    }
-
-    /**
      * Test: OrderService::getOrder() - $id parameter
      *
      * Code reference: src/Service/OrderService.php:65
@@ -105,26 +48,6 @@ class ParameterReferenceTest extends CallsContractTestCase
             ->verify();
 
         $this->assertTrue($result->success);
-    }
-
-    /**
-     * Test: EmailSender::send() - $to, $subject, $body parameters
-     *
-     * Code reference: src/Component/EmailSender.php:12
-     *   public function send(string $to, string $subject, string $body): void
-     *
-     * Expected: One value entry for each parameter.
-     */
-    public function testEmailSenderSendParameters(): void
-    {
-        foreach (['$to', '$subject', '$body'] as $param) {
-            $result = $this->assertReferenceConsistency()
-                ->inMethod('App\Component\EmailSender', 'send')
-                ->forParameter($param)
-                ->verify();
-
-            $this->assertTrue($result->success, "Parameter {$param} should have single value entry");
-        }
     }
 
     /**

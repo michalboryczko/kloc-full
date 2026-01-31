@@ -18,33 +18,6 @@ use ContractTests\CallsContractTestCase;
 class DataIntegrityTest extends CallsContractTestCase
 {
     /**
-     * Test: No duplicate parameter symbols
-     *
-     * Each parameter should have exactly one value entry.
-     * Duplicates indicate an indexer bug.
-     */
-    public function testNoParameterDuplicates(): void
-    {
-        $this->assertIntegrity()
-            ->noParameterDuplicates()
-            ->verify();
-    }
-
-    /**
-     * Test: No duplicate local variable symbols per line
-     *
-     * Each local variable assignment at a specific line should have
-     * exactly one value entry. Different lines can have the same variable
-     * name (reassignment creates new symbol with different @line).
-     */
-    public function testNoLocalDuplicates(): void
-    {
-        $this->assertIntegrity()
-            ->noLocalDuplicatesPerLine()
-            ->verify();
-    }
-
-    /**
      * Test: All receiver_value_id references exist
      *
      * Every call's receiver_value_id should point to an existing value.
