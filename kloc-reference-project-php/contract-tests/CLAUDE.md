@@ -5,16 +5,34 @@ Contract testing framework for validating scip-php calls.json output.
 ## Quick Start
 
 ```bash
-# Build and run tests with Docker
-docker compose build
-docker compose run --rm contract-tests
+# Run the complete test flow (generates index + runs tests in Docker)
+./run-tests.sh
+```
 
-# Or without Docker (requires PHP 8.3+)
-composer install
-# Generate index first
-../../scip-php/build/scip-php ..
-mv ../calls.json output/
-vendor/bin/phpunit
+That's it. The script handles everything:
+1. Generates `calls.json` using scip-php on the host
+2. Builds the Docker image (PHP 8.4)
+3. Runs PHPUnit tests in the container
+
+## Prerequisites
+
+- Docker and docker-compose
+- scip-php binary built at `../../scip-php/build/scip-php`
+
+## Manual Docker Commands
+
+```bash
+# If you already have calls.json in output/
+docker compose build
+docker compose run --rm -e SKIP_INDEX_GENERATION=1 contract-tests
+
+# Run specific test suite
+docker compose run --rm -e SKIP_INDEX_GENERATION=1 contract-tests \
+  vendor/bin/phpunit --testsuite=smoke
+
+# Run single test
+docker compose run --rm -e SKIP_INDEX_GENERATION=1 contract-tests \
+  vendor/bin/phpunit --filter testOrderRepositorySaveParameterExists
 ```
 
 ## Documentation
@@ -35,23 +53,24 @@ All framework documentation is in the main repository:
 
 1. **Always reference kloc-reference-project-php code** in test descriptions
 2. **Include file:line references** for the code being tested
-3. **Tests run once** - index is generated in bootstrap.php, not per-test
-4. **Configuration** via config.php or environment variables
+3. **Tests run once** - index is generated before tests, not per-test
+4. **Docker only** - always run tests via Docker for consistent environment
 
-## Configuration
+## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SCIP_PHP_BINARY` | `../../scip-php/build/scip-php` | Path to scip-php binary |
-| `PROJECT_ROOT` | `../` | Path to kloc-reference-project-php root |
-| `OUTPUT_DIR` | `./output` | Where to write generated index |
-| `SKIP_INDEX_GENERATION` | - | Skip regeneration if calls.json exists |
+| `SCIP_PHP_BINARY` | `../../scip-php/build/scip-php` | Path to scip-php binary (host) |
+| `SKIP_INDEX_GENERATION` | - | Skip regeneration, use existing calls.json |
 | `FORCE_INDEX_GENERATION` | - | Force regeneration even if exists |
 
 ## Directory Structure
 
 ```
 contract-tests/
+  run-tests.sh              # Main entry point - run this
+  Dockerfile                # PHP 8.4 image
+  docker-compose.yml        # Container config
   src/
     CallsContractTestCase.php   # Base test class
     CallsData.php               # JSON wrapper
@@ -79,22 +98,15 @@ contract-tests/
     calls.json                  # Generated index (gitignored)
 ```
 
-## Running Tests
+## Test Suites
 
-```bash
-# All tests
-vendor/bin/phpunit
-
-# By test suite
-vendor/bin/phpunit --testsuite=smoke
-vendor/bin/phpunit --testsuite=integrity
-vendor/bin/phpunit --testsuite=reference
-vendor/bin/phpunit --testsuite=chain
-vendor/bin/phpunit --testsuite=argument
-
-# Single test
-vendor/bin/phpunit --filter testOrderRepositorySaveParameterExists
-```
+| Suite | Description |
+|-------|-------------|
+| `smoke` | Critical acceptance tests (must pass) |
+| `integrity` | Data integrity checks (duplicates, orphans) |
+| `reference` | Parameter/local reference consistency |
+| `chain` | Method chain linkage verification |
+| `argument` | Argument binding validation |
 
 ## Writing Tests
 
