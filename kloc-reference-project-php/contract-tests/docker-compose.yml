@@ -15,7 +15,7 @@ services:
       - PROJECT_ROOT=/app
       - OUTPUT_DIR=/app/contract-tests/output
     working_dir: /app/contract-tests
-    command: ["sh", "-c", "composer install --quiet && vendor/bin/phpunit"]
+    command: ["sh", "-c", "composer install --quiet && vendor/bin/phpunit --testdox"]
 
 volumes:
   contract-tests-vendor:

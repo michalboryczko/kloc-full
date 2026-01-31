@@ -4,24 +4,20 @@ declare(strict_types=1);
 
 namespace ContractTests\Tests\Argument;
 
+use ContractTests\Attribute\ContractTest;
 use ContractTests\CallsContractTestCase;
 
 /**
  * Tests for argument binding correctness.
- *
- * These tests verify that method/function arguments are correctly
- * linked to their source values.
  */
 class ArgumentBindingTest extends CallsContractTestCase
 {
-    /**
-     * Test: OrderService::createOrder() calls save($order)
-     *
-     * Code reference: src/Service/OrderService.php:40
-     *   $savedOrder = $this->orderRepository->save($order);
-     *
-     * Expected: Argument 0 points to $order local variable.
-     */
+    #[ContractTest(
+        name: 'save() Receives $order Local',
+        description: 'Argument 0 of save() points to $order local variable',
+        codeRef: 'src/Service/OrderService.php:40',
+        category: 'argument',
+    )]
     public function testSaveArgumentPointsToOrderLocal(): void
     {
         $this->assertArgument()
@@ -32,14 +28,12 @@ class ArgumentBindingTest extends CallsContractTestCase
             ->verify();
     }
 
-    /**
-     * Test: NotificationService::notifyOrderCreated() calls findById($orderId)
-     *
-     * Code reference: src/Service/NotificationService.php:20
-     *   $order = $this->orderRepository->findById($orderId);
-     *
-     * Expected: Argument 0 points to $orderId parameter.
-     */
+    #[ContractTest(
+        name: 'findById() Receives $orderId Parameter',
+        description: 'Argument 0 of findById() points to $orderId parameter',
+        codeRef: 'src/Service/NotificationService.php:20',
+        category: 'argument',
+    )]
     public function testFindByIdArgumentPointsToParameter(): void
     {
         $this->assertArgument()
@@ -50,15 +44,12 @@ class ArgumentBindingTest extends CallsContractTestCase
             ->verify();
     }
 
-    /**
-     * Test: EmailSender::send() receives customerEmail access result
-     *
-     * Code reference: src/Service/OrderService.php:42-43
-     *   $this->emailSender->send(
-     *       to: $savedOrder->customerEmail,
-     *
-     * Expected: First argument points to result of customerEmail access.
-     */
+    #[ContractTest(
+        name: 'send() Receives customerEmail Access Result',
+        description: 'First argument of send() points to customerEmail property access result',
+        codeRef: 'src/Service/OrderService.php:42-43',
+        category: 'argument',
+    )]
     public function testEmailSenderReceivesCustomerEmail(): void
     {
         $this->assertArgument()
@@ -69,22 +60,14 @@ class ArgumentBindingTest extends CallsContractTestCase
             ->verify();
     }
 
-    /**
-     * Test: Constructor Order() receives correct arguments
-     *
-     * Code reference: src/Service/OrderService.php:31-38
-     *   $order = new Order(
-     *       id: 0,
-     *       customerEmail: $input->customerEmail,
-     *       productId: $input->productId,
-     *       ...
-     *   );
-     *
-     * Expected: Constructor has multiple arguments with correct bindings.
-     */
+    #[ContractTest(
+        name: 'Order Constructor Arguments',
+        description: 'Order constructor receives correct argument types (literal, result)',
+        codeRef: 'src/Service/OrderService.php:31-38',
+        category: 'argument',
+    )]
     public function testOrderConstructorArguments(): void
     {
-        // Find the constructor call
         $constructorCall = $this->calls()
             ->kind('constructor')
             ->callerContains('OrderService#createOrder()')
@@ -96,14 +79,12 @@ class ArgumentBindingTest extends CallsContractTestCase
         $arguments = $constructorCall['arguments'] ?? [];
         $this->assertNotEmpty($arguments, 'Constructor should have arguments');
 
-        // First argument (id) should be a literal
         $idArg = $this->findArgumentByPosition($arguments, 0);
         if ($idArg !== null) {
             $idValue = $this->callsData()->getValueById($idArg['value_id']);
             $this->assertEquals('literal', $idValue['kind'] ?? null, 'id argument should be literal');
         }
 
-        // Second argument (customerEmail) should be result of access
         $emailArg = $this->findArgumentByPosition($arguments, 1);
         if ($emailArg !== null) {
             $emailValue = $this->callsData()->getValueById($emailArg['value_id']);
@@ -111,21 +92,14 @@ class ArgumentBindingTest extends CallsContractTestCase
         }
     }
 
-    /**
-     * Test: OrderRepository::save() in OrderRepository (internal call to new Order)
-     *
-     * Code reference: src/Repository/OrderRepository.php:29-36
-     *   $newOrder = new Order(
-     *       id: self::$nextId++,
-     *       customerEmail: $order->customerEmail,
-     *       ...
-     *   );
-     *
-     * Expected: Constructor receives property access results from $order parameter.
-     */
+    #[ContractTest(
+        name: 'OrderRepository Constructor in save()',
+        description: 'Order constructor in save() receives property access results from $order',
+        codeRef: 'src/Repository/OrderRepository.php:29-36',
+        category: 'argument',
+    )]
     public function testOrderRepositoryConstructorArguments(): void
     {
-        // Find constructor call in save method
         $constructorCall = $this->calls()
             ->kind('constructor')
             ->callerContains('OrderRepository#save()')
@@ -137,7 +111,6 @@ class ArgumentBindingTest extends CallsContractTestCase
         $arguments = $constructorCall['arguments'] ?? [];
         $this->assertNotEmpty($arguments, 'Constructor should have arguments');
 
-        // Verify arguments exist and have value_ids
         foreach ($arguments as $arg) {
             $this->assertArrayHasKey('value_id', $arg);
             $valueId = $arg['value_id'];
@@ -148,17 +121,14 @@ class ArgumentBindingTest extends CallsContractTestCase
         }
     }
 
-    /**
-     * Test: MessageBus dispatch receives OrderCreatedMessage
-     *
-     * Code reference: src/Service/OrderService.php:53
-     *   $this->messageBus->dispatch(new OrderCreatedMessage($savedOrder->id));
-     *
-     * Expected: dispatch receives constructor result as argument.
-     */
+    #[ContractTest(
+        name: 'dispatch() Receives Constructor Result',
+        description: 'MessageBus dispatch() receives OrderCreatedMessage constructor result',
+        codeRef: 'src/Service/OrderService.php:53',
+        category: 'argument',
+    )]
     public function testMessageBusDispatchArgument(): void
     {
-        // Find dispatch call
         $dispatchCall = $this->calls()
             ->kind('method')
             ->callerContains('OrderService#createOrder()')
@@ -170,7 +140,6 @@ class ArgumentBindingTest extends CallsContractTestCase
         $arguments = $dispatchCall['arguments'] ?? [];
         $this->assertNotEmpty($arguments, 'dispatch should have argument');
 
-        // First argument should be result of constructor
         $arg0 = $this->findArgumentByPosition($arguments, 0);
         $this->assertNotNull($arg0, 'Should have argument at position 0');
 
@@ -178,17 +147,14 @@ class ArgumentBindingTest extends CallsContractTestCase
         $this->assertEquals('result', $argValue['kind'] ?? null, 'Argument should be constructor result');
     }
 
-    /**
-     * Test: InventoryChecker receives $input property values
-     *
-     * Code reference: src/Service/OrderService.php:29
-     *   $this->inventoryChecker->checkAvailability($input->productId, $input->quantity);
-     *
-     * Expected: Both arguments are results of property access on $input.
-     */
+    #[ContractTest(
+        name: 'checkAvailability() Receives Property Access Results',
+        description: 'InventoryChecker receives $input property values as arguments',
+        codeRef: 'src/Service/OrderService.php:29',
+        category: 'argument',
+    )]
     public function testInventoryCheckerArguments(): void
     {
-        // Find checkAvailability call
         $call = $this->calls()
             ->kind('method')
             ->callerContains('OrderService#createOrder()')
@@ -200,7 +166,6 @@ class ArgumentBindingTest extends CallsContractTestCase
         $arguments = $call['arguments'] ?? [];
         $this->assertGreaterThanOrEqual(2, count($arguments), 'Should have at least 2 arguments');
 
-        // Both arguments should be access results
         foreach ([0, 1] as $pos) {
             $arg = $this->findArgumentByPosition($arguments, $pos);
             if ($arg !== null) {
@@ -215,8 +180,6 @@ class ArgumentBindingTest extends CallsContractTestCase
     }
 
     /**
-     * Find an argument by position in arguments array.
-     *
      * @param array<int, array<string, mixed>> $arguments
      * @return array<string, mixed>|null
      */
