@@ -19,6 +19,37 @@ That's it. The script handles everything:
 - Docker and docker-compose
 - scip-php binary built at `../../scip-php/build/scip-php`
 
+## Generate Documentation
+
+Generate test documentation with live execution status:
+
+```bash
+# Run tests + generate markdown documentation
+docker compose run --rm -e SKIP_INDEX_GENERATION=1 contract-tests \
+  php bin/generate-docs.php
+
+# Generate JSON format (for tooling)
+docker compose run --rm -e SKIP_INDEX_GENERATION=1 contract-tests \
+  php bin/generate-docs.php --format=json
+
+# Generate CSV format
+docker compose run --rm -e SKIP_INDEX_GENERATION=1 contract-tests \
+  php bin/generate-docs.php --format=csv
+
+# Use cached results (skip running tests)
+docker compose run --rm -e SKIP_INDEX_GENERATION=1 contract-tests \
+  php bin/generate-docs.php --skip-tests
+
+# Write to file
+docker compose run --rm -e SKIP_INDEX_GENERATION=1 contract-tests \
+  php bin/generate-docs.php --output=TESTS.md
+```
+
+Output includes:
+- Summary table (passed/failed/skipped/error counts)
+- Tests grouped by category with live execution status
+- Failed test details with error messages
+
 ## Manual Docker Commands
 
 ```bash
@@ -55,6 +86,7 @@ All framework documentation is in the main repository:
 2. **Include file:line references** for the code being tested
 3. **Tests run once** - index is generated before tests, not per-test
 4. **Docker only** - always run tests via Docker for consistent environment
+5. **Use #[ContractTest] attribute** - for documentation generation
 
 ## Environment Variables
 
@@ -71,7 +103,11 @@ contract-tests/
   run-tests.sh              # Main entry point - run this
   Dockerfile                # PHP 8.4 image
   docker-compose.yml        # Container config
+  bin/
+    generate-docs.php       # Generate test documentation
   src/
+    Attribute/
+      ContractTest.php      # Test metadata attribute
     CallsContractTestCase.php   # Base test class
     CallsData.php               # JSON wrapper
     Query/
@@ -96,6 +132,8 @@ contract-tests/
     Argument/                   # Category 3 tests
   output/
     calls.json                  # Generated index (gitignored)
+    junit.xml                   # PHPUnit results (gitignored)
+    test-metadata.json          # Cached test metadata (gitignored)
 ```
 
 ## Test Suites
@@ -110,31 +148,56 @@ contract-tests/
 
 ## Writing Tests
 
-Tests must extend `CallsContractTestCase` and reference code in `../src/`:
+Tests must:
+1. Extend `CallsContractTestCase`
+2. Use `#[ContractTest]` attribute for metadata
+3. Include docblock with detailed description
+4. Reference code in `../src/`
 
 ```php
 <?php
 
 namespace ContractTests\Tests\Reference;
 
+use ContractTests\Attribute\ContractTest;
 use ContractTests\CallsContractTestCase;
 
 class ParameterReferenceTest extends CallsContractTestCase
 {
     /**
-     * Test: OrderRepository::save() - $order parameter
+     * Verifies $order parameter in save() has exactly one value entry.
+     * Per the spec, each parameter should have a single value entry at
+     * declaration, with all usages referencing that entry.
      *
      * Code reference: src/Repository/OrderRepository.php:26
      *   public function save(Order $order): Order
-     *
-     * Expected: One value entry for $order, all usages reference it.
      */
-    public function testOrderParameterHasSingleValueEntry(): void
+    #[ContractTest(
+        name: 'OrderRepository::save() $order',
+        description: 'Verifies $order parameter has single value entry',
+        codeRef: 'src/Repository/OrderRepository.php:26',
+        category: 'reference',
+    )]
+    public function testOrderRepositorySaveOrderParameter(): void
     {
-        $this->assertReferenceConsistency()
+        $result = $this->assertReferenceConsistency()
             ->inMethod('App\Repository\OrderRepository', 'save')
             ->forParameter('$order')
             ->verify();
+
+        $this->assertTrue($result->success);
     }
 }
 ```
+
+## ContractTest Attribute
+
+The `#[ContractTest]` attribute provides metadata for documentation generation:
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | Yes | Human-readable test name |
+| `description` | string | Yes | What the test verifies |
+| `codeRef` | string | No | Code reference (file:line) |
+| `category` | string | No | Test category (auto-detected from class if omitted) |
+| `status` | string | No | Declared status: `active`, `skipped`, `pending` (default: `active`) |
