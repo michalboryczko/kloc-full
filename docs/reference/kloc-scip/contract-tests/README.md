@@ -12,22 +12,23 @@ The contract tests framework ensures that the `scip-php` indexer produces correc
 # Navigate to contract-tests directory
 cd kloc-reference-project-php/contract-tests
 
-# Option 1: Run with Docker (recommended for CI)
-docker compose build
-docker compose run --rm contract-tests
+# Run all tests (generates fresh index + runs in Docker)
+bin/run.sh test
 
-# Option 2: Run locally (requires PHP 8.3+ and scip-php binary)
-composer install
+# Run specific test by name
+bin/run.sh test --filter testOrderRepository
 
-# Generate index first
-../../scip-php/build/scip-php ..
+# Run specific test suite
+bin/run.sh test --suite smoke
 
-# Move calls.json to output directory
-mv ../calls.json output/
+# Generate documentation
+bin/run.sh docs
 
-# Run tests
-vendor/bin/phpunit
+# Show all options
+bin/run.sh help
 ```
+
+The script handles everything: generates fresh `calls.json`, builds Docker image, runs tests.
 
 ## Test Categories
 
@@ -70,17 +71,54 @@ Each entry has a unique ID based on source position (`file:line:col`). Key linka
 
 ```bash
 # Run by test suite
-vendor/bin/phpunit --testsuite=smoke
-vendor/bin/phpunit --testsuite=integrity
-vendor/bin/phpunit --testsuite=reference
-vendor/bin/phpunit --testsuite=chain
-vendor/bin/phpunit --testsuite=argument
+bin/run.sh test --suite smoke
+bin/run.sh test --suite integrity
+bin/run.sh test --suite reference
+bin/run.sh test --suite chain
+bin/run.sh test --suite argument
 
-# Run single test file
-vendor/bin/phpunit tests/SmokeTest.php
+# Run single test by name
+bin/run.sh test --filter testOrderRepositorySaveParameterExists
+```
 
-# Run single test method
-vendor/bin/phpunit --filter testOrderRepositorySaveParameterExists
+## ContractTest Attribute
+
+Every test method MUST use the `#[ContractTest]` attribute:
+
+```php
+use ContractTests\Attribute\ContractTest;
+
+#[ContractTest(
+    name: 'OrderRepository::save() $order',
+    description: 'Verifies $order parameter has single value entry',
+    category: 'reference',
+)]
+public function testOrderRepositorySaveOrderParameter(): void
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | Yes | Human-readable test name |
+| `description` | string | Yes | What the test verifies |
+| `category` | string | No | `smoke`, `integrity`, `reference`, `chain`, `argument` |
+| `status` | string | No | `active` (default), `skipped`, `pending` |
+
+**Note**: Code reference (`ClassName::methodName`) is auto-generated via reflection.
+
+## Generating Documentation
+
+```bash
+# Generate markdown documentation
+bin/run.sh docs
+
+# Generate JSON format
+bin/run.sh docs --format=json
+
+# Generate CSV format
+bin/run.sh docs --format=csv
+
+# Write to file
+bin/run.sh docs --output=TESTS.md
 ```
 
 ## Configuration
@@ -89,16 +127,11 @@ Configuration is in `config.php`:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `scip_binary` | `../../scip-php/build/scip-php` | Path to scip-php binary |
-| `project_root` | `../` | Path to PHP project to index |
-| `output_dir` | `./output` | Where to write generated index |
+| `output_dir` | `./output` | Directory containing generated index |
+| `calls_json` | `calls.json` | Name of calls.json file |
 
-Environment variables override config file values:
-- `SCIP_PHP_BINARY`
-- `PROJECT_ROOT`
-- `OUTPUT_DIR`
-- `SKIP_INDEX_GENERATION` - Skip regeneration if calls.json exists
-- `FORCE_INDEX_GENERATION` - Force regeneration even if exists
+**Note:** Index generation is handled by `bin/run.sh` using the scip-php Docker image.
+Tests only read the pre-generated `calls.json` file.
 
 ## Documentation
 

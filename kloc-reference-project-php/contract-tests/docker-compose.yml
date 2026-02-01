@@ -4,16 +4,10 @@ services:
       context: ..
       dockerfile: contract-tests/Dockerfile
     volumes:
-      # Mount scip-php binary to separate path (avoids read-only parent conflict)
-      - ../../scip-php/build/scip-php:/scip-php-bin:ro
       # Mount entire reference project (includes composer.json, vendor/, src/)
       - ..:/app
       # Named volume for vendor to persist between runs
       - contract-tests-vendor:/app/contract-tests/vendor
-    environment:
-      - SCIP_PHP_BINARY=/scip-php-bin
-      - PROJECT_ROOT=/app
-      - OUTPUT_DIR=/app/contract-tests/output
     working_dir: /app/contract-tests
     command: ["sh", "-c", "composer install --quiet && vendor/bin/phpunit --testdox"]
 

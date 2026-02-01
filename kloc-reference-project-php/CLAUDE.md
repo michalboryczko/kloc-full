@@ -53,8 +53,9 @@ The project uses `App\` namespace. All classes in `src/` follow this pattern.
 To validate the project can be analyzed by scip-php:
 
 ```bash
-# From kloc repository root
-./scip-php/build/scip-php kloc-reference-project-php
+# From kloc repository root (requires scip-php Docker image built)
+cd scip-php && ./build/build.sh  # Build Docker image (once)
+./bin/scip-php.sh -d ../kloc-reference-project-php -o /tmp/output
 ```
 
 ### Code Style

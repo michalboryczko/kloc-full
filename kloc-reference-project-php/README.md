@@ -162,8 +162,10 @@ Response:
 This project is designed to be analyzed by scip-php:
 
 ```bash
-# From the kloc repository root
-./scip-php/build/scip-php kloc-reference-project-php
+# From the scip-php directory
+cd scip-php
+./build/build.sh  # Build Docker image (once)
+./bin/scip-php.sh -d ../kloc-reference-project-php -o /tmp/output
 ```
 
 This generates:

@@ -56,7 +56,6 @@ class SmokeTest extends CallsContractTestCase
     #[ContractTest(
         name: 'OrderRepository::save() $order Parameter',
         description: 'Critical acceptance test: Verifies $order parameter in OrderRepository::save() exists in index with kind=parameter, symbol containing ($order), and type containing Order',
-        codeRef: 'src/Repository/OrderRepository.php:26',
         category: 'smoke',
     )]
     public function testOrderRepositorySaveParameterExists(): void

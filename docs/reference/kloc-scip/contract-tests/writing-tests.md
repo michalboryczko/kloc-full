@@ -10,7 +10,7 @@ This guide explains how to write new contract tests for the `scip-php` indexer.
 
 ## Test Structure
 
-Every test class extends `CallsContractTestCase`:
+Every test class extends `CallsContractTestCase` and uses the `#[ContractTest]` attribute:
 
 ```php
 <?php
@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace ContractTests\Tests\Category;
 
+use ContractTests\Attribute\ContractTest;
 use ContractTests\CallsContractTestCase;
 
 class MyFeatureTest extends CallsContractTestCase
@@ -31,12 +32,41 @@ class MyFeatureTest extends CallsContractTestCase
      *
      * Expected: Description of expected behavior
      */
+    #[ContractTest(
+        name: 'ClassName::methodName() scenario',
+        description: 'Detailed description of what the test verifies',
+        category: 'reference',
+    )]
     public function testDescriptiveName(): void
     {
         // Test implementation
     }
 }
 ```
+
+## ContractTest Attribute
+
+Every test method MUST use the `#[ContractTest]` attribute for documentation generation:
+
+```php
+use ContractTests\Attribute\ContractTest;
+
+#[ContractTest(
+    name: 'OrderRepository::save() $order',
+    description: 'Verifies $order parameter has single value entry. Per spec, each parameter should have one value entry at declaration.',
+    category: 'reference',
+)]
+public function testOrderRepositorySaveOrderParameter(): void
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | Yes | Human-readable test name shown in docs |
+| `description` | string | Yes | What the test verifies (detailed) |
+| `category` | string | No | Test category: `smoke`, `integrity`, `reference`, `chain`, `argument` (auto-detected from class if omitted) |
+| `status` | string | No | `active` (default), `skipped`, `pending` |
+
+**Note**: Code reference (`ClassName::methodName`) is generated automatically via reflection - do not specify manually.
 
 ## Best Practices
 
@@ -316,7 +346,33 @@ foreach ($calls as $call) {
 
 4. Run tests to verify:
    ```bash
-   vendor/bin/phpunit tests/YourNewTest.php
+   bin/run.sh test --filter YourNewTest
    ```
 
 5. Update `phpunit.xml` if adding new directory (usually not needed)
+
+## Generating Documentation
+
+Use `bin/run.sh` to generate test documentation:
+
+```bash
+# Generate markdown documentation
+bin/run.sh docs
+
+# Generate JSON format (for tooling)
+bin/run.sh docs --format=json
+
+# Generate CSV format
+bin/run.sh docs --format=csv
+
+# Write to file
+bin/run.sh docs --output=TESTS.md
+```
+
+**Note:** `bin/run.sh` handles index generation automatically before running documentation generation.
+
+The generated documentation includes:
+- Summary table (passed/failed/skipped/error counts)
+- Tests grouped by category with live execution status
+- Failed test details with error messages
+- Auto-generated code reference as `ClassName::methodName` from reflection

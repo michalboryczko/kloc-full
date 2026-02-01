@@ -13,8 +13,9 @@ index.scip
 calls.json
 index.kloc
 
-# Composer lock (optional in libraries, committed in apps)
-# composer.lock
+# Contract tests
+/contract-tests/vendor/
+/contract-tests/output/
 
 # IDE
 .idea/

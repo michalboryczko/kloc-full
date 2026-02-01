@@ -15,7 +15,6 @@ class ArgumentBindingTest extends CallsContractTestCase
     #[ContractTest(
         name: 'save() Receives $order Local',
         description: 'Argument 0 of save() points to $order local variable',
-        codeRef: 'src/Service/OrderService.php:40',
         category: 'argument',
     )]
     public function testSaveArgumentPointsToOrderLocal(): void
@@ -31,7 +30,6 @@ class ArgumentBindingTest extends CallsContractTestCase
     #[ContractTest(
         name: 'findById() Receives $orderId Parameter',
         description: 'Argument 0 of findById() points to $orderId parameter',
-        codeRef: 'src/Service/NotificationService.php:20',
         category: 'argument',
     )]
     public function testFindByIdArgumentPointsToParameter(): void
@@ -47,7 +45,6 @@ class ArgumentBindingTest extends CallsContractTestCase
     #[ContractTest(
         name: 'send() Receives customerEmail Access Result',
         description: 'First argument of send() points to customerEmail property access result',
-        codeRef: 'src/Service/OrderService.php:42-43',
         category: 'argument',
     )]
     public function testEmailSenderReceivesCustomerEmail(): void
@@ -63,7 +60,6 @@ class ArgumentBindingTest extends CallsContractTestCase
     #[ContractTest(
         name: 'Order Constructor Arguments',
         description: 'Order constructor receives correct argument types (literal, result)',
-        codeRef: 'src/Service/OrderService.php:31-38',
         category: 'argument',
     )]
     public function testOrderConstructorArguments(): void
@@ -95,7 +91,6 @@ class ArgumentBindingTest extends CallsContractTestCase
     #[ContractTest(
         name: 'OrderRepository Constructor in save()',
         description: 'Order constructor in save() receives property access results from $order',
-        codeRef: 'src/Repository/OrderRepository.php:29-36',
         category: 'argument',
     )]
     public function testOrderRepositoryConstructorArguments(): void
@@ -124,7 +119,6 @@ class ArgumentBindingTest extends CallsContractTestCase
     #[ContractTest(
         name: 'dispatch() Receives Constructor Result',
         description: 'MessageBus dispatch() receives OrderCreatedMessage constructor result',
-        codeRef: 'src/Service/OrderService.php:53',
         category: 'argument',
     )]
     public function testMessageBusDispatchArgument(): void
@@ -150,7 +144,6 @@ class ArgumentBindingTest extends CallsContractTestCase
     #[ContractTest(
         name: 'checkAvailability() Receives Property Access Results',
         description: 'InventoryChecker receives $input property values as arguments',
-        codeRef: 'src/Service/OrderService.php:29',
         category: 'argument',
     )]
     public function testInventoryCheckerArguments(): void

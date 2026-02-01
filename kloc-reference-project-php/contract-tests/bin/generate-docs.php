@@ -164,11 +164,14 @@ function extractTestMetadata(): array
             $key = $className . '::' . $method->getName();
             $attributes = $method->getAttributes(ContractTest::class);
 
+            // Generate codeRef dynamically from reflection
+            $dynamicCodeRef = $className . '::' . $method->getName();
+
             if (empty($attributes)) {
                 $tests[$key] = [
                     'name' => humanize($method->getName()),
                     'description' => '',
-                    'codeRef' => '',
+                    'codeRef' => $dynamicCodeRef,
                     'category' => getCategoryFromClass($className),
                     'declaredStatus' => 'active',
                 ];
@@ -177,7 +180,7 @@ function extractTestMetadata(): array
                 $tests[$key] = [
                     'name' => $attr->name,
                     'description' => $attr->description,
-                    'codeRef' => $attr->codeRef,
+                    'codeRef' => $dynamicCodeRef,
                     'category' => $attr->category ?: getCategoryFromClass($className),
                     'declaredStatus' => $attr->status,
                 ];
