@@ -32,16 +32,16 @@ class NestedChainTest extends CallsContractTestCase
         // $email = $customer->contact->email;
         // $phone = $customer->contact->phone;
 
-        // Find the email and phone property accesses within getCustomerDetails
+        // Find the email and phone property accesses within getCustomerById
         $emailAccess = $this->calls()
             ->kind('access')
-            ->callerContains('CustomerService#getCustomerDetails()')
+            ->callerContains('CustomerService#getCustomerById()')
             ->calleeContains('$email')
             ->first();
 
         $phoneAccess = $this->calls()
             ->kind('access')
-            ->callerContains('CustomerService#getCustomerDetails()')
+            ->callerContains('CustomerService#getCustomerById()')
             ->calleeContains('$phone')
             ->first();
 
@@ -82,13 +82,13 @@ class NestedChainTest extends CallsContractTestCase
         // Find the street and city property accesses
         $streetAccess = $this->calls()
             ->kind('access')
-            ->callerContains('CustomerService#getCustomerDetails()')
+            ->callerContains('CustomerService#getCustomerById()')
             ->calleeContains('$street')
             ->first();
 
         $cityAccess = $this->calls()
             ->kind('access')
-            ->callerContains('CustomerService#getCustomerDetails()')
+            ->callerContains('CustomerService#getCustomerById()')
             ->calleeContains('$city')
             ->first();
 
@@ -133,14 +133,14 @@ class NestedChainTest extends CallsContractTestCase
         // Find the contact property accesses (there may be multiple)
         $contactAccesses = $this->calls()
             ->kind('access')
-            ->callerContains('CustomerService#getCustomerDetails()')
+            ->callerContains('CustomerService#getCustomerById()')
             ->calleeContains('$contact')
             ->all();
 
         // Find the address property accesses (there may be multiple)
         $addressAccesses = $this->calls()
             ->kind('access')
-            ->callerContains('CustomerService#getCustomerDetails()')
+            ->callerContains('CustomerService#getCustomerById()')
             ->calleeContains('$address')
             ->all();
 
@@ -182,18 +182,18 @@ class NestedChainTest extends CallsContractTestCase
     // ================================================================
 
     #[ContractTest(
-        name: 'Value Flow from Entity to Response DTO',
-        description: 'Verifies we can trace the value of $street from CustomerResponse constructor argument back through the chain: argument -> $street local -> address->street access -> address access -> $customer.',
+        name: 'Value Flow from Entity to Service DTO',
+        description: 'Verifies we can trace the value of $street from CustomerOutput constructor argument back through the chain: argument -> $street local -> address->street access -> address access -> $customer.',
         category: 'chain',
     )]
     public function testValueFlowFromEntityToResponse(): void
     {
-        // Code reference: src/Service/CustomerService.php:45,52
+        // Code reference: src/Service/CustomerService.php:55,65
         // $street = $customer->address->street;
-        // return new CustomerResponse(..., street: $street, ...);
+        // return new CustomerOutput(..., street: $street, ...);
 
-        // Find the $street local variable in getCustomerDetails
-        $streetLocal = $this->inMethod('App\Service\CustomerService', 'getCustomerDetails')
+        // Find the $street local variable in getCustomerById
+        $streetLocal = $this->inMethod('App\Service\CustomerService', 'getCustomerById')
             ->values()
             ->kind('local')
             ->symbolContains('local$street')
@@ -359,7 +359,7 @@ class NestedChainTest extends CallsContractTestCase
         // Start from a nested property access
         $emailAccess = $this->calls()
             ->kind('access')
-            ->callerContains('CustomerService#getCustomerDetails()')
+            ->callerContains('CustomerService#getCustomerById()')
             ->calleeContains('$email')
             ->first();
 
@@ -538,5 +538,229 @@ class NestedChainTest extends CallsContractTestCase
         $customerValue = self::$calls->getValueById($contactReceiverId);
         $this->assertNotNull($customerValue, 'customer value should exist');
         $this->assertSame('parameter', $customerValue['kind'] ?? '', 'customer should be parameter');
+    }
+
+    // ================================================================
+    // Scenario 6: Full Flow from Controller to Entity
+    // ================================================================
+
+    #[ContractTest(
+        name: 'Full Flow: Controller Response to Entity Property',
+        description: 'Verifies the complete data flow from CustomerController creating CustomerResponse, through CustomerService returning CustomerOutput, back to the Entity nested properties. Tests that $output->street in Controller traces to CustomerOutput, which traces to $street local in Service, which traces to $customer->address->street.',
+        category: 'chain',
+    )]
+    public function testFullFlowControllerToEntity(): void
+    {
+        // Flow: Controller (CustomerResponse) <- Service (CustomerOutput) <- Entity
+        //
+        // CustomerController::get():
+        //   $output = $this->customerService->getCustomerById($id);
+        //   return new CustomerResponse(..., street: $output->street, ...);
+        //
+        // CustomerService::getCustomerById():
+        //   $street = $customer->address->street;
+        //   return new CustomerOutput(..., street: $street, ...);
+
+        // Step 1: Find the CustomerResponse constructor call in Controller
+        $responseConstructor = $this->calls()
+            ->kind('constructor')
+            ->callerContains('CustomerController#get()')
+            ->calleeContains('CustomerResponse')
+            ->first();
+
+        $this->assertNotNull($responseConstructor, 'Should find CustomerResponse constructor in Controller');
+
+        // Step 2: Verify the constructor has arguments
+        $arguments = $responseConstructor['arguments'] ?? [];
+        $this->assertNotEmpty($arguments, 'CustomerResponse constructor should have arguments');
+
+        // Step 3: Find the street argument (should reference $output->street access result)
+        $streetArg = null;
+        foreach ($arguments as $arg) {
+            $paramSymbol = $arg['parameter'] ?? '';
+            if (str_contains($paramSymbol, 'street')) {
+                $streetArg = $arg;
+                break;
+            }
+        }
+
+        $this->assertNotNull($streetArg, 'Should find street argument in CustomerResponse constructor');
+
+        // Step 4: The street argument value should point to $output->street access result
+        $streetArgValueId = $streetArg['value_id'] ?? null;
+        $this->assertNotNull($streetArgValueId, 'street argument should have value_id');
+
+        $streetArgValue = self::$calls->getValueById($streetArgValueId);
+        $this->assertNotNull($streetArgValue, 'street argument value should exist');
+
+        // Step 5: Verify this is a result from property access on $output
+        $this->assertSame('result', $streetArgValue['kind'] ?? '', 'street arg should be result of access');
+
+        $streetAccessId = $streetArgValue['source_call_id'] ?? null;
+        $this->assertNotNull($streetAccessId, 'street result should have source_call_id');
+
+        $streetAccess = self::$calls->getCallById($streetAccessId);
+        $this->assertNotNull($streetAccess, 'street access call should exist');
+        $this->assertSame('access', $streetAccess['kind'] ?? '', 'Should be access call');
+        $this->assertStringContainsString('street', $streetAccess['callee'] ?? '', 'Should access street property');
+
+        // Step 6: The receiver should be $output local variable
+        $outputReceiverId = $streetAccess['receiver_value_id'] ?? null;
+        $this->assertNotNull($outputReceiverId, 'street access should have receiver');
+
+        $outputValue = self::$calls->getValueById($outputReceiverId);
+        $this->assertNotNull($outputValue, 'output value should exist');
+        $this->assertSame('local', $outputValue['kind'] ?? '', 'output should be local variable');
+        $this->assertStringContainsString('output', $outputValue['symbol'] ?? '', 'Should be $output local');
+    }
+
+    #[ContractTest(
+        name: 'Full Flow: Service Output to Entity Nested Chain',
+        description: 'Verifies that CustomerOutput properties in Service can be traced back through nested entity access chains: $output.street <- $street local <- $customer->address->street <- $customer local <- repository call.',
+        category: 'chain',
+    )]
+    public function testFullFlowServiceOutputToEntityChain(): void
+    {
+        // Find CustomerOutput constructor in getCustomerById
+        $outputConstructor = $this->calls()
+            ->kind('constructor')
+            ->callerContains('CustomerService#getCustomerById()')
+            ->calleeContains('CustomerOutput')
+            ->first();
+
+        $this->assertNotNull($outputConstructor, 'Should find CustomerOutput constructor in Service');
+
+        // Find the street argument
+        $arguments = $outputConstructor['arguments'] ?? [];
+        $streetArg = null;
+        foreach ($arguments as $arg) {
+            $paramSymbol = $arg['parameter'] ?? '';
+            if (str_contains($paramSymbol, 'street')) {
+                $streetArg = $arg;
+                break;
+            }
+        }
+
+        $this->assertNotNull($streetArg, 'Should find street argument in CustomerOutput constructor');
+
+        // The street argument should reference the $street local variable
+        $streetLocalId = $streetArg['value_id'] ?? null;
+        $this->assertNotNull($streetLocalId, 'street argument should have value_id');
+
+        $streetLocal = self::$calls->getValueById($streetLocalId);
+        $this->assertNotNull($streetLocal, 'street local should exist');
+        $this->assertSame('local', $streetLocal['kind'] ?? '', 'should be local variable');
+
+        // $street local should have source_call_id pointing to address->street access
+        $streetAccessId = $streetLocal['source_call_id'] ?? null;
+        $this->assertNotNull($streetAccessId, '$street should have source_call_id');
+
+        $streetAccess = self::$calls->getCallById($streetAccessId);
+        $this->assertNotNull($streetAccess, 'street access should exist');
+        $this->assertSame('access', $streetAccess['kind'] ?? '', 'Should be access');
+        $this->assertStringContainsString('street', $streetAccess['callee'] ?? '', 'Should access street');
+
+        // street access receiver should be result of address access
+        $addressResultId = $streetAccess['receiver_value_id'] ?? null;
+        $this->assertNotNull($addressResultId, 'street access should have receiver');
+
+        $addressResult = self::$calls->getValueById($addressResultId);
+        $this->assertNotNull($addressResult, 'address result should exist');
+        $this->assertSame('result', $addressResult['kind'] ?? '', 'Should be result');
+
+        // address result should have source_call_id pointing to address access
+        $addressAccessId = $addressResult['source_call_id'] ?? null;
+        $this->assertNotNull($addressAccessId, 'address result should have source_call_id');
+
+        $addressAccess = self::$calls->getCallById($addressAccessId);
+        $this->assertNotNull($addressAccess, 'address access should exist');
+        $this->assertSame('access', $addressAccess['kind'] ?? '', 'Should be access');
+        $this->assertStringContainsString('address', $addressAccess['callee'] ?? '', 'Should access address');
+
+        // address access receiver should be $customer local
+        $customerLocalId = $addressAccess['receiver_value_id'] ?? null;
+        $this->assertNotNull($customerLocalId, 'address access should have receiver');
+
+        $customerLocal = self::$calls->getValueById($customerLocalId);
+        $this->assertNotNull($customerLocal, 'customer local should exist');
+        $this->assertSame('local', $customerLocal['kind'] ?? '', '$customer should be local');
+        $this->assertStringContainsString('customer', $customerLocal['symbol'] ?? '', 'Should be $customer');
+
+        // $customer should have source_call_id pointing to repository->findById call
+        $findByIdId = $customerLocal['source_call_id'] ?? null;
+        $this->assertNotNull($findByIdId, '$customer should have source_call_id from findById');
+
+        $findByIdCall = self::$calls->getCallById($findByIdId);
+        $this->assertNotNull($findByIdCall, 'findById call should exist');
+        $this->assertSame('method', $findByIdCall['kind'] ?? '', 'Should be method call');
+        $this->assertStringContainsString('findById', $findByIdCall['callee'] ?? '', 'Should call findById');
+    }
+
+    #[ContractTest(
+        name: 'Direct Nested Access in Constructor Arguments',
+        description: 'Verifies that getCustomerDetails with direct nested access in constructor (email: $customer->contact->email) correctly tracks the chain.',
+        category: 'chain',
+    )]
+    public function testDirectNestedAccessInConstructorArguments(): void
+    {
+        // In getCustomerDetails: new CustomerOutput(..., email: $customer->contact->email, ...)
+        $outputConstructor = $this->calls()
+            ->kind('constructor')
+            ->callerContains('CustomerService#getCustomerDetails()')
+            ->calleeContains('CustomerOutput')
+            ->first();
+
+        $this->assertNotNull($outputConstructor, 'Should find CustomerOutput constructor in getCustomerDetails');
+
+        // Find the email argument - it should be a result from nested access chain
+        $arguments = $outputConstructor['arguments'] ?? [];
+        $emailArg = null;
+        foreach ($arguments as $arg) {
+            $paramSymbol = $arg['parameter'] ?? '';
+            if (str_contains($paramSymbol, 'email')) {
+                $emailArg = $arg;
+                break;
+            }
+        }
+
+        $this->assertNotNull($emailArg, 'Should find email argument');
+
+        // The email argument value should be a result (from $customer->contact->email chain)
+        $emailValueId = $emailArg['value_id'] ?? null;
+        $this->assertNotNull($emailValueId, 'email argument should have value_id');
+
+        $emailValue = self::$calls->getValueById($emailValueId);
+        $this->assertNotNull($emailValue, 'email value should exist');
+        $this->assertSame('result', $emailValue['kind'] ?? '', 'email should be result from access chain');
+
+        // Trace back through the chain
+        $emailAccessId = $emailValue['source_call_id'] ?? null;
+        $this->assertNotNull($emailAccessId, 'email result should have source_call_id');
+
+        $emailAccess = self::$calls->getCallById($emailAccessId);
+        $this->assertNotNull($emailAccess, 'email access should exist');
+        $this->assertStringContainsString('email', $emailAccess['callee'] ?? '', 'Should access email');
+
+        // email access receiver should be result of contact access
+        $contactResultId = $emailAccess['receiver_value_id'] ?? null;
+        $this->assertNotNull($contactResultId, 'email access should have receiver');
+
+        $contactResult = self::$calls->getValueById($contactResultId);
+        $this->assertNotNull($contactResult, 'contact result should exist');
+        $this->assertSame('result', $contactResult['kind'] ?? '', 'Should be result from contact access');
+
+        // contact result should trace back to $customer
+        $contactAccessId = $contactResult['source_call_id'] ?? null;
+        $this->assertNotNull($contactAccessId, 'contact result should have source_call_id');
+
+        $contactAccess = self::$calls->getCallById($contactAccessId);
+        $this->assertNotNull($contactAccess, 'contact access should exist');
+
+        $customerReceiverId = $contactAccess['receiver_value_id'] ?? null;
+        $this->assertNotNull($customerReceiverId, 'contact access should have receiver');
+
+        $customerValue = self::$calls->getValueById($customerReceiverId);
+        $this->assertNotNull($customerValue, 'customer value should exist');
+        $this->assertSame('local', $customerValue['kind'] ?? '', '$customer should be local');
     }
 }

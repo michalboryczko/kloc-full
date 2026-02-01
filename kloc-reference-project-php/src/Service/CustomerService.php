@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use App\Dto\CustomerResponse;
+use App\Dto\CustomerOutput;
 use App\Entity\Customer;
 use App\Repository\CustomerRepository;
 
@@ -14,7 +14,9 @@ use App\Repository\CustomerRepository;
  * Contract test scenarios:
  * - Nested property chains: $customer->contact->email, $customer->address->street
  * - Multiple accesses on same nested object should share receivers
- * - Full value flow tracing from entity to response DTO
+ * - Full value flow tracing from entity to service DTO (CustomerOutput)
+ *
+ * Flow: Entity -> Service (CustomerOutput) -> Controller (CustomerResponse)
  */
 final readonly class CustomerService
 {
@@ -24,19 +26,18 @@ final readonly class CustomerService
     }
 
     /**
-     * Get customer details demonstrating nested property access chains.
+     * Get customer by ID, returning service DTO.
      *
-     * Contract test: Nested chain receiver sharing
-     * - $customer->contact->email and $customer->contact->phone share contact receiver
-     * - $customer->contact and $customer->address share $customer receiver
-     * - Values flow from entity properties to response DTO
+     * Contract test: Value flow from entity to service DTO
+     * - $customer->contact->email flows to output.email
+     * - $customer->address->street flows to output.street
      *
      * Code reference for contract tests:
-     * Lines 40-45: Nested property access on contact (email, phone)
-     * Lines 48-51: Nested property access on address (street, city)
-     * Lines 53-61: Value flow to CustomerResponse constructor
+     * Lines 46-49: Nested property access on contact (email, phone)
+     * Lines 52-56: Nested property access on address (street, city, etc.)
+     * Lines 58-67: Value flow to CustomerOutput constructor
      */
-    public function getCustomerDetails(int $id): ?CustomerResponse
+    public function getCustomerById(int $id): ?CustomerOutput
     {
         $customer = $this->repository->findById($id);
 
@@ -50,17 +51,48 @@ final readonly class CustomerService
         $phone = $customer->contact->phone;
 
         // These should share the same $customer receiver for 'address' access
-        // And the result of address access is shared receiver for street/city
+        // And the result of address access is shared receiver for street/city/etc.
         $street = $customer->address->street;
         $city = $customer->address->city;
+        $postalCode = $customer->address->postalCode;
+        $country = $customer->address->country;
 
-        return new CustomerResponse(
+        return new CustomerOutput(
             id: $customer->id,
             name: $customer->name,
             email: $email,
             phone: $phone,
             street: $street,
             city: $city,
+            postalCode: $postalCode,
+            country: $country,
+        );
+    }
+
+    /**
+     * Get customer details with direct nested access pattern.
+     *
+     * Contract test: Direct nested property access in return
+     * Pattern: new CustomerOutput(..., email: $customer->contact->email, ...)
+     */
+    public function getCustomerDetails(int $id): ?CustomerOutput
+    {
+        $customer = $this->repository->findById($id);
+
+        if ($customer === null) {
+            return null;
+        }
+
+        // Direct nested property access in constructor arguments
+        // Each nested chain: $customer->contact->X and $customer->address->Y
+        return new CustomerOutput(
+            id: $customer->id,
+            name: $customer->name,
+            email: $customer->contact->email,
+            phone: $customer->contact->phone,
+            street: $customer->address->street,
+            city: $customer->address->city,
+            postalCode: $customer->address->postalCode,
             country: $customer->address->country,
         );
     }

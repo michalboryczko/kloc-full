@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Dto;
 
 /**
- * Response DTO for customer data.
+ * Service layer DTO for customer data.
  *
- * Contract test: Value flow tracking
- * The street and email values should be traceable from this response
- * back to the original Customer->Address->street and Customer->Contact->email.
+ * Flow: Entity (Customer->contact->email, Customer->address->street)
+ *       -> Service (CustomerService returns CustomerOutput)
+ *       -> Controller (converts to CustomerResponse)
  */
-final readonly class CustomerResponse
+final readonly class CustomerOutput
 {
     public function __construct(
         public int $id,
@@ -20,6 +20,7 @@ final readonly class CustomerResponse
         public string $phone,
         public string $street,
         public string $city,
+        public string $postalCode,
         public string $country,
     ) {
     }
