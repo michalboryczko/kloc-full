@@ -112,12 +112,17 @@ class OneValuePerDeclarationTest extends CallsContractTestCase
             ->hasReceiver()
             ->all();
 
-        // Filter to accesses where receiver should be $order
-        // These are accesses like $order->customerEmail, $order->productId, etc.
+        // Filter to accesses on lines 31-35 (the $order property accesses)
+        // This excludes $newOrder->id on line 37 which correctly has a different receiver
         $orderPropertyAccesses = array_filter($propertyAccessCalls, function ($call) {
-            // Match properties: customerEmail, productId, quantity, status, createdAt, id
+            // Match properties: customerEmail, productId, quantity, status, createdAt
+            // These are the 5 accesses on $order in the constructor call (lines 31-35)
             $callee = $call['callee'] ?? '';
-            return preg_match('/Order#\$(customerEmail|productId|quantity|status|createdAt|id)\./', $callee);
+            $location = $call['location'] ?? [];
+            $line = $location['line'] ?? 0;
+            // Only include lines 31-35 where $order property accesses occur
+            return preg_match('/Order#\$(customerEmail|productId|quantity|status|createdAt)\./', $callee)
+                && $line >= 31 && $line <= 35;
         });
 
         $this->assertNotEmpty(

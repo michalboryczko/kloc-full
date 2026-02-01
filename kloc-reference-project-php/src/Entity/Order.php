@@ -17,4 +17,22 @@ final readonly class Order
         public DateTimeImmutable $createdAt,
     ) {
     }
+
+    /**
+     * Get customer display name from email.
+     * Used for nullsafe method call contract testing.
+     */
+    public function getCustomerName(): string
+    {
+        $parts = explode('@', $this->customerEmail);
+        return $parts[0];
+    }
+
+    /**
+     * Check if order is in pending status.
+     */
+    public function isPending(): bool
+    {
+        return $this->status === 'pending';
+    }
 }
