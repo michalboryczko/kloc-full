@@ -27,6 +27,10 @@ Contract testing revealed 15 documented behaviors in `calls-schema.json` that ar
 
 ## Feature 1: Static Method Calls (`method_static`)
 
+### Documentation Reference
+- **Schema**: [`calls-schema.json:129,136`](../reference/kloc-scip/calls-schema.json) - CallKind enum and description
+- **Docs**: [`calls-and-data-flow.md:183`](../reference/kloc-scip/calls-and-data-flow.md#call-kinds) - Call Kinds table
+
 ### Description
 Track static method calls like `Foo::bar()` in calls.json.
 
@@ -74,6 +78,10 @@ tests/CallKind/CallKindTest.php::testStaticMethodCallKind
 
 ## Feature 2: Static Property Access (`access_static`)
 
+### Documentation Reference
+- **Schema**: [`calls-schema.json:131,141`](../reference/kloc-scip/calls-schema.json) - CallKind enum and description
+- **Docs**: [`calls-and-data-flow.md:188`](../reference/kloc-scip/calls-and-data-flow.md#call-kinds) - Call Kinds table
+
 ### Description
 Track static property access like `Foo::$bar` in calls.json.
 
@@ -119,6 +127,11 @@ tests/CallKind/CallKindTest.php::testStaticPropertyAccessKind
 
 ## Feature 3: Array Access (`access_array`)
 
+### Documentation Reference
+- **Schema**: [`calls-schema.json:131,143`](../reference/kloc-scip/calls-schema.json) - CallKind enum and description
+- **Schema**: [`calls-schema.json:249-254`](../reference/kloc-scip/calls-schema.json) - `key_value_id` field definition
+- **Docs**: [`calls-and-data-flow.md:190,481-497`](../reference/kloc-scip/calls-and-data-flow.md#array-access) - Array Access section
+
 ### Description
 Track array access operations like `$arr['key']` or `$arr[$index]` in calls.json.
 
@@ -161,6 +174,10 @@ tests/CallKind/CallKindTest.php::testArrayAccessKind
 
 ## Feature 4: Nullsafe Method Calls (`method_nullsafe`)
 
+### Documentation Reference
+- **Schema**: [`calls-schema.json:129,137`](../reference/kloc-scip/calls-schema.json) - CallKind enum and description
+- **Docs**: [`calls-and-data-flow.md:184`](../reference/kloc-scip/calls-and-data-flow.md#call-kinds) - Call Kinds table
+
 ### Description
 Track nullsafe method calls like `$obj?->method()` in calls.json.
 
@@ -202,6 +219,10 @@ tests/CallKind/CallKindTest.php::testNullsafeMethodCallKind
 
 ## Feature 5: Nullsafe Property Access (`access_nullsafe`)
 
+### Documentation Reference
+- **Schema**: [`calls-schema.json:131,142`](../reference/kloc-scip/calls-schema.json) - CallKind enum and description
+- **Docs**: [`calls-and-data-flow.md:189`](../reference/kloc-scip/calls-and-data-flow.md#call-kinds) - Call Kinds table
+
 ### Description
 Track nullsafe property access like `$obj?->property` in calls.json.
 
@@ -240,6 +261,11 @@ tests/CallKind/CallKindTest.php::testNullsafePropertyAccessKind
 ---
 
 ## Feature 6: Null Coalesce Operator (`coalesce`)
+
+### Documentation Reference
+- **Schema**: [`calls-schema.json:132,144`](../reference/kloc-scip/calls-schema.json) - CallKind enum and description
+- **Schema**: [`calls-schema.json:256-268`](../reference/kloc-scip/calls-schema.json) - `left_value_id`, `right_value_id` field definitions
+- **Docs**: [`calls-and-data-flow.md:191,415-437`](../reference/kloc-scip/calls-and-data-flow.md#null-coalesce-) - Null Coalesce section with example
 
 ### Description
 Track null coalesce operator `$a ?? $b` in calls.json.
@@ -284,6 +310,11 @@ tests/Operator/OperatorTest.php::testCoalesceOperator
 
 ## Feature 7: Short Ternary Operator (`ternary`)
 
+### Documentation Reference
+- **Schema**: [`calls-schema.json:132,145`](../reference/kloc-scip/calls-schema.json) - CallKind enum and description
+- **Schema**: [`calls-schema.json:270-289`](../reference/kloc-scip/calls-schema.json) - `condition_value_id`, `true_value_id`, `false_value_id` field definitions
+- **Docs**: [`calls-and-data-flow.md:192,439-457`](../reference/kloc-scip/calls-and-data-flow.md#ternary--) - Ternary section with example
+
 ### Description
 Track short ternary operator `$a ?: $b` (Elvis operator) in calls.json.
 
@@ -325,6 +356,11 @@ tests/Operator/OperatorTest.php::testShortTernaryOperator
 ---
 
 ## Feature 8: Full Ternary Operator (`ternary_full`)
+
+### Documentation Reference
+- **Schema**: [`calls-schema.json:132,146`](../reference/kloc-scip/calls-schema.json) - CallKind enum and description (Note: `ternary_full` in schema)
+- **Schema**: [`calls-schema.json:270-289`](../reference/kloc-scip/calls-schema.json) - `condition_value_id`, `true_value_id`, `false_value_id` field definitions
+- **Docs**: [`calls-and-data-flow.md:192,439-457`](../reference/kloc-scip/calls-and-data-flow.md#ternary--) - Ternary section with example
 
 ### Description
 Track full ternary operator `$a ? $b : $c` in calls.json.
@@ -368,6 +404,11 @@ tests/Operator/OperatorTest.php::testFullTernaryOperator
 ---
 
 ## Feature 9: Match Expression (`match`)
+
+### Documentation Reference
+- **Schema**: [`calls-schema.json:132,147`](../reference/kloc-scip/calls-schema.json) - CallKind enum and description
+- **Schema**: [`calls-schema.json:291-302`](../reference/kloc-scip/calls-schema.json) - `subject_value_id`, `arm_ids` field definitions
+- **Docs**: [`calls-and-data-flow.md:193,459-478`](../reference/kloc-scip/calls-and-data-flow.md#match-expression) - Match Expression section with example
 
 ### Description
 Track match expressions in calls.json.
