@@ -1,0 +1,324 @@
+<?php
+
+declare(strict_types=1);
+
+namespace ContractTests\Tests\Operator;
+
+use ContractTests\Attribute\ContractTest;
+use ContractTests\CallsContractTestCase;
+
+/**
+ * Tests for operator tracking in calls.json.
+ *
+ * Verifies that PHP operators (coalesce, ternary, match) are tracked
+ * with their operand values for data flow analysis.
+ */
+class OperatorTest extends CallsContractTestCase
+{
+    // ═══════════════════════════════════════════════════════════════
+    // Null Coalesce Operator (??)
+    // ═══════════════════════════════════════════════════════════════
+
+    #[ContractTest(
+        name: 'Null Coalesce Operator Kind Exists',
+        description: 'Verifies null coalesce operators ($a ?? $b) are tracked with kind=coalesce, kind_type=operator, left_value_id, right_value_id.',
+        category: 'operator',
+        status: 'pending',
+    )]
+    public function testNullCoalesceOperatorKindExists(): void
+    {
+        $coalesceCalls = $this->calls()
+            ->kind('coalesce')
+            ->all();
+
+        if (empty($coalesceCalls)) {
+            $this->markTestSkipped(
+                'No coalesce operators found. Operator tracking may not be implemented. ' .
+                'Reference: OrderRepository::findById() uses self::$orders[$id] ?? null'
+            );
+        }
+
+        // Verify structure
+        $call = $coalesceCalls[0];
+        $this->assertSame('operator', $call['kind_type'] ?? '');
+        $this->assertArrayHasKey('left_value_id', $call, 'Coalesce should have left_value_id');
+        $this->assertArrayHasKey('right_value_id', $call, 'Coalesce should have right_value_id');
+    }
+
+    #[ContractTest(
+        name: 'Coalesce Operands Reference Values',
+        description: 'Verifies coalesce left_value_id and right_value_id point to existing values in the values array.',
+        category: 'operator',
+        status: 'pending',
+    )]
+    public function testCoalesceOperandsReferenceValues(): void
+    {
+        $coalesceCalls = $this->calls()
+            ->kind('coalesce')
+            ->all();
+
+        if (empty($coalesceCalls)) {
+            $this->markTestSkipped('No coalesce operators found');
+        }
+
+        foreach ($coalesceCalls as $call) {
+            $leftId = $call['left_value_id'] ?? null;
+            $rightId = $call['right_value_id'] ?? null;
+
+            if ($leftId !== null) {
+                $this->assertTrue(
+                    self::$calls->hasValue($leftId),
+                    sprintf('Coalesce %s left_value_id %s should exist', $call['id'], $leftId)
+                );
+            }
+
+            if ($rightId !== null) {
+                $this->assertTrue(
+                    self::$calls->hasValue($rightId),
+                    sprintf('Coalesce %s right_value_id %s should exist', $call['id'], $rightId)
+                );
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Ternary Operator (? :)
+    // ═══════════════════════════════════════════════════════════════
+
+    #[ContractTest(
+        name: 'Ternary Operator Kind Exists',
+        description: 'Verifies ternary operators ($a ? $b : $c) are tracked with kind=ternary_full, kind_type=operator, and operand IDs.',
+        category: 'operator',
+        status: 'pending',
+    )]
+    public function testTernaryOperatorKindExists(): void
+    {
+        $ternaryFullCalls = $this->calls()
+            ->kind('ternary_full')
+            ->all();
+
+        $ternaryCalls = $this->calls()
+            ->kind('ternary')
+            ->all();
+
+        $allTernary = array_merge($ternaryFullCalls, $ternaryCalls);
+
+        if (empty($allTernary)) {
+            $this->markTestSkipped(
+                'No ternary operators found. Reference project may not use ternary expressions, ' .
+                'or operator tracking may not be implemented.'
+            );
+        }
+
+        // Verify structure of first ternary
+        $call = $allTernary[0];
+        $this->assertSame('operator', $call['kind_type'] ?? '');
+    }
+
+    #[ContractTest(
+        name: 'Full Ternary Has All Operand IDs',
+        description: 'Verifies full ternary ($a ? $b : $c) has condition_value_id, true_value_id, and false_value_id.',
+        category: 'operator',
+        status: 'pending',
+    )]
+    public function testFullTernaryHasAllOperandIds(): void
+    {
+        $ternaryFullCalls = $this->calls()
+            ->kind('ternary_full')
+            ->all();
+
+        if (empty($ternaryFullCalls)) {
+            $this->markTestSkipped('No ternary_full operators found');
+        }
+
+        foreach ($ternaryFullCalls as $call) {
+            $this->assertArrayHasKey(
+                'condition_value_id',
+                $call,
+                sprintf('Ternary %s should have condition_value_id', $call['id'])
+            );
+            $this->assertArrayHasKey(
+                'true_value_id',
+                $call,
+                sprintf('Ternary %s should have true_value_id', $call['id'])
+            );
+            $this->assertArrayHasKey(
+                'false_value_id',
+                $call,
+                sprintf('Ternary %s should have false_value_id', $call['id'])
+            );
+        }
+    }
+
+    #[ContractTest(
+        name: 'Short Ternary Has Condition ID',
+        description: 'Verifies short ternary ($a ?: $b) has condition_value_id. True value is the condition itself.',
+        category: 'operator',
+        status: 'pending',
+    )]
+    public function testShortTernaryHasConditionId(): void
+    {
+        $ternaryCalls = $this->calls()
+            ->kind('ternary')
+            ->all();
+
+        if (empty($ternaryCalls)) {
+            $this->markTestSkipped('No short ternary operators found');
+        }
+
+        foreach ($ternaryCalls as $call) {
+            $this->assertArrayHasKey(
+                'condition_value_id',
+                $call,
+                sprintf('Short ternary %s should have condition_value_id', $call['id'])
+            );
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Match Expression
+    // ═══════════════════════════════════════════════════════════════
+
+    #[ContractTest(
+        name: 'Match Expression Kind Exists',
+        description: 'Verifies match expressions are tracked with kind=match, kind_type=operator, subject_value_id, and arm_ids.',
+        category: 'operator',
+        status: 'pending',
+    )]
+    public function testMatchExpressionKindExists(): void
+    {
+        $matchCalls = $this->calls()
+            ->kind('match')
+            ->all();
+
+        if (empty($matchCalls)) {
+            $this->markTestSkipped(
+                'No match expressions found. Reference project may not use match, ' .
+                'or operator tracking may not be implemented.'
+            );
+        }
+
+        // Verify structure
+        $call = $matchCalls[0];
+        $this->assertSame('operator', $call['kind_type'] ?? '');
+        $this->assertArrayHasKey('subject_value_id', $call, 'Match should have subject_value_id');
+        $this->assertArrayHasKey('arm_ids', $call, 'Match should have arm_ids array');
+    }
+
+    #[ContractTest(
+        name: 'Match Expression Arms Reference Values',
+        description: 'Verifies match expression arm_ids array contains valid value references for each arm result.',
+        category: 'operator',
+        status: 'pending',
+    )]
+    public function testMatchExpressionArmsReferenceValues(): void
+    {
+        $matchCalls = $this->calls()
+            ->kind('match')
+            ->all();
+
+        if (empty($matchCalls)) {
+            $this->markTestSkipped('No match expressions found');
+        }
+
+        foreach ($matchCalls as $call) {
+            $armIds = $call['arm_ids'] ?? [];
+            $this->assertIsArray($armIds, 'arm_ids should be an array');
+
+            foreach ($armIds as $armId) {
+                $this->assertTrue(
+                    self::$calls->hasValue($armId),
+                    sprintf('Match %s arm_id %s should reference existing value', $call['id'], $armId)
+                );
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Operator Kind Type Validation
+    // ═══════════════════════════════════════════════════════════════
+
+    #[ContractTest(
+        name: 'All Operators Have Kind Type Operator',
+        description: 'Verifies all operator kinds (coalesce, ternary, ternary_full, match) have kind_type=operator.',
+        category: 'operator',
+        status: 'pending',
+    )]
+    public function testAllOperatorsHaveKindTypeOperator(): void
+    {
+        $operatorKinds = ['coalesce', 'ternary', 'ternary_full', 'match'];
+
+        $operatorCalls = [];
+        foreach ($operatorKinds as $kind) {
+            $calls = $this->calls()->kind($kind)->all();
+            $operatorCalls = array_merge($operatorCalls, $calls);
+        }
+
+        if (empty($operatorCalls)) {
+            $this->markTestSkipped('No operator calls found in the index');
+        }
+
+        $wrongKindType = [];
+        foreach ($operatorCalls as $call) {
+            if (($call['kind_type'] ?? '') !== 'operator') {
+                $wrongKindType[] = sprintf(
+                    '%s (kind=%s) has kind_type=%s',
+                    $call['id'] ?? 'unknown',
+                    $call['kind'] ?? 'unknown',
+                    $call['kind_type'] ?? 'unknown'
+                );
+            }
+        }
+
+        $this->assertEmpty(
+            $wrongKindType,
+            sprintf(
+                "Found %d operator calls with wrong kind_type:\n%s",
+                count($wrongKindType),
+                implode("\n", $wrongKindType)
+            )
+        );
+    }
+
+    #[ContractTest(
+        name: 'Operators Have Result Values',
+        description: 'Verifies operator calls have corresponding result values for data flow tracking.',
+        category: 'operator',
+        status: 'pending',
+    )]
+    public function testOperatorsHaveResultValues(): void
+    {
+        $operatorKinds = ['coalesce', 'ternary', 'ternary_full', 'match'];
+
+        $operatorCalls = [];
+        foreach ($operatorKinds as $kind) {
+            $calls = $this->calls()->kind($kind)->all();
+            $operatorCalls = array_merge($operatorCalls, $calls);
+        }
+
+        if (empty($operatorCalls)) {
+            $this->markTestSkipped('No operator calls found in the index');
+        }
+
+        $missingResults = [];
+        foreach ($operatorCalls as $call) {
+            $resultValue = self::$calls->getValueById($call['id']);
+            if ($resultValue === null) {
+                $missingResults[] = sprintf(
+                    '%s (kind=%s)',
+                    $call['id'] ?? 'unknown',
+                    $call['kind'] ?? 'unknown'
+                );
+            }
+        }
+
+        $this->assertEmpty(
+            $missingResults,
+            sprintf(
+                "Found %d operator calls without result values:\n%s",
+                count($missingResults),
+                implode("\n", $missingResults)
+            )
+        );
+    }
+}

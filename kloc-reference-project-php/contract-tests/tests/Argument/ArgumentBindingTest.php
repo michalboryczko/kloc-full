@@ -172,6 +172,75 @@ class ArgumentBindingTest extends CallsContractTestCase
         }
     }
 
+    #[ContractTest(
+        name: 'Argument value_expr for Complex Expressions',
+        description: 'Verifies arguments with complex expressions (like self::$nextId++) have value_expr when value_id is null.',
+        category: 'argument',
+    )]
+    public function testArgumentValueExprForComplexExpressions(): void
+    {
+        // Find Order constructor in save() which has self::$nextId++ as first argument
+        $constructorCall = $this->calls()
+            ->kind('constructor')
+            ->callerContains('OrderRepository#save()')
+            ->calleeContains('Order')
+            ->first();
+
+        $this->assertNotNull($constructorCall, 'Should find Order constructor in save()');
+
+        $arguments = $constructorCall['arguments'] ?? [];
+        $idArg = $this->findArgumentByPosition($arguments, 0);
+
+        $this->assertNotNull($idArg, 'Should have first argument');
+
+        // This argument should have value_expr since self::$nextId++ is complex
+        if ($idArg['value_id'] === null) {
+            $this->assertNotEmpty(
+                $idArg['value_expr'] ?? '',
+                'Argument with null value_id should have value_expr'
+            );
+            $this->assertStringContainsString(
+                'nextId',
+                $idArg['value_expr'] ?? '',
+                'value_expr should contain the expression'
+            );
+        }
+    }
+
+    #[ContractTest(
+        name: 'Argument Parameter Symbol Present',
+        description: 'Verifies arguments have parameter symbol linking to the callee parameter definition.',
+        category: 'argument',
+    )]
+    public function testArgumentParameterSymbolPresent(): void
+    {
+        // Find a method call with arguments
+        $methodCall = $this->calls()
+            ->kind('method')
+            ->callerContains('OrderService#createOrder()')
+            ->calleeContains('save')
+            ->first();
+
+        $this->assertNotNull($methodCall, 'Should find save() call');
+
+        $arguments = $methodCall['arguments'] ?? [];
+        $this->assertNotEmpty($arguments, 'save() should have arguments');
+
+        $arg0 = $this->findArgumentByPosition($arguments, 0);
+        $this->assertNotNull($arg0, 'Should have argument at position 0');
+
+        // Check parameter symbol is present
+        $this->assertNotEmpty(
+            $arg0['parameter'] ?? '',
+            'Argument should have parameter symbol'
+        );
+        $this->assertStringContainsString(
+            '($order)',
+            $arg0['parameter'] ?? '',
+            'Parameter symbol should reference the parameter name'
+        );
+    }
+
     /**
      * @param array<int, array<string, mixed>> $arguments
      * @return array<string, mixed>|null

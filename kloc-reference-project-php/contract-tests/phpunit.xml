@@ -32,6 +32,9 @@
         <testsuite name="valuekind">
             <directory>tests/ValueKind</directory>
         </testsuite>
+        <testsuite name="operator">
+            <directory>tests/Operator</directory>
+        </testsuite>
         <testsuite name="default">
             <directory>tests</directory>
             <exclude>tests/SmokeTest.php</exclude>
@@ -42,6 +45,7 @@
             <exclude>tests/Schema</exclude>
             <exclude>tests/CallKind</exclude>
             <exclude>tests/ValueKind</exclude>
+            <exclude>tests/Operator</exclude>
         </testsuite>
     </testsuites>
 

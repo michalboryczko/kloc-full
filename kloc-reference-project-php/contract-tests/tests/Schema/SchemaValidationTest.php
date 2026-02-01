@@ -458,4 +458,154 @@ class SchemaValidationTest extends CallsContractTestCase
             "Found calls with non-zero-based argument positions:\n" . implode("\n", array_slice($issues, 0, 10))
         );
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // ID Uniqueness
+    // ═══════════════════════════════════════════════════════════════
+
+    #[ContractTest(
+        name: 'Value IDs Are Unique',
+        description: 'Verifies all value IDs are unique within the values array (no duplicates).',
+        category: 'schema',
+    )]
+    public function testValueIdsAreUnique(): void
+    {
+        $ids = [];
+        $duplicates = [];
+
+        foreach (self::$calls->values() as $value) {
+            $id = $value['id'] ?? '';
+            if (isset($ids[$id])) {
+                $duplicates[] = $id;
+            }
+            $ids[$id] = true;
+        }
+
+        $this->assertEmpty(
+            $duplicates,
+            sprintf(
+                "Found %d duplicate value IDs:\n%s",
+                count($duplicates),
+                implode("\n", array_slice($duplicates, 0, 10))
+            )
+        );
+    }
+
+    #[ContractTest(
+        name: 'Call IDs Are Unique',
+        description: 'Verifies all call IDs are unique within the calls array (no duplicates).',
+        category: 'schema',
+    )]
+    public function testCallIdsAreUnique(): void
+    {
+        $ids = [];
+        $duplicates = [];
+
+        foreach (self::$calls->calls() as $call) {
+            $id = $call['id'] ?? '';
+            if (isset($ids[$id])) {
+                $duplicates[] = $id;
+            }
+            $ids[$id] = true;
+        }
+
+        $this->assertEmpty(
+            $duplicates,
+            sprintf(
+                "Found %d duplicate call IDs:\n%s",
+                count($duplicates),
+                implode("\n", array_slice($duplicates, 0, 10))
+            )
+        );
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Call Locations Match IDs
+    // ═══════════════════════════════════════════════════════════════
+
+    #[ContractTest(
+        name: 'Call ID Matches Location',
+        description: 'Verifies call ID is consistent with location (file:line:col format).',
+        category: 'schema',
+    )]
+    public function testCallIdMatchesLocation(): void
+    {
+        $mismatched = [];
+
+        foreach (self::$calls->calls() as $call) {
+            $id = $call['id'] ?? '';
+            $location = $call['location'] ?? [];
+
+            if (empty($location)) {
+                continue;
+            }
+
+            $expectedId = sprintf(
+                '%s:%d:%d',
+                $location['file'] ?? '',
+                $location['line'] ?? 0,
+                $location['col'] ?? 0
+            );
+
+            if ($id !== $expectedId) {
+                $mismatched[] = sprintf(
+                    'ID %s does not match location %s',
+                    $id,
+                    $expectedId
+                );
+            }
+        }
+
+        $this->assertEmpty(
+            $mismatched,
+            sprintf(
+                "Found %d calls where ID doesn't match location:\n%s",
+                count($mismatched),
+                implode("\n", array_slice($mismatched, 0, 10))
+            )
+        );
+    }
+
+    #[ContractTest(
+        name: 'Value ID Matches Location',
+        description: 'Verifies value ID is consistent with location (file:line:col format).',
+        category: 'schema',
+    )]
+    public function testValueIdMatchesLocation(): void
+    {
+        $mismatched = [];
+
+        foreach (self::$calls->values() as $value) {
+            $id = $value['id'] ?? '';
+            $location = $value['location'] ?? [];
+
+            if (empty($location)) {
+                continue;
+            }
+
+            $expectedId = sprintf(
+                '%s:%d:%d',
+                $location['file'] ?? '',
+                $location['line'] ?? 0,
+                $location['col'] ?? 0
+            );
+
+            if ($id !== $expectedId) {
+                $mismatched[] = sprintf(
+                    'ID %s does not match location %s',
+                    $id,
+                    $expectedId
+                );
+            }
+        }
+
+        $this->assertEmpty(
+            $mismatched,
+            sprintf(
+                "Found %d values where ID doesn't match location:\n%s",
+                count($mismatched),
+                implode("\n", array_slice($mismatched, 0, 10))
+            )
+        );
+    }
 }
