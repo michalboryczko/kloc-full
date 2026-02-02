@@ -177,20 +177,27 @@ Calls are operations — method calls, property access, operators. Each call tha
 
 ### Call Kinds
 
+**Stable kinds** (always generated):
+
 | Kind | `kind_type` | Description | Has `receiver_value_id` | Has `arguments` |
 |------|-------------|-------------|------------------------|-----------------|
 | `method` | invocation | `$obj->method()` | Yes | Yes |
 | `method_static` | invocation | `Foo::method()` | No | Yes |
-| `method_nullsafe` | invocation | `$obj?->method()` | Yes | Yes |
-| `function` | invocation | `func()` | No | Yes |
 | `constructor` | invocation | `new Foo()` | No | Yes |
 | `access` | access | `$obj->property` | Yes | No |
 | `access_static` | access | `Foo::$property` | No | No |
-| `access_nullsafe` | access | `$obj?->property` | Yes | No |
+
+**Experimental kinds** (require `--experimental` flag):
+
+| Kind | `kind_type` | Description | Has `receiver_value_id` | Has `arguments` |
+|------|-------------|-------------|------------------------|-----------------|
+| `function` | invocation | `func()` | No | Yes |
 | `access_array` | access | `$arr['key']` | Yes | No (has `key_value_id`) |
 | `coalesce` | operator | `$a ?? $b` | No | No (has `left_value_id`, `right_value_id`) |
-| `ternary` | operator | `$a ? $b : $c` | No | No (has operand IDs) |
+| `ternary` | operator | `$a ?: $b` or `$a ? $b : $c` | No | No (has operand IDs) |
 | `match` | operator | `match($x) {...}` | No | No (has `subject_value_id`, `arm_value_ids`) |
+
+**Nullsafe handling**: Nullsafe operators (`$obj?->method()`, `$obj?->prop`) use the regular `method`/`access` kind with `return_type` set to union `T|null`.
 
 ## Argument Record Structure
 
@@ -199,7 +206,7 @@ Calls are operations — method calls, property access, operators. Each call tha
   "position": 0,
   "parameter": "scip-php composer . App/Repository#find().($id)",
   "value_id": "src/Service.php:10:30",
-  "value_type": "scip-php builtin . int#"
+  "value_expr": "$userId"
 }
 ```
 
@@ -208,9 +215,11 @@ Calls are operations — method calls, property access, operators. Each call tha
 | `position` | int | 0-based argument index |
 | `parameter` | string? | SCIP symbol of the target parameter |
 | `value_id` | string | ID of the value passed as argument (always a value) |
-| `value_type` | string? | Type symbol of the argument value |
+| `value_expr` | string? | Expression string (when `value_id` is null for complex expressions) |
 
 **Important**: `value_id` always references a value (parameter, local, literal, constant, or result). Never a call ID.
+
+**Type lookup**: To get the type of an argument, look up `values[value_id].type`.
 
 ## Chaining Example
 
@@ -320,8 +329,8 @@ class NotificationService
     "return_type": "...void#",
     "location": {"file": "src/Service.php", "line": 11, "col": 4},
     "arguments": [
-      {"position": 0, "parameter": "...($to)", "value_id": "src/Service.php:11:25", "value_type": "...string#"},
-      {"position": 1, "parameter": "...($priority)", "value_id": "src/Service.php:11:40", "value_type": "...int#"}
+      {"position": 0, "parameter": "...($to)", "value_id": "src/Service.php:11:25"},
+      {"position": 1, "parameter": "...($priority)", "value_id": "src/Service.php:11:40"}
     ]
   }
 ]
