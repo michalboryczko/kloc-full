@@ -9,10 +9,12 @@ use ContractTests\Assertions\ChainIntegrityAssertion;
 use ContractTests\Assertions\DataIntegrityAssertion;
 use ContractTests\Assertions\IntegrityReport;
 use ContractTests\Assertions\ReferenceConsistencyAssertion;
+use ContractTests\Attribute\ContractTest;
 use ContractTests\Query\CallQuery;
 use ContractTests\Query\MethodScope;
 use ContractTests\Query\ValueQuery;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 
 /**
  * Base test class for contract tests.
@@ -28,6 +30,40 @@ abstract class CallsContractTestCase extends TestCase
         if (self::$calls === null) {
             self::$calls = CallsData::load(CALLS_JSON_PATH);
         }
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->skipIfExperimentalTest();
+    }
+
+    /**
+     * Check if the current test is marked as experimental and skip if not in experimental mode.
+     */
+    private function skipIfExperimentalTest(): void
+    {
+        $testMethod = $this->name();
+        $reflection = new ReflectionMethod($this, $testMethod);
+        $attributes = $reflection->getAttributes(ContractTest::class);
+
+        if (empty($attributes)) {
+            return;
+        }
+
+        $contractTest = $attributes[0]->newInstance();
+
+        if ($contractTest->experimental && !self::isExperimentalMode()) {
+            $this->markTestSkipped('Experimental test - run with --experimental flag to enable');
+        }
+    }
+
+    /**
+     * Check if experimental mode is enabled via environment variable.
+     */
+    public static function isExperimentalMode(): bool
+    {
+        return getenv('CONTRACT_TESTS_EXPERIMENTAL') === '1';
     }
 
     // ═══════════════════════════════════════════════════════════════

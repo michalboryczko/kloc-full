@@ -98,7 +98,7 @@ class CallKindTest extends CallsContractTestCase
         name: 'Function Call Kind',
         description: 'Verifies function calls are tracked with kind=function. Example: sprintf(). Per schema: func(). NOTE: Function kind is EXPERIMENTAL and requires --experimental flag.',
         category: 'callkind',
-        status: 'pending',
+        experimental: true,
     )]
     public function testFunctionCallKindExists(): void
     {
@@ -106,15 +106,12 @@ class CallKindTest extends CallsContractTestCase
             ->kind('function')
             ->all();
 
-        // Function kind is experimental - skip if not present in default output
-        if (empty($functionCalls)) {
-            $this->markTestSkipped(
-                'Function calls (kind=function) not found. ' .
-                'This is an EXPERIMENTAL kind that requires --experimental flag to be generated.'
-            );
-        }
+        $this->assertNotEmpty(
+            $functionCalls,
+            'Function calls (kind=function) should be present with --experimental flag'
+        );
 
-        // Verify properties when present
+        // Verify properties
         $call = $functionCalls[0];
         $this->assertSame('invocation', $call['kind_type'] ?? '', 'Function calls should have kind_type=invocation');
         $this->assertArrayHasKey('arguments', $call, 'Function calls should have arguments array');
@@ -161,7 +158,6 @@ class CallKindTest extends CallsContractTestCase
         name: 'Static Property Access Kind',
         description: 'Verifies static property access is tracked with kind=access_static. Example: self::$orders. Per schema: Foo::$property',
         category: 'callkind',
-        status: 'pending',
     )]
     public function testStaticPropertyAccessKindExists(): void
     {
@@ -169,13 +165,10 @@ class CallKindTest extends CallsContractTestCase
             ->kind('access_static')
             ->all();
 
-        // Note: Static property access may not be indexed or may use a different pattern
-        if (empty($staticAccessCalls)) {
-            $this->markTestSkipped(
-                'No static property access (kind=access_static) found. ' .
-                'Self::$property accesses may be tracked differently by the indexer.'
-            );
-        }
+        $this->assertNotEmpty(
+            $staticAccessCalls,
+            'Should find at least one static property access (kind=access_static)'
+        );
 
         // Verify properties
         $call = $staticAccessCalls[0];
@@ -188,9 +181,9 @@ class CallKindTest extends CallsContractTestCase
 
     #[ContractTest(
         name: 'Array Access Kind',
-        description: 'Verifies array access is tracked with kind=access_array. Example: self::$orders[$id]. Per schema: $arr[\'key\']',
+        description: 'Verifies array access is tracked with kind=access_array. Example: self::$orders[$id]. Per schema: $arr[\'key\']. NOTE: Array access is EXPERIMENTAL.',
         category: 'callkind',
-        status: 'pending',
+        experimental: true,
     )]
     public function testArrayAccessKindExists(): void
     {
@@ -198,13 +191,10 @@ class CallKindTest extends CallsContractTestCase
             ->kind('access_array')
             ->all();
 
-        // Note: Array access may not be indexed by scip-php currently
-        if (empty($arrayAccessCalls)) {
-            $this->markTestSkipped(
-                'No array access (kind=access_array) found. ' .
-                'Array access tracking may not be implemented in the indexer.'
-            );
-        }
+        $this->assertNotEmpty(
+            $arrayAccessCalls,
+            'Array access (kind=access_array) should be present with --experimental flag'
+        );
 
         // Verify properties
         $call = $arrayAccessCalls[0];
@@ -214,28 +204,31 @@ class CallKindTest extends CallsContractTestCase
     }
 
     #[ContractTest(
-        name: 'Nullsafe Method Call Kind',
-        description: 'Verifies nullsafe method calls are tracked with kind=method_nullsafe. Example: $obj?->method(). Per schema.',
+        name: 'Nullsafe Uses Access Kind with Union Type',
+        description: 'Verifies nullsafe property access uses kind=access (not access_nullsafe) with union return_type. Per schema: $obj?->prop uses access with return_type including null.',
         category: 'callkind',
-        status: 'pending',
     )]
-    public function testNullsafeMethodCallKind(): void
+    public function testNullsafeUsesAccessKindWithUnionType(): void
     {
+        // There should be NO access_nullsafe kind anymore
+        $nullsafeAccessCalls = $this->calls()
+            ->kind('access_nullsafe')
+            ->all();
+
+        $this->assertEmpty(
+            $nullsafeAccessCalls,
+            'access_nullsafe kind is deprecated. Nullsafe accesses should use kind=access with union return_type.'
+        );
+
+        // There should be NO method_nullsafe kind anymore
         $nullsafeMethodCalls = $this->calls()
             ->kind('method_nullsafe')
             ->all();
 
-        // Reference project may not have nullsafe method calls
-        if (empty($nullsafeMethodCalls)) {
-            $this->markTestSkipped(
-                'No nullsafe method calls found in reference project. ' .
-                'If added (e.g., $obj?->method()), should have kind_type=invocation, receiver_value_id.'
-            );
-        }
-
-        $call = $nullsafeMethodCalls[0];
-        $this->assertSame('invocation', $call['kind_type'] ?? '');
-        $this->assertArrayHasKey('receiver_value_id', $call);
+        $this->assertEmpty(
+            $nullsafeMethodCalls,
+            'method_nullsafe kind is deprecated. Nullsafe method calls should use kind=method with union return_type.'
+        );
     }
 
     #[ContractTest(
@@ -424,7 +417,7 @@ class CallKindTest extends CallsContractTestCase
         name: 'sprintf Function Call Tracked',
         description: 'Verifies sprintf() function call is tracked as kind=function. NOTE: Function kind is EXPERIMENTAL and requires --experimental flag.',
         category: 'callkind',
-        status: 'pending',
+        experimental: true,
     )]
     public function testSprintfFunctionCallTracked(): void
     {
@@ -435,13 +428,10 @@ class CallKindTest extends CallsContractTestCase
             ->calleeContains('sprintf')
             ->all();
 
-        // Function kind is experimental - skip if not present in default output
-        if (empty($sprintfCalls)) {
-            $this->markTestSkipped(
-                'sprintf() function calls not found. ' .
-                'Function kind is EXPERIMENTAL and requires --experimental flag to be generated.'
-            );
-        }
+        $this->assertNotEmpty(
+            $sprintfCalls,
+            'sprintf() function calls should be present with --experimental flag'
+        );
 
         $call = $sprintfCalls[0];
         $this->assertSame('function', $call['kind']);

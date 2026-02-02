@@ -20,11 +20,13 @@ final readonly class ContractTest
      * @param string $description What the test verifies
      * @param string $category Test category (smoke, integrity, reference, chain, argument)
      * @param string $status Test status (active, skipped, pending)
+     * @param bool $experimental Whether this test requires --experimental flag
      */
     public function __construct(
         public string $name,
         public string $description,
         public string $category = '',
         public string $status = 'active',
+        public bool $experimental = false,
     ) {}
 }

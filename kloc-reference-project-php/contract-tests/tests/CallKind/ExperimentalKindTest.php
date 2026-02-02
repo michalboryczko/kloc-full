@@ -122,10 +122,13 @@ class ExperimentalKindTest extends CallsContractTestCase
         name: 'No Function Calls Without Experimental Flag',
         description: 'Verifies function calls (kind=function) are NOT present in default calls.json. Function kind is experimental and requires --experimental flag.',
         category: 'callkind',
-        status: 'pending',
     )]
     public function testNoFunctionCallsWithoutExperimentalFlag(): void
     {
+        if (self::isExperimentalMode()) {
+            $this->markTestSkipped('This test verifies default mode behavior - skipped in experimental mode');
+        }
+
         $functionCalls = $this->calls()->kind('function')->all();
 
         $this->assertEmpty(
@@ -141,10 +144,13 @@ class ExperimentalKindTest extends CallsContractTestCase
         name: 'No Coalesce Operators Without Experimental Flag',
         description: 'Verifies null coalesce operators (kind=coalesce) are NOT present in default calls.json. Coalesce kind is experimental and requires --experimental flag.',
         category: 'callkind',
-        status: 'pending',
     )]
     public function testNoCoalesceWithoutExperimentalFlag(): void
     {
+        if (self::isExperimentalMode()) {
+            $this->markTestSkipped('This test verifies default mode behavior - skipped in experimental mode');
+        }
+
         $coalesceCalls = $this->calls()->kind('coalesce')->all();
 
         $this->assertEmpty(
@@ -160,10 +166,13 @@ class ExperimentalKindTest extends CallsContractTestCase
         name: 'No Ternary Operators Without Experimental Flag',
         description: 'Verifies ternary operators (kind=ternary, ternary_full) are NOT present in default calls.json. Ternary kinds are experimental and require --experimental flag.',
         category: 'callkind',
-        status: 'pending',
     )]
     public function testNoTernaryWithoutExperimentalFlag(): void
     {
+        if (self::isExperimentalMode()) {
+            $this->markTestSkipped('This test verifies default mode behavior - skipped in experimental mode');
+        }
+
         $ternaryCalls = $this->calls()->kind('ternary')->all();
         $ternaryFullCalls = $this->calls()->kind('ternary_full')->all();
 
@@ -182,10 +191,13 @@ class ExperimentalKindTest extends CallsContractTestCase
         name: 'No Array Access Without Experimental Flag',
         description: 'Verifies array access (kind=access_array) is NOT present in default calls.json. Array access kind is experimental and requires --experimental flag.',
         category: 'callkind',
-        status: 'pending',
     )]
     public function testNoArrayAccessWithoutExperimentalFlag(): void
     {
+        if (self::isExperimentalMode()) {
+            $this->markTestSkipped('This test verifies default mode behavior - skipped in experimental mode');
+        }
+
         $arrayAccessCalls = $this->calls()->kind('access_array')->all();
 
         $this->assertEmpty(
@@ -201,10 +213,13 @@ class ExperimentalKindTest extends CallsContractTestCase
         name: 'No Match Expressions Without Experimental Flag',
         description: 'Verifies match expressions (kind=match) are NOT present in default calls.json. Match kind is experimental and requires --experimental flag.',
         category: 'callkind',
-        status: 'pending',
     )]
     public function testNoMatchWithoutExperimentalFlag(): void
     {
+        if (self::isExperimentalMode()) {
+            $this->markTestSkipped('This test verifies default mode behavior - skipped in experimental mode');
+        }
+
         $matchCalls = $this->calls()->kind('match')->all();
 
         $this->assertEmpty(
@@ -220,10 +235,13 @@ class ExperimentalKindTest extends CallsContractTestCase
         name: 'No Experimental Kinds in Default Output',
         description: 'Verifies NO experimental kinds exist in calls.json generated without --experimental flag. This is the comprehensive test for experimental filtering.',
         category: 'callkind',
-        status: 'pending',
     )]
     public function testNoExperimentalKindsInDefaultOutput(): void
     {
+        if (self::isExperimentalMode()) {
+            $this->markTestSkipped('This test verifies default mode behavior - skipped in experimental mode');
+        }
+
         $experimentalFound = [];
 
         foreach (self::EXPERIMENTAL_KINDS as $kind) {
@@ -247,6 +265,51 @@ class ExperimentalKindTest extends CallsContractTestCase
     }
 
     // ═══════════════════════════════════════════════════════════════
+    // Experimental Kinds Tests (--experimental mode)
+    // These tests only run when --experimental flag is passed
+    // ═══════════════════════════════════════════════════════════════
+
+    #[ContractTest(
+        name: 'Function Calls Present With Experimental Flag',
+        description: 'Verifies function calls (kind=function) ARE present when --experimental flag is used. Tests sprintf() and other global function calls.',
+        category: 'callkind',
+        experimental: true,
+    )]
+    public function testFunctionCallsPresentWithExperimentalFlag(): void
+    {
+        $functionCalls = $this->calls()->kind('function')->all();
+
+        $this->assertNotEmpty(
+            $functionCalls,
+            'Function calls should be present with --experimental flag (e.g., sprintf in Address.php)'
+        );
+    }
+
+    #[ContractTest(
+        name: 'Experimental Kinds Present With Flag',
+        description: 'Verifies experimental kinds ARE present in calls.json when --experimental flag is used.',
+        category: 'callkind',
+        experimental: true,
+    )]
+    public function testExperimentalKindsPresentWithFlag(): void
+    {
+        // At least one experimental kind should be present
+        $totalExperimental = 0;
+        foreach (self::EXPERIMENTAL_KINDS as $kind) {
+            $totalExperimental += $this->calls()->kind($kind)->count();
+        }
+
+        $this->assertGreaterThan(
+            0,
+            $totalExperimental,
+            sprintf(
+                'At least one experimental kind (%s) should be present with --experimental flag',
+                implode(', ', self::EXPERIMENTAL_KINDS)
+            )
+        );
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // Deprecated Kinds Tests
     // ═══════════════════════════════════════════════════════════════
 
@@ -254,7 +317,6 @@ class ExperimentalKindTest extends CallsContractTestCase
         name: 'No Deprecated Kinds Exist',
         description: 'Verifies deprecated kinds (access_nullsafe, method_nullsafe) do not exist in calls.json. These have been replaced by access/method with union return types.',
         category: 'callkind',
-        status: 'pending',
     )]
     public function testNoDeprecatedKindsExist(): void
     {
