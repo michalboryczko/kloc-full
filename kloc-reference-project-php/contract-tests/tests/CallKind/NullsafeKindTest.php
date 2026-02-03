@@ -29,8 +29,7 @@ class NullsafeKindTest extends CallsContractTestCase
         name: 'Nullsafe Property Access Uses kind=access',
         description: 'Verifies nullsafe property access ($order?->status) uses kind="access" not "access_nullsafe". Per finish-mvp spec, nullsafe semantics are captured via union return type.',
         category: 'callkind',
-        status: 'pending',
-    )]
+            )]
     public function testNullsafePropertyAccessUsesAccessKind(): void
     {
         // Code reference: src/Service/OrderDisplayService.php:64
@@ -59,8 +58,7 @@ class NullsafeKindTest extends CallsContractTestCase
         name: 'Nullsafe Property Access Has Union Return Type',
         description: 'Verifies nullsafe property access ($order?->status) has union return_type containing null. For string property, should be "null|string" union.',
         category: 'callkind',
-        status: 'pending',
-    )]
+            )]
     public function testNullsafePropertyAccessHasUnionReturnType(): void
     {
         // Code reference: src/Service/OrderDisplayService.php:64
@@ -98,8 +96,7 @@ class NullsafeKindTest extends CallsContractTestCase
         name: 'No access_nullsafe Kind Exists',
         description: 'Verifies calls.json contains ZERO calls with kind="access_nullsafe". This kind has been removed in favor of access with union return type.',
         category: 'callkind',
-        status: 'pending',
-    )]
+            )]
     public function testNoAccessNullsafeKindExists(): void
     {
         $nullsafeCalls = $this->calls()
@@ -123,8 +120,7 @@ class NullsafeKindTest extends CallsContractTestCase
         name: 'Nullsafe Method Call Uses kind=method',
         description: 'Verifies nullsafe method call ($order?->getCustomerName()) uses kind="method" not "method_nullsafe". Per finish-mvp spec, nullsafe semantics are captured via union return type.',
         category: 'callkind',
-        status: 'pending',
-    )]
+            )]
     public function testNullsafeMethodCallUsesMethodKind(): void
     {
         // Code reference: src/Service/OrderDisplayService.php:162
@@ -151,8 +147,7 @@ class NullsafeKindTest extends CallsContractTestCase
         name: 'Nullsafe Method Call Has Union Return Type',
         description: 'Verifies nullsafe method call ($order?->getCustomerName()) has union return_type containing null. For method returning string, should be "null|string" union.',
         category: 'callkind',
-        status: 'pending',
-    )]
+            )]
     public function testNullsafeMethodCallHasUnionReturnType(): void
     {
         // Code reference: src/Service/OrderDisplayService.php:162
@@ -189,8 +184,7 @@ class NullsafeKindTest extends CallsContractTestCase
         name: 'Nullsafe Boolean Method Has Union Return Type',
         description: 'Verifies nullsafe method call returning bool ($order?->isPending()) has union return_type "null|bool".',
         category: 'callkind',
-        status: 'pending',
-    )]
+            )]
     public function testNullsafeBooleanMethodHasUnionReturnType(): void
     {
         // Code reference: src/Service/OrderDisplayService.php:175
@@ -227,8 +221,7 @@ class NullsafeKindTest extends CallsContractTestCase
         name: 'No method_nullsafe Kind Exists',
         description: 'Verifies calls.json contains ZERO calls with kind="method_nullsafe". This kind has been removed in favor of method with union return type.',
         category: 'callkind',
-        status: 'pending',
-    )]
+            )]
     public function testNoMethodNullsafeKindExists(): void
     {
         $nullsafeCalls = $this->calls()
@@ -252,8 +245,7 @@ class NullsafeKindTest extends CallsContractTestCase
         name: 'Multiple Nullsafe Accesses Share Receiver',
         description: 'Verifies multiple nullsafe property accesses on same variable share the same receiver_value_id. In getOrderSummary(): $order?->id, $order?->customerEmail, $order?->status should all point to same $order value.',
         category: 'chain',
-        status: 'pending',
-    )]
+            )]
     public function testMultipleNullsafeAccessesShareReceiver(): void
     {
         // Code reference: src/Service/OrderDisplayService.php:139-141
@@ -294,8 +286,7 @@ class NullsafeKindTest extends CallsContractTestCase
         name: 'Nullsafe Access Has Receiver Value',
         description: 'Verifies nullsafe property access has receiver_value_id pointing to a valid value in the values array.',
         category: 'chain',
-        status: 'pending',
-    )]
+            )]
     public function testNullsafeAccessHasReceiverValue(): void
     {
         // Get any nullsafe property access
@@ -320,8 +311,7 @@ class NullsafeKindTest extends CallsContractTestCase
         name: 'Nullsafe Access Result Value Exists',
         description: 'Verifies nullsafe property access creates a result value with source_call_id pointing to the access call.',
         category: 'chain',
-        status: 'pending',
-    )]
+            )]
     public function testNullsafeAccessResultValueExists(): void
     {
         $accessCalls = $this->calls()

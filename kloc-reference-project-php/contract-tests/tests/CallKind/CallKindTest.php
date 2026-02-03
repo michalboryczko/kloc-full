@@ -231,30 +231,6 @@ class CallKindTest extends CallsContractTestCase
         );
     }
 
-    #[ContractTest(
-        name: 'Nullsafe Property Access Kind',
-        description: 'Verifies nullsafe property access is tracked with kind=access_nullsafe. Example: $obj?->property. Per schema.',
-        category: 'callkind',
-        status: 'pending',
-    )]
-    public function testNullsafePropertyAccessKind(): void
-    {
-        $nullsafeAccessCalls = $this->calls()
-            ->kind('access_nullsafe')
-            ->all();
-
-        if (empty($nullsafeAccessCalls)) {
-            $this->markTestSkipped(
-                'No nullsafe property access found in reference project. ' .
-                'If added (e.g., $obj?->property), should have kind_type=access, receiver_value_id.'
-            );
-        }
-
-        $call = $nullsafeAccessCalls[0];
-        $this->assertSame('access', $call['kind_type'] ?? '');
-        $this->assertArrayHasKey('receiver_value_id', $call);
-    }
-
     // ═══════════════════════════════════════════════════════════════
     // Kind Type Categories
     // ═══════════════════════════════════════════════════════════════
@@ -467,9 +443,9 @@ class CallKindTest extends CallsContractTestCase
 
     #[ContractTest(
         name: 'Array Access on self::$orders Tracked',
-        description: 'Verifies self::$orders[$id] array access is tracked as kind=access_array with key_value_id.',
+        description: 'Verifies self::$orders[$id] array access is tracked as kind=access_array with key_value_id. NOTE: access_array is EXPERIMENTAL.',
         category: 'callkind',
-        status: 'pending',
+        experimental: true,
     )]
     public function testArrayAccessOnOrdersTracked(): void
     {
@@ -480,12 +456,10 @@ class CallKindTest extends CallsContractTestCase
             ->callerContains('OrderRepository')
             ->all();
 
-        if (empty($arrayAccessCalls)) {
-            $this->markTestSkipped(
-                'Array access tracking (kind=access_array) not found. ' .
-                'This feature may not be implemented in the indexer.'
-            );
-        }
+        $this->assertNotEmpty(
+            $arrayAccessCalls,
+            'Array access (kind=access_array) should be present with --experimental flag'
+        );
 
         $call = $arrayAccessCalls[0];
         $this->assertSame('access_array', $call['kind']);

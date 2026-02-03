@@ -23,7 +23,7 @@ class OperatorTest extends CallsContractTestCase
         name: 'Null Coalesce Operator Kind Exists',
         description: 'Verifies null coalesce operators ($a ?? $b) are tracked with kind=coalesce, kind_type=operator, left_value_id, right_value_id.',
         category: 'operator',
-        status: 'pending',
+        experimental: true,
     )]
     public function testNullCoalesceOperatorKindExists(): void
     {
@@ -31,12 +31,10 @@ class OperatorTest extends CallsContractTestCase
             ->kind('coalesce')
             ->all();
 
-        if (empty($coalesceCalls)) {
-            $this->markTestSkipped(
-                'No coalesce operators found. Operator tracking may not be implemented. ' .
-                'Reference: OrderRepository::findById() uses self::$orders[$id] ?? null'
-            );
-        }
+        $this->assertNotEmpty(
+            $coalesceCalls,
+            'Coalesce operators should be present with --experimental flag'
+        );
 
         // Verify structure
         $call = $coalesceCalls[0];
@@ -49,7 +47,7 @@ class OperatorTest extends CallsContractTestCase
         name: 'Coalesce Operands Reference Values',
         description: 'Verifies coalesce left_value_id and right_value_id point to existing values in the values array.',
         category: 'operator',
-        status: 'pending',
+        experimental: true,
     )]
     public function testCoalesceOperandsReferenceValues(): void
     {
@@ -57,9 +55,7 @@ class OperatorTest extends CallsContractTestCase
             ->kind('coalesce')
             ->all();
 
-        if (empty($coalesceCalls)) {
-            $this->markTestSkipped('No coalesce operators found');
-        }
+        $this->assertNotEmpty($coalesceCalls, 'Coalesce operators should be present with --experimental flag');
 
         foreach ($coalesceCalls as $call) {
             $leftId = $call['left_value_id'] ?? null;
@@ -89,7 +85,7 @@ class OperatorTest extends CallsContractTestCase
         name: 'Ternary Operator Kind Exists',
         description: 'Verifies ternary operators ($a ? $b : $c) are tracked with kind=ternary_full, kind_type=operator, and operand IDs.',
         category: 'operator',
-        status: 'pending',
+        experimental: true,
     )]
     public function testTernaryOperatorKindExists(): void
     {
@@ -103,12 +99,10 @@ class OperatorTest extends CallsContractTestCase
 
         $allTernary = array_merge($ternaryFullCalls, $ternaryCalls);
 
-        if (empty($allTernary)) {
-            $this->markTestSkipped(
-                'No ternary operators found. Reference project may not use ternary expressions, ' .
-                'or operator tracking may not be implemented.'
-            );
-        }
+        $this->assertNotEmpty(
+            $allTernary,
+            'Ternary operators should be present with --experimental flag'
+        );
 
         // Verify structure of first ternary
         $call = $allTernary[0];
@@ -119,7 +113,7 @@ class OperatorTest extends CallsContractTestCase
         name: 'Full Ternary Has All Operand IDs',
         description: 'Verifies full ternary ($a ? $b : $c) has condition_value_id, true_value_id, and false_value_id.',
         category: 'operator',
-        status: 'pending',
+        experimental: true,
     )]
     public function testFullTernaryHasAllOperandIds(): void
     {
@@ -127,9 +121,7 @@ class OperatorTest extends CallsContractTestCase
             ->kind('ternary_full')
             ->all();
 
-        if (empty($ternaryFullCalls)) {
-            $this->markTestSkipped('No ternary_full operators found');
-        }
+        $this->assertNotEmpty($ternaryFullCalls, 'Full ternary operators should be present with --experimental flag');
 
         foreach ($ternaryFullCalls as $call) {
             $this->assertArrayHasKey(
@@ -154,7 +146,7 @@ class OperatorTest extends CallsContractTestCase
         name: 'Short Ternary Has Condition ID',
         description: 'Verifies short ternary ($a ?: $b) has condition_value_id. True value is the condition itself.',
         category: 'operator',
-        status: 'pending',
+        experimental: true,
     )]
     public function testShortTernaryHasConditionId(): void
     {
@@ -162,9 +154,7 @@ class OperatorTest extends CallsContractTestCase
             ->kind('ternary')
             ->all();
 
-        if (empty($ternaryCalls)) {
-            $this->markTestSkipped('No short ternary operators found');
-        }
+        $this->assertNotEmpty($ternaryCalls, 'Short ternary operators should be present with --experimental flag');
 
         foreach ($ternaryCalls as $call) {
             $this->assertArrayHasKey(
@@ -183,7 +173,7 @@ class OperatorTest extends CallsContractTestCase
         name: 'Match Expression Kind Exists',
         description: 'Verifies match expressions are tracked with kind=match, kind_type=operator, subject_value_id, and arm_ids.',
         category: 'operator',
-        status: 'pending',
+        experimental: true,
     )]
     public function testMatchExpressionKindExists(): void
     {
@@ -191,12 +181,10 @@ class OperatorTest extends CallsContractTestCase
             ->kind('match')
             ->all();
 
-        if (empty($matchCalls)) {
-            $this->markTestSkipped(
-                'No match expressions found. Reference project may not use match, ' .
-                'or operator tracking may not be implemented.'
-            );
-        }
+        $this->assertNotEmpty(
+            $matchCalls,
+            'Match expressions should be present with --experimental flag'
+        );
 
         // Verify structure
         $call = $matchCalls[0];
@@ -209,7 +197,7 @@ class OperatorTest extends CallsContractTestCase
         name: 'Match Expression Arms Reference Values',
         description: 'Verifies match expression arm_ids array contains valid value references for each arm result.',
         category: 'operator',
-        status: 'pending',
+        experimental: true,
     )]
     public function testMatchExpressionArmsReferenceValues(): void
     {
@@ -217,9 +205,7 @@ class OperatorTest extends CallsContractTestCase
             ->kind('match')
             ->all();
 
-        if (empty($matchCalls)) {
-            $this->markTestSkipped('No match expressions found');
-        }
+        $this->assertNotEmpty($matchCalls, 'Match expressions should be present with --experimental flag');
 
         foreach ($matchCalls as $call) {
             $armIds = $call['arm_ids'] ?? [];
@@ -242,7 +228,7 @@ class OperatorTest extends CallsContractTestCase
         name: 'All Operators Have Kind Type Operator',
         description: 'Verifies all operator kinds (coalesce, ternary, ternary_full, match) have kind_type=operator.',
         category: 'operator',
-        status: 'pending',
+        experimental: true,
     )]
     public function testAllOperatorsHaveKindTypeOperator(): void
     {
@@ -284,7 +270,7 @@ class OperatorTest extends CallsContractTestCase
         name: 'Operators Have Result Values',
         description: 'Verifies operator calls have corresponding result values for data flow tracking.',
         category: 'operator',
-        status: 'pending',
+        experimental: true,
     )]
     public function testOperatorsHaveResultValues(): void
     {
