@@ -69,12 +69,26 @@ generate_index() {
         echo -e "${RED}Error: scip-php did not generate calls.json${NC}"
         exit 1
     fi
+
 }
 
 build_docker() {
     echo -e "${YELLOW}Building Docker image...${NC}"
     docker compose build --quiet
     echo -e "${GREEN}  Docker image ready${NC}"
+}
+
+convert_scip_to_json() {
+    # Check if index.scip was generated and convert to JSON
+    if [[ -f "output/index.scip" ]]; then
+        echo -e "${YELLOW}Converting SCIP to JSON...${NC}"
+        docker compose run --rm contract-tests scip print --json /app/contract-tests/output/index.scip > output/index.scip.json 2>/dev/null
+        if [[ -f "output/index.scip.json" && -s "output/index.scip.json" ]]; then
+            echo -e "${GREEN}  index.scip.json generated${NC}"
+        else
+            echo -e "${YELLOW}  Warning: index.scip.json generation failed (non-fatal)${NC}"
+        fi
+    fi
 }
 
 run_tests() {
@@ -90,6 +104,7 @@ run_tests() {
 
     generate_index "$experimental"
     build_docker
+    convert_scip_to_json
 
     echo -e "${YELLOW}Running tests...${NC}"
     echo ""
@@ -123,6 +138,7 @@ run_docs() {
 
     generate_index
     build_docker
+    convert_scip_to_json
 
     echo -e "${YELLOW}Generating documentation...${NC}"
     echo ""

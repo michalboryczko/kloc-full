@@ -15,5 +15,6 @@ return [
     // Generated files
     'calls_json' => 'calls.json',
     'index_scip' => 'index.scip',
+    'scip_json' => 'index.scip.json',
     'index_kloc' => 'index.kloc',
 ];

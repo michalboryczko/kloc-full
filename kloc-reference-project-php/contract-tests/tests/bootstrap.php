@@ -45,3 +45,10 @@ echo sprintf("Using index: %s\n", $callsJsonPath);
 
 // Store calls.json path for tests
 define('CALLS_JSON_PATH', $callsJsonPath);
+
+// Build SCIP JSON path (optional - may not exist)
+$scipJsonPath = $outputDir . '/' . ($config['scip_json'] ?? 'index.scip.json');
+if (file_exists($scipJsonPath)) {
+    echo sprintf("Using SCIP index: %s\n", $scipJsonPath);
+    define('SCIP_JSON_PATH', $scipJsonPath);
+}
