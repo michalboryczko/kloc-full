@@ -109,7 +109,7 @@ run_tests() {
     echo -e "${YELLOW}Running tests...${NC}"
     echo ""
 
-    local cmd="vendor/bin/phpunit"
+    local cmd="vendor/bin/phpunit --display-skipped"
     if [[ -n "$filter" ]]; then
         cmd="$cmd --filter $filter"
     fi

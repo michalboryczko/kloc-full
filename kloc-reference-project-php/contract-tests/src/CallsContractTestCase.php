@@ -63,7 +63,10 @@ abstract class CallsContractTestCase extends TestCase
         $contractTest = $attributes[0]->newInstance();
 
         if ($contractTest->experimental && !self::isExperimentalMode()) {
-            $this->markTestSkipped('Experimental test - run with --experimental flag to enable');
+            $this->markTestSkipped(sprintf(
+                '[EXPERIMENTAL] %s - requires --experimental flag',
+                $contractTest->name
+            ));
         }
     }
 
