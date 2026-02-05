@@ -44,6 +44,82 @@ class OperatorTest extends CallsContractTestCase
     }
 
     #[ContractTest(
+        name: 'Coalesce Return Type Removes Null',
+        description: 'Verifies coalesce return_type correctly removes null from left operand. For ($nullable ?? $default), if left is T|null and right is T, result is T (not T|null).',
+        category: 'operator',
+        experimental: true,
+    )]
+    public function testCoalesceReturnTypeRemovesNull(): void
+    {
+        // Code reference: src/Service/OrderDisplayService.php:45
+        // return $order?->status ?? 'unknown';
+        // Left type: string|null (from nullsafe property access)
+        // Right type: string (literal)
+        // Expected result type: string (null removed, since right provides fallback)
+        $coalesceCalls = $this->calls()
+            ->kind('coalesce')
+            ->inFile('OrderDisplayService.php')
+            ->all();
+
+        $this->assertNotEmpty($coalesceCalls, 'Coalesce operators should be present with --experimental flag');
+
+        $validReturnTypes = 0;
+        $invalidReturnTypes = [];
+
+        foreach ($coalesceCalls as $call) {
+            $returnType = $call['return_type'] ?? null;
+            if ($returnType === null) {
+                continue;
+            }
+
+            // Coalesce return_type should NOT contain 'null' since null is handled by fallback
+            // Exception: if right operand can also be null, union may contain null
+            if (str_contains($returnType, 'null') && str_contains($returnType, 'union')) {
+                // This might be valid if the right side can also be null
+                // Check if left_value_id's type has null but right doesn't
+                $leftId = $call['left_value_id'] ?? null;
+                $rightId = $call['right_value_id'] ?? null;
+
+                if ($leftId !== null && $rightId !== null) {
+                    $leftValue = self::$calls->getValueById($leftId);
+                    $rightValue = self::$calls->getValueById($rightId);
+
+                    $leftType = $leftValue['type'] ?? '';
+                    $rightType = $rightValue['type'] ?? '';
+
+                    // If left has null but right doesn't, result shouldn't have null
+                    if (str_contains($leftType, 'null') && !str_contains($rightType, 'null')) {
+                        $invalidReturnTypes[] = sprintf(
+                            '%s: left=%s, right=%s, return=%s (null should be removed)',
+                            $call['id'],
+                            $leftType,
+                            $rightType,
+                            $returnType
+                        );
+                    }
+                }
+            } else {
+                // Return type without null union is correct
+                $validReturnTypes++;
+            }
+        }
+
+        $this->assertEmpty(
+            $invalidReturnTypes,
+            sprintf(
+                "Coalesce return_type incorrectly contains null:\n%s",
+                implode("\n", $invalidReturnTypes)
+            )
+        );
+
+        $this->assertGreaterThan(
+            0,
+            $validReturnTypes,
+            'At least one coalesce should have valid return_type without null'
+        );
+    }
+
+    #[ContractTest(
         name: 'Coalesce Operands Reference Values',
         description: 'Verifies coalesce left_value_id and right_value_id point to existing values in the values array.',
         category: 'operator',

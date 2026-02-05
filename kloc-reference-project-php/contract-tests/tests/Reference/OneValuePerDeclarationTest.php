@@ -187,11 +187,11 @@ class OneValuePerDeclarationTest extends CallsContractTestCase
             )
         );
 
-        // Should be at declaration line (27)
+        // Should be at declaration line (28)
         $this->assertSame(
-            27,
+            28,
             $inputParams[0]['location']['line'] ?? 0,
-            'Parameter $input should be at declaration line 27'
+            'Parameter $input should be at declaration line 28'
         );
     }
 
@@ -201,7 +201,7 @@ class OneValuePerDeclarationTest extends CallsContractTestCase
 
     /**
      * Verifies $savedOrder local in OrderService::createOrder() has exactly one
-     * value entry at the assignment site (line 40), not at each usage site.
+     * value entry at the assignment site (line 45), not at each usage site.
      *
      * The $savedOrder local is used 8 times after assignment (lines 43, 44, 47-49, 53, 56-62).
      *
@@ -210,7 +210,7 @@ class OneValuePerDeclarationTest extends CallsContractTestCase
      */
     #[ContractTest(
         name: 'OrderService::createOrder() $savedOrder - Single Value Entry',
-        description: 'Verifies $savedOrder local has exactly ONE value entry at assignment (line 40), not multiple entries for each of its 8 usages.',
+        description: 'Verifies $savedOrder local has exactly ONE value entry at assignment (line 45), not multiple entries for each of its 8 usages.',
         category: 'reference',
     )]
     public function testOrderServiceCreateOrderSavedOrderLocalSingleEntry(): void
@@ -233,12 +233,12 @@ class OneValuePerDeclarationTest extends CallsContractTestCase
             )
         );
 
-        // Should be at assignment line (40)
+        // Should be at assignment line (45)
         $localValue = $savedOrderLocals[0];
         $this->assertSame(
-            40,
+            45,
             $localValue['location']['line'] ?? 0,
-            'Local $savedOrder should be at assignment line 40'
+            'Local $savedOrder should be at assignment line 45'
         );
 
         // Should have source_call_id pointing to the save() call
@@ -257,7 +257,7 @@ class OneValuePerDeclarationTest extends CallsContractTestCase
      */
     #[ContractTest(
         name: 'OrderService::createOrder() $savedOrder - All Accesses Share Receiver',
-        description: 'Verifies all property accesses on $savedOrder have the same receiver_value_id pointing to the single local value at assignment line 40.',
+        description: 'Verifies all property accesses on $savedOrder have the same receiver_value_id pointing to the single local value at assignment line 45.',
         category: 'reference',
     )]
     public function testOrderServiceCreateOrderSavedOrderAllAccessesShareReceiver(): void
@@ -280,16 +280,16 @@ class OneValuePerDeclarationTest extends CallsContractTestCase
             ->all();
 
         // Filter to accesses on Order properties (from $savedOrder)
-        // These are after line 40 where $savedOrder is assigned
+        // These are after line 45 where $savedOrder is assigned
         $savedOrderAccesses = array_filter($propertyAccessCalls, function ($call) {
             $line = $call['location']['line'] ?? 0;
-            // $savedOrder is used after line 40
+            // $savedOrder is used after line 45
             return $line > 40;
         });
 
         $this->assertNotEmpty(
             $savedOrderAccesses,
-            'Should find property accesses on $savedOrder (after line 40)'
+            'Should find property accesses on $savedOrder (after line 45)'
         );
 
         // All these accesses should have receiver_value_id pointing to the local

@@ -21,6 +21,7 @@ final readonly class OrderService
         private EmailSenderInterface $emailSender,
         private InventoryCheckerInterface $inventoryChecker,
         private MessageBusInterface $messageBus,
+        private AbstractOrderProcessor $orderProcessor,
     ) {
     }
 
@@ -37,7 +38,11 @@ final readonly class OrderService
             createdAt: new DateTimeImmutable(),
         );
 
-        $savedOrder = $this->orderRepository->save($order);
+        // Process order through inheritance chain (AbstractOrderProcessor -> StandardOrderProcessor)
+        $processedOrder = $this->orderProcessor->process($order);
+        $processorName = $this->orderProcessor->getName();
+
+        $savedOrder = $this->orderRepository->save($processedOrder);
 
         $this->emailSender->send(
             to: $savedOrder->customerEmail,

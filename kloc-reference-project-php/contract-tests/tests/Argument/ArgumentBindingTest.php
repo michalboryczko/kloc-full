@@ -13,17 +13,17 @@ use ContractTests\CallsContractTestCase;
 class ArgumentBindingTest extends CallsContractTestCase
 {
     #[ContractTest(
-        name: 'save() Receives $order Local',
-        description: 'Argument 0 of save() points to $order local variable',
+        name: 'save() Receives $processedOrder Local',
+        description: 'Argument 0 of save() points to $processedOrder local variable (processed via AbstractOrderProcessor)',
         category: 'argument',
     )]
-    public function testSaveArgumentPointsToOrderLocal(): void
+    public function testSaveArgumentPointsToProcessedOrderLocal(): void
     {
         $this->assertArgument()
             ->inMethod('App\Service\OrderService', 'createOrder')
             ->atCall('save')
             ->position(0)
-            ->pointsToLocal('$order')
+            ->pointsToLocal('$processedOrder')
             ->verify();
     }
 

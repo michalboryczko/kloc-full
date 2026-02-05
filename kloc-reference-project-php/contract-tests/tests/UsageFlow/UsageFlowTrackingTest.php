@@ -452,8 +452,8 @@ class UsageFlowTrackingTest extends CallsContractTestCase
     )]
     public function testTC5ArgumentPointsToLocal(): void
     {
-        // Code reference: src/Service/OrderService.php:40
-        // $this->orderRepository->save($order)
+        // Code reference: src/Service/OrderService.php:45
+        // $this->orderRepository->save($processedOrder)
 
         $saveCall = $this->calls()
             ->kind('method')
@@ -476,7 +476,7 @@ class UsageFlowTrackingTest extends CallsContractTestCase
         $argValue = self::$calls->getValueById($valueId);
         $this->assertNotNull($argValue, 'Argument value should exist');
         $this->assertSame('local', $argValue['kind'] ?? '', 'Argument should point to local value');
-        $this->assertStringContainsString('$order', $argValue['symbol'] ?? '', 'Should be $order local');
+        $this->assertStringContainsString('$processedOrder', $argValue['symbol'] ?? '', 'Should be $processedOrder local');
     }
 
     #[ContractTest(

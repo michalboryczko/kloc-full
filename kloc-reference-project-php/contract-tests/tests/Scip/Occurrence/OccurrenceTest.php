@@ -180,26 +180,26 @@ class OccurrenceTest extends CallsContractTestCase
             'Expected reference occurrence for OrderRepository.save() in OrderService'
         );
 
-        // Verify one is near line 40
-        $foundAtLine40 = false;
+        // Verify one is near line 45
+        $foundAtLine45 = false;
         foreach ($occurrences as $occ) {
             $line = ($occ['range'][0] ?? -1) + 1;
-            if ($line >= 38 && $line <= 42) {
-                $foundAtLine40 = true;
+            if ($line >= 43 && $line <= 47) {
+                $foundAtLine45 = true;
                 break;
             }
         }
 
         $this->assertTrue(
-            $foundAtLine40,
-            'Expected save() reference near line 40 in OrderService'
+            $foundAtLine45,
+            'Expected save() reference near line 45 in OrderService'
         );
     }
 
     /**
      * Verifies property access creates reference occurrence.
      *
-     * Code reference: src/Service/OrderService.php:43
+     * Code reference: src/Service/OrderService.php:48
      *   to: $savedOrder->customerEmail,
      *
      * Expected: SCIP contains reference occurrence for customerEmail property.
