@@ -2,6 +2,7 @@
 kloc-cli/
 kloc-mapper/
 scip-php/
+kloc-reference-project-php/
 
 # Artifacts
 artifacts/
@@ -26,3 +27,5 @@ PROGRESS.md
 build/
 context7-docs.zip
 .claude
+notes.md
+tester-agents-requirements.md
