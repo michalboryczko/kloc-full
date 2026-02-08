@@ -2,6 +2,7 @@
 kloc-cli/
 kloc-mapper/
 scip-php/
+kloc-reference-project-php/
 
 # Artifacts
 artifacts/
