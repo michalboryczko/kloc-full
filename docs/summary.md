@@ -35,7 +35,7 @@ This MVP implements two components:
 | Value | Runtime value: parameter, local variable, result, literal, or constant tracked for data flow |
 | Call | Call site: method call, property access, constructor invocation, or operator expression |
 
-### Edge Types (12 types)
+### Edge Types (13 types)
 
 #### Structural edges (from SCIP index)
 
