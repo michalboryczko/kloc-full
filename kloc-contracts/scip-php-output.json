@@ -30,7 +30,7 @@
   "$defs": {
     "ScipIndex": {
       "type": "object",
-      "description": "SCIP index data serialized from protobuf.",
+      "description": "SCIP index data in JSON format.",
       "required": ["metadata", "documents"],
       "additionalProperties": false,
       "properties": {
