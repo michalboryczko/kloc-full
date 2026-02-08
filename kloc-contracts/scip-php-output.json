@@ -1,0 +1,347 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kloc.dev/schemas/scip-php-output.json",
+  "title": "scip-php Unified JSON Output",
+  "description": "Schema for the unified JSON output from scip-php. Combines SCIP index data with calls and values into a single file.",
+  "type": "object",
+  "required": ["version", "scip", "calls", "values"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Format version. '4.0' for unified JSON output.",
+      "const": "4.0"
+    },
+    "scip": {
+      "$ref": "#/$defs/ScipIndex",
+      "description": "SCIP index data (metadata, documents with symbols and occurrences)."
+    },
+    "calls": {
+      "type": "array",
+      "description": "Call site records from scip-php call tracking.",
+      "items": { "$ref": "#/$defs/CallRecord" }
+    },
+    "values": {
+      "type": "array",
+      "description": "Value records from scip-php data flow tracking.",
+      "items": { "$ref": "#/$defs/ValueRecord" }
+    }
+  },
+  "$defs": {
+    "ScipIndex": {
+      "type": "object",
+      "description": "SCIP index data serialized from protobuf.",
+      "required": ["metadata", "documents"],
+      "additionalProperties": false,
+      "properties": {
+        "metadata": { "$ref": "#/$defs/ScipMetadata" },
+        "documents": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ScipDocument" }
+        },
+        "external_symbols": {
+          "type": "array",
+          "description": "External symbol information (from external packages).",
+          "items": { "$ref": "#/$defs/ScipSymbolInformation" }
+        }
+      }
+    },
+    "ScipMetadata": {
+      "type": "object",
+      "description": "SCIP index metadata.",
+      "required": ["version", "project_root", "tool_info"],
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "integer",
+          "description": "SCIP protocol version."
+        },
+        "project_root": {
+          "type": "string",
+          "description": "URI of the project root."
+        },
+        "tool_info": {
+          "type": "object",
+          "description": "Information about the indexer tool.",
+          "required": ["name", "version"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string" },
+            "version": { "type": "string" },
+            "arguments": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "text_document_encoding": {
+          "type": "integer",
+          "description": "Text encoding (1 = UTF-8)."
+        }
+      }
+    },
+    "ScipDocument": {
+      "type": "object",
+      "description": "A source file with its symbols and occurrences.",
+      "required": ["relative_path", "occurrences", "symbols"],
+      "additionalProperties": false,
+      "properties": {
+        "language": {
+          "type": "string",
+          "description": "Language identifier (e.g. '19' for PHP in SCIP enum)."
+        },
+        "relative_path": {
+          "type": "string",
+          "description": "File path relative to project root."
+        },
+        "occurrences": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ScipOccurrence" }
+        },
+        "symbols": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ScipSymbolInformation" }
+        },
+        "position_encoding": {
+          "type": "integer",
+          "description": "Position encoding used in ranges."
+        }
+      }
+    },
+    "ScipOccurrence": {
+      "type": "object",
+      "description": "A symbol occurrence at a specific source location.",
+      "required": ["range", "symbol"],
+      "additionalProperties": false,
+      "properties": {
+        "range": {
+          "type": "array",
+          "description": "Position as [line, startChar, endChar] (3 elements, same line) or [startLine, startChar, endLine, endChar] (4 elements, multi-line).",
+          "items": { "type": "integer" },
+          "minItems": 3,
+          "maxItems": 4
+        },
+        "symbol": {
+          "type": "string",
+          "description": "SCIP symbol string."
+        },
+        "symbol_roles": {
+          "type": "integer",
+          "description": "Bitmask of symbol roles (1=Definition, 4=WriteAccess, 8=ReadAccess, etc.)."
+        },
+        "syntax_kind": {
+          "type": "integer",
+          "description": "Syntax kind enum value."
+        },
+        "enclosing_range": {
+          "type": "array",
+          "description": "Enclosing range [startLine, startCol, endLine, endCol].",
+          "items": { "type": "integer" },
+          "minItems": 4,
+          "maxItems": 4
+        }
+      }
+    },
+    "ScipSymbolInformation": {
+      "type": "object",
+      "description": "Information about a symbol (documentation, relationships).",
+      "required": ["symbol"],
+      "additionalProperties": false,
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "description": "SCIP symbol string."
+        },
+        "documentation": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Documentation strings."
+        },
+        "relationships": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ScipRelationship" },
+          "description": "Symbol relationships (extends, implements, etc.)."
+        }
+      }
+    },
+    "ScipRelationship": {
+      "type": "object",
+      "description": "A relationship between two symbols.",
+      "required": ["symbol"],
+      "additionalProperties": false,
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "description": "Target symbol."
+        },
+        "is_implementation": {
+          "type": "boolean",
+          "description": "Whether this is an implementation relationship."
+        },
+        "is_reference": {
+          "type": "boolean",
+          "description": "Whether this is a reference relationship."
+        },
+        "is_type_definition": {
+          "type": "boolean",
+          "description": "Whether this is a type definition relationship."
+        },
+        "is_definition": {
+          "type": "boolean",
+          "description": "Whether this is a definition relationship."
+        }
+      }
+    },
+    "SourceLocation": {
+      "type": "object",
+      "description": "Source location (file, line, col).",
+      "required": ["file", "line", "col"],
+      "additionalProperties": false,
+      "properties": {
+        "file": { "type": "string" },
+        "line": { "type": "integer" },
+        "col": { "type": "integer" }
+      }
+    },
+    "ArgumentRecord": {
+      "type": "object",
+      "description": "Argument-to-parameter binding at a call site.",
+      "required": ["position", "parameter", "value_id", "value_expr"],
+      "additionalProperties": false,
+      "properties": {
+        "position": {
+          "type": "integer",
+          "description": "Zero-based argument index."
+        },
+        "parameter": {
+          "type": ["string", "null"],
+          "description": "SCIP symbol of the callee's formal parameter. Null if unavailable."
+        },
+        "value_id": {
+          "type": ["string", "null"],
+          "description": "ID of the value or call that produces this argument."
+        },
+        "value_expr": {
+          "type": "string",
+          "description": "Pretty-printed source text of the argument expression."
+        }
+      }
+    },
+    "CallRecord": {
+      "type": "object",
+      "description": "A call site record from scip-php.",
+      "required": ["id", "kind", "kind_type", "caller", "callee", "return_type", "receiver_value_id", "location", "arguments"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier: '{file}:{line}:{col}'."
+        },
+        "kind": {
+          "type": "string",
+          "description": "Call kind: method, access, constructor, method_static, access_static, function, access_array, coalesce, ternary, ternary_full, match."
+        },
+        "kind_type": {
+          "type": "string",
+          "description": "Kind category: invocation, access, operator.",
+          "enum": ["invocation", "access", "operator"]
+        },
+        "caller": {
+          "type": "string",
+          "description": "SCIP symbol of the enclosing method/function."
+        },
+        "callee": {
+          "type": "string",
+          "description": "SCIP symbol being accessed/called."
+        },
+        "return_type": {
+          "type": ["string", "null"],
+          "description": "Type symbol this expression produces."
+        },
+        "receiver_value_id": {
+          "type": ["string", "null"],
+          "description": "ID of the value/call that produces the receiver (for chaining)."
+        },
+        "location": {
+          "$ref": "#/$defs/SourceLocation",
+          "description": "Source location of the call site."
+        },
+        "arguments": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ArgumentRecord" },
+          "description": "Argument-to-parameter bindings."
+        },
+        "left_value_id": {
+          "type": "string",
+          "description": "ID of left operand value (coalesce operator)."
+        },
+        "right_value_id": {
+          "type": "string",
+          "description": "ID of right operand value (coalesce operator)."
+        },
+        "condition_value_id": {
+          "type": "string",
+          "description": "ID of condition value (ternary, ternary_full)."
+        },
+        "true_value_id": {
+          "type": "string",
+          "description": "ID of true branch value (ternary_full)."
+        },
+        "false_value_id": {
+          "type": "string",
+          "description": "ID of false branch value (ternary, ternary_full)."
+        },
+        "subject_value_id": {
+          "type": "string",
+          "description": "ID of match subject value."
+        },
+        "arm_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "IDs of match arm result expressions."
+        },
+        "key_value_id": {
+          "type": ["string", "null"],
+          "description": "ID of array access key value (access_array). Null for array append."
+        }
+      }
+    },
+    "ValueRecord": {
+      "type": "object",
+      "description": "A value-producing expression tracked for data flow.",
+      "required": ["id", "kind", "symbol", "type", "location"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier: '{file}:{line}:{col}'."
+        },
+        "kind": {
+          "type": "string",
+          "description": "Value kind: parameter, local, literal, constant, result.",
+          "enum": ["parameter", "local", "literal", "constant", "result"]
+        },
+        "symbol": {
+          "type": ["string", "null"],
+          "description": "SCIP symbol. Null for literals and results."
+        },
+        "type": {
+          "type": ["string", "null"],
+          "description": "Type symbol this value has."
+        },
+        "location": {
+          "$ref": "#/$defs/SourceLocation",
+          "description": "Source location."
+        },
+        "source_call_id": {
+          "type": "string",
+          "description": "ID of call that produces this value (for locals/results)."
+        },
+        "source_value_id": {
+          "type": "string",
+          "description": "ID of value this was assigned from (for locals)."
+        }
+      }
+    }
+  }
+}
