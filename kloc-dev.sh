@@ -38,7 +38,7 @@ if [[ -z "$RUN_ID" ]]; then
 fi
 
 ARTIFACT_DIR="$ARTIFACTS_BASE/$RUN_ID"
-INDEX_FILE="$ARTIFACT_DIR/index.kloc"
+INDEX_FILE="$ARTIFACT_DIR/index.json"
 SOT_FILE="$ARTIFACT_DIR/sot.json"
 
 echo "== kloc-dev pipeline =="
@@ -60,7 +60,7 @@ else
 fi
 
 if [[ ! -f "$INDEX_FILE" ]]; then
-    echo "Error: index.kloc not found at $INDEX_FILE after indexing"
+    echo "Error: index.json not found at $INDEX_FILE after indexing"
     exit 1
 fi
 
