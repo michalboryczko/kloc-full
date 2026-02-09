@@ -189,6 +189,10 @@
         "position": {
           "type": "integer",
           "description": "0-based argument index for 'argument' edges."
+        },
+        "expression": {
+          "type": "string",
+          "description": "Source expression text for 'argument' edges (e.g. '$input->productId', 'new DateTimeImmutable()')."
         }
       }
     }
