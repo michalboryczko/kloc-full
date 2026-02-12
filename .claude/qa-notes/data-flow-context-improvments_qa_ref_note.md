@@ -673,3 +673,48 @@ uv run kloc-cli context 'App\Entity\Order::$customerEmail' --sot $SOT > /tmp/v6_
 | Virtual relation invention (violating core principle) | HIGH | VERIFY checklist item in every phase gate |
 | Backward compat with old sot.json | LOW | Position fallback tested (v6-D-INT-05) |
 | Promoted property resolution fails | MEDIUM | assigned_from edge (63 exist) must be followed correctly |
+
+---
+
+## 11. QA Validation Results (2026-02-12)
+
+**Overall Status: FAIL**
+
+### Critical Bug: `kloc-cli/src/graph/loader.py` missing `parameter` field
+
+The CLI uses `msgspec` for fast JSON loading. The `EdgeSpec` struct and `load_sot()` conversion both omit the `parameter` field, causing all 122 argument edges to be loaded with `parameter=None`. This is the single-point-of-failure blocking ISSUE-D, ISSUE-E, and ISSUE-F.
+
+**Fix locations:**
+1. `EdgeSpec` struct (line 57): add `parameter: Optional[str] = None`
+2. `load_sot()` edge dict (line 119): add `"parameter": e.parameter,`
+
+### Secondary Bug: Value/Argument auto-selection
+
+`resolve_symbol()` sorts Value before Argument but `ResolveResult.unique` returns False when len > 1, causing disambiguation prompt instead of auto-selecting Value.
+
+### Results by Issue
+
+| Issue | Status | Details |
+|-------|--------|---------|
+| ISSUE-C | PASS | `on:` line shows correctly on send(), constructors excluded |
+| ISSUE-D | FAIL | parameter field not loaded by CLI (loader.py bug); named args still swapped |
+| ISSUE-E | FAIL | Cross-method tracing returns 0 results (depends on parameter field) |
+| ISSUE-F | PARTIAL | Property USED BY works; Property USES empty (depends on E) |
+| Regression | PASS | Only expected FQN separator change (:: -> .) |
+
+### Test Suite Results
+
+| Suite | Result |
+|-------|--------|
+| kloc-mapper tests | 77 passed, 30 skipped |
+| kloc-cli tests | 172 passed, 22 skipped |
+
+### Validated Data
+
+| Check | Result | Value |
+|-------|--------|-------|
+| argument edges with parameter in sot.json | 122/122 | PASS |
+| Argument FQNs with bad :: separator | 0/62 | PASS |
+| send() `on:` line in USED BY | Present | PASS |
+| Constructor `on:` line in USED BY | Absent | PASS |
+| method-level regression diff | FQN fix only | PASS |

@@ -169,7 +169,7 @@
     },
     "Edge": {
       "type": "object",
-      "description": "An edge in the SoT graph.",
+      "description": "An edge in the SoT graph. Argument edges may include a 'parameter' field linking to the formal parameter FQN.",
       "required": ["type", "source", "target"],
       "additionalProperties": false,
       "properties": {
@@ -193,6 +193,10 @@
         "expression": {
           "type": "string",
           "description": "Source expression text for 'argument' edges (e.g. '$input->productId', 'new DateTimeImmutable()')."
+        },
+        "parameter": {
+          "type": "string",
+          "description": "FQN of the formal parameter for 'argument' edges. Resolved from scip-php parameter symbol."
         }
       }
     }
