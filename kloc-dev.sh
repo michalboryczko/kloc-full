@@ -8,6 +8,7 @@ set -euo pipefail
 #   ./kloc-dev.sh context "App\Service\OrderService" --depth 2 --impl
 #   ./kloc-dev.sh context "App\Service\OrderService" --id=my-test --depth 2
 #   ./kloc-dev.sh resolve "App\Entity\Order" --id=my-test
+#   ./kloc-dev.sh context "App\Service\OrderService" --internal-all
 #
 # Artifacts are stored in: artifacts/kloc-dev/{id}/
 # When --id is provided and artifacts exist, the index/map steps are skipped.
@@ -19,12 +20,16 @@ ARTIFACTS_BASE="$SCRIPT_DIR/artifacts/$SCRIPT_NAME"
 # --- Parse --id flag (extract before passing rest to kloc-cli) ---
 
 RUN_ID=""
+INTERNAL_ALL=""
 PASSTHROUGH_ARGS=()
 
 for arg in "$@"; do
     case "$arg" in
         --id=*)
             RUN_ID="${arg#--id=}"
+            ;;
+        --internal-all)
+            INTERNAL_ALL="--internal-all"
             ;;
         *)
             PASSTHROUGH_ARGS+=("$arg")
@@ -55,7 +60,8 @@ else
     mkdir -p "$ARTIFACT_DIR"
     "$SCRIPT_DIR/scip-php/bin/scip-php.sh" \
         -d "$SCRIPT_DIR/kloc-reference-project-php" \
-        -o "$ARTIFACT_DIR"
+        -o "$ARTIFACT_DIR" \
+        $INTERNAL_ALL
     echo ""
 fi
 
