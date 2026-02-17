@@ -246,6 +246,55 @@
       "depth": 2,
       "impl": false,
       "category": "property"
+    },
+    {
+      "name": "val-param-save-order-d2",
+      "symbol": "App\\Repository\\AuditableOrderRepository::save().$order",
+      "depth": 2,
+      "impl": false,
+      "category": "value-param"
+    },
+    {
+      "name": "val-param-create-input-d2",
+      "symbol": "App\\Service\\OrderService::createOrder().$input",
+      "depth": 2,
+      "impl": false,
+      "category": "value-param"
+    },
+    {
+      "name": "val-param-process-order-d2",
+      "symbol": "App\\Service\\AbstractOrderProcessor::process().$order",
+      "depth": 2,
+      "impl": false,
+      "category": "value-param"
+    },
+    {
+      "name": "val-param-controller-request-d2",
+      "symbol": "App\\Ui\\Rest\\Controller\\OrderController::create().$request",
+      "depth": 2,
+      "impl": false,
+      "category": "value-param"
+    },
+    {
+      "name": "val-local-saved-order-d3",
+      "symbol": "App\\Service\\OrderService::createOrder().local$savedOrder@45",
+      "depth": 3,
+      "impl": false,
+      "category": "value-local"
+    },
+    {
+      "name": "val-local-order-d2",
+      "symbol": "App\\Service\\OrderService::getOrder().local$order@72",
+      "depth": 2,
+      "impl": false,
+      "category": "value-local"
+    },
+    {
+      "name": "val-local-customer-d2",
+      "symbol": "App\\Service\\CustomerService::getCustomerById().local$customer@42",
+      "depth": 2,
+      "impl": false,
+      "category": "value-local"
     }
   ]
 }
