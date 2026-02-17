@@ -1,0 +1,251 @@
+{
+  "description": "Context command snapshot test cases for kloc-cli",
+  "sot_id": "context-final",
+  "cases": [
+    {
+      "name": "class-order-d1",
+      "symbol": "App\\Entity\\Order",
+      "depth": 1,
+      "impl": false,
+      "category": "class"
+    },
+    {
+      "name": "class-order-d3",
+      "symbol": "App\\Entity\\Order",
+      "depth": 3,
+      "impl": false,
+      "category": "class"
+    },
+    {
+      "name": "class-order-service-d2",
+      "symbol": "App\\Service\\OrderService",
+      "depth": 2,
+      "impl": false,
+      "category": "class"
+    },
+    {
+      "name": "class-order-output-d2",
+      "symbol": "App\\Dto\\OrderOutput",
+      "depth": 2,
+      "impl": false,
+      "category": "class"
+    },
+    {
+      "name": "class-customer-d2",
+      "symbol": "App\\Entity\\Customer",
+      "depth": 2,
+      "impl": false,
+      "category": "class"
+    },
+    {
+      "name": "class-address-d2",
+      "symbol": "App\\Entity\\Address",
+      "depth": 2,
+      "impl": false,
+      "category": "class"
+    },
+    {
+      "name": "class-abstract-processor-d2",
+      "symbol": "App\\Service\\AbstractOrderProcessor",
+      "depth": 2,
+      "impl": false,
+      "category": "class"
+    },
+    {
+      "name": "interface-order-repo-d2",
+      "symbol": "App\\Repository\\OrderRepositoryInterface",
+      "depth": 2,
+      "impl": false,
+      "category": "interface"
+    },
+    {
+      "name": "interface-order-repo-d2-impl",
+      "symbol": "App\\Repository\\OrderRepositoryInterface",
+      "depth": 2,
+      "impl": true,
+      "category": "interface"
+    },
+    {
+      "name": "interface-customer-repo-d2",
+      "symbol": "App\\Repository\\CustomerRepositoryInterface",
+      "depth": 2,
+      "impl": false,
+      "category": "interface"
+    },
+    {
+      "name": "interface-email-sender-d2",
+      "symbol": "App\\Component\\EmailSenderInterface",
+      "depth": 2,
+      "impl": false,
+      "category": "interface"
+    },
+    {
+      "name": "interface-email-sender-d2-impl",
+      "symbol": "App\\Component\\EmailSenderInterface",
+      "depth": 2,
+      "impl": true,
+      "category": "interface"
+    },
+    {
+      "name": "interface-order-processor-d2",
+      "symbol": "App\\Component\\OrderProcessorInterface",
+      "depth": 2,
+      "impl": false,
+      "category": "interface"
+    },
+    {
+      "name": "interface-inventory-checker-d1",
+      "symbol": "App\\Component\\InventoryCheckerInterface",
+      "depth": 1,
+      "impl": false,
+      "category": "interface"
+    },
+    {
+      "name": "interface-base-repo-d2-impl",
+      "symbol": "App\\Repository\\BaseRepositoryInterface",
+      "depth": 2,
+      "impl": true,
+      "category": "interface"
+    },
+    {
+      "name": "method-order-construct-d2",
+      "symbol": "App\\Entity\\Order::__construct()",
+      "depth": 2,
+      "impl": false,
+      "category": "method"
+    },
+    {
+      "name": "method-create-order-d3",
+      "symbol": "App\\Service\\OrderService::createOrder()",
+      "depth": 3,
+      "impl": false,
+      "category": "method"
+    },
+    {
+      "name": "method-create-order-d5",
+      "symbol": "App\\Service\\OrderService::createOrder()",
+      "depth": 5,
+      "impl": false,
+      "category": "method"
+    },
+    {
+      "name": "method-get-order-d3",
+      "symbol": "App\\Service\\OrderService::getOrder()",
+      "depth": 3,
+      "impl": false,
+      "category": "method"
+    },
+    {
+      "name": "method-repo-save-d2",
+      "symbol": "App\\Repository\\OrderRepositoryInterface::save()",
+      "depth": 2,
+      "impl": false,
+      "category": "method"
+    },
+    {
+      "name": "method-repo-save-d2-impl",
+      "symbol": "App\\Repository\\OrderRepositoryInterface::save()",
+      "depth": 2,
+      "impl": true,
+      "category": "method"
+    },
+    {
+      "name": "method-repo-find-d3",
+      "symbol": "App\\Repository\\OrderRepositoryInterface::findById()",
+      "depth": 3,
+      "impl": false,
+      "category": "method"
+    },
+    {
+      "name": "method-process-d2",
+      "symbol": "App\\Service\\AbstractOrderProcessor::process()",
+      "depth": 2,
+      "impl": false,
+      "category": "method"
+    },
+    {
+      "name": "method-email-send-d2",
+      "symbol": "App\\Component\\EmailSenderInterface::send()",
+      "depth": 2,
+      "impl": false,
+      "category": "method"
+    },
+    {
+      "name": "method-get-customer-d3",
+      "symbol": "App\\Service\\CustomerService::getCustomerById()",
+      "depth": 3,
+      "impl": false,
+      "category": "method"
+    },
+    {
+      "name": "method-get-full-address-d2",
+      "symbol": "App\\Entity\\Address::getFullAddress()",
+      "depth": 2,
+      "impl": false,
+      "category": "method"
+    },
+    {
+      "name": "prop-order-id-d2",
+      "symbol": "App\\Entity\\Order::$id",
+      "depth": 2,
+      "impl": false,
+      "category": "property"
+    },
+    {
+      "name": "prop-order-id-d4",
+      "symbol": "App\\Entity\\Order::$id",
+      "depth": 4,
+      "impl": false,
+      "category": "property"
+    },
+    {
+      "name": "prop-order-email-d2",
+      "symbol": "App\\Entity\\Order::$customerEmail",
+      "depth": 2,
+      "impl": false,
+      "category": "property"
+    },
+    {
+      "name": "prop-order-status-d2",
+      "symbol": "App\\Entity\\Order::$status",
+      "depth": 2,
+      "impl": false,
+      "category": "property"
+    },
+    {
+      "name": "prop-customer-contact-d3",
+      "symbol": "App\\Entity\\Customer::$contact",
+      "depth": 3,
+      "impl": false,
+      "category": "property"
+    },
+    {
+      "name": "prop-customer-address-d3",
+      "symbol": "App\\Entity\\Customer::$address",
+      "depth": 3,
+      "impl": false,
+      "category": "property"
+    },
+    {
+      "name": "prop-service-order-repo-d2",
+      "symbol": "App\\Service\\OrderService::$orderRepository",
+      "depth": 2,
+      "impl": false,
+      "category": "property"
+    },
+    {
+      "name": "prop-address-street-d2",
+      "symbol": "App\\Entity\\Address::$street",
+      "depth": 2,
+      "impl": false,
+      "category": "property"
+    },
+    {
+      "name": "prop-contact-email-d2",
+      "symbol": "App\\Entity\\Contact::$email",
+      "depth": 2,
+      "impl": false,
+      "category": "property"
+    }
+  ]
+}
