@@ -21,6 +21,7 @@ SCHEMAS_DIR = Path(__file__).parent
 SCHEMA_MAP = {
     "sot-json": "sot-json.json",
     "scip-php-output": "scip-php-output.json",
+    "kloc-cli-context": "kloc-cli-context.json",
 }
 
 

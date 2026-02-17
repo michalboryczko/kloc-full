@@ -6,6 +6,7 @@ set -euo pipefail
 # Usage:
 #   ./tests/snapshot.sh capture              # Run all cases, save snapshot
 #   ./tests/snapshot.sh verify <snapshot>    # Compare current output against snapshot
+#   ./tests/snapshot.sh validate [snapshot]  # Validate JSON output against contract schema
 #   ./tests/snapshot.sh list                 # List available snapshots
 #   ./tests/snapshot.sh diff <snapshot>      # Show diffs for failing cases
 
@@ -13,6 +14,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CLI_DIR="$REPO_ROOT/kloc-cli"
 CASES_FILE="$SCRIPT_DIR/cases.json"
+VALIDATE_SCRIPT="$REPO_ROOT/kloc-contracts/validate.py"
 
 # Read sot_id from cases.json
 SOT_ID=$(python3 -c "import json; print(json.load(open('$CASES_FILE'))['sot_id'])")
@@ -99,6 +101,29 @@ for c in data['cases']:
     echo "  Completed $((total - failed))/$total cases" >&2
 }
 
+validate_case_output() {
+    # Validates a single JSON output against the kloc-cli-context schema
+    # Args: $1 = case name, $2 = JSON string
+    local name="$1"
+    local json_data="$2"
+    local tmpfile
+    tmpfile=$(mktemp)
+    echo "$json_data" > "$tmpfile"
+
+    cd "$CLI_DIR"
+    if uv run python3 "$VALIDATE_SCRIPT" kloc-cli-context "$tmpfile" >/dev/null 2>&1; then
+        rm -f "$tmpfile"
+        return 0
+    else
+        # Capture errors for reporting
+        local errors
+        errors=$(uv run python3 "$VALIDATE_SCRIPT" kloc-cli-context "$tmpfile" 2>&1 || true)
+        rm -f "$tmpfile"
+        echo "$errors" >&2
+        return 1
+    fi
+}
+
 # --- Commands ---
 
 cmd_capture() {
@@ -152,11 +177,12 @@ for c in data['cases']:
     local snapshot
     snapshot=$(cat "$snapshot_file")
 
-    local total passed failed errors
+    local total passed failed errors schema_errors
     total=$(echo "$cases" | wc -l | tr -d ' ')
     passed=0
     failed=0
     errors=0
+    schema_errors=0
     current=0
 
     while IFS= read -r case_json; do
@@ -193,7 +219,13 @@ else:
             actual_sorted=$(echo "$actual" | python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin), sort_keys=True))" 2>/dev/null)
 
             if [[ "$actual_sorted" == "$expected" ]]; then
-                echo "PASS" >&2
+                # Also validate against schema
+                if validate_case_output "$name" "$actual" 2>/dev/null; then
+                    echo "PASS" >&2
+                else
+                    echo "PASS (diff) SCHEMA FAIL" >&2
+                    schema_errors=$((schema_errors + 1))
+                fi
                 passed=$((passed + 1))
             else
                 echo "FAIL" >&2
@@ -207,6 +239,113 @@ else:
 
     echo "" >&2
     echo "Results: $passed passed, $failed failed, $errors errors (out of $total)" >&2
+    if [[ $schema_errors -gt 0 ]]; then
+        echo "Schema validation: $schema_errors case(s) failed contract schema" >&2
+    fi
+
+    if [[ $failed -gt 0 || $errors -gt 0 ]]; then
+        exit 1
+    fi
+}
+
+cmd_validate() {
+    local source="live"
+    local snapshot_file=""
+
+    # If a snapshot file is given, validate from snapshot; otherwise run live
+    if [[ -n "${1:-}" ]]; then
+        snapshot_file="$1"
+        source="snapshot"
+
+        # Resolve relative to tests/ dir if not absolute
+        if [[ ! "$snapshot_file" = /* ]]; then
+            if [[ -f "$SCRIPT_DIR/$snapshot_file" ]]; then
+                snapshot_file="$SCRIPT_DIR/$snapshot_file"
+            fi
+        fi
+
+        if [[ ! -f "$snapshot_file" ]]; then
+            echo "Error: Snapshot file not found: $snapshot_file"
+            exit 1
+        fi
+    fi
+
+    echo "Validating against kloc-cli-context schema (source: $source)" >&2
+    echo "" >&2
+
+    local cases
+    cases=$(python3 -c "
+import json
+with open('$CASES_FILE') as f:
+    data = json.load(f)
+for c in data['cases']:
+    print(json.dumps(c))
+")
+
+    local total passed failed errors
+    total=$(echo "$cases" | wc -l | tr -d ' ')
+    passed=0
+    failed=0
+    errors=0
+    current=0
+
+    # Load snapshot if using snapshot source
+    local snapshot=""
+    if [[ "$source" == "snapshot" ]]; then
+        snapshot=$(cat "$snapshot_file")
+    fi
+
+    while IFS= read -r case_json; do
+        current=$((current + 1))
+        local name symbol depth impl
+        name=$(echo "$case_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['name'])")
+        symbol=$(echo "$case_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['symbol'])")
+        depth=$(echo "$case_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['depth'])")
+        impl=$(echo "$case_json" | python3 -c "import json,sys; print(str(json.load(sys.stdin).get('impl', False)).lower())")
+
+        echo -n "  [$current/$total] $name... " >&2
+
+        local json_output=""
+
+        if [[ "$source" == "snapshot" ]]; then
+            # Extract from snapshot
+            json_output=$(echo "$snapshot" | python3 -c "
+import json, sys
+snap = json.load(sys.stdin)
+name = '$name'
+if name in snap:
+    print(json.dumps(snap[name]))
+else:
+    print('MISSING')
+" 2>/dev/null)
+
+            if [[ "$json_output" == "MISSING" ]]; then
+                echo "SKIP (not in snapshot)" >&2
+                continue
+            fi
+        else
+            # Run live
+            if json_output=$(run_case "$symbol" "$depth" "$impl" 2>&1); then
+                : # success
+            else
+                echo "ERROR (command failed)" >&2
+                errors=$((errors + 1))
+                continue
+            fi
+        fi
+
+        # Validate against schema
+        if validate_case_output "$name" "$json_output" 2>/dev/null; then
+            echo "PASS" >&2
+            passed=$((passed + 1))
+        else
+            echo "FAIL" >&2
+            failed=$((failed + 1))
+        fi
+    done <<< "$cases"
+
+    echo "" >&2
+    echo "Schema validation: $passed passed, $failed failed, $errors errors (out of $total)" >&2
 
     if [[ $failed -gt 0 || $errors -gt 0 ]]; then
         exit 1
@@ -299,6 +438,9 @@ case "${1:-}" in
         fi
         cmd_verify "$2"
         ;;
+    validate)
+        cmd_validate "${2:-}"
+        ;;
     diff)
         if [[ -z "${2:-}" ]]; then
             echo "Usage: $0 diff <snapshot-file>"
@@ -310,13 +452,14 @@ case "${1:-}" in
         cmd_list
         ;;
     *)
-        echo "Usage: $0 {capture|verify|diff|list}"
+        echo "Usage: $0 {capture|verify|validate|diff|list}"
         echo ""
         echo "Commands:"
-        echo "  capture             Run all cases, save snapshot as snapshot-DDMMYYHHMM.json"
-        echo "  verify <snapshot>   Run all cases, compare against snapshot"
-        echo "  diff <snapshot>     Show JSON diffs for failing cases"
-        echo "  list                List available snapshots"
+        echo "  capture              Run all cases, save snapshot as snapshot-DDMMYYHHMM.json"
+        echo "  verify <snapshot>    Run all cases, compare against snapshot (+ schema validation)"
+        echo "  validate [snapshot]  Validate output against kloc-cli-context contract schema"
+        echo "  diff <snapshot>      Show JSON diffs for failing cases"
+        echo "  list                 List available snapshots"
         exit 1
         ;;
 esac

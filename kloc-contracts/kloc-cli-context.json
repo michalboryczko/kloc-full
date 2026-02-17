@@ -1,0 +1,318 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kloc.dev/schemas/kloc-cli-context.json",
+  "title": "kloc-cli Context Command Output",
+  "description": "Schema for kloc-cli `context` command JSON output (--json flag). Covers both method-level and class-level context modes.",
+  "type": "object",
+  "required": ["target", "maxDepth", "usedBy", "uses"],
+  "additionalProperties": false,
+  "properties": {
+    "target": { "$ref": "#/$defs/Target" },
+    "maxDepth": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Maximum traversal depth requested."
+    },
+    "usedBy": {
+      "type": "array",
+      "description": "Callers / consumers of the target symbol.",
+      "items": { "$ref": "#/$defs/ContextEntry" }
+    },
+    "uses": {
+      "type": "array",
+      "description": "Dependencies / callees of the target symbol.",
+      "items": { "$ref": "#/$defs/ContextEntry" }
+    },
+    "definition": {
+      "$ref": "#/$defs/DefinitionInfo",
+      "description": "Structural definition metadata for the target symbol. Present for most symbol kinds."
+    }
+  },
+  "$defs": {
+    "Target": {
+      "type": "object",
+      "description": "The queried target symbol.",
+      "required": ["fqn", "file", "line"],
+      "additionalProperties": false,
+      "properties": {
+        "fqn": { "type": "string", "description": "Fully qualified name." },
+        "file": { "type": ["string", "null"], "description": "Relative file path." },
+        "line": { "type": ["integer", "null"], "description": "1-based line number." },
+        "signature": { "type": "string", "description": "Method/function signature. Present for Method/Function targets." }
+      }
+    },
+    "ContextEntry": {
+      "type": "object",
+      "description": "Recursive tree entry representing a caller or callee relationship. Fields vary by context mode (method vs class) and entry kind.",
+      "required": ["depth", "fqn", "kind", "children"],
+      "properties": {
+        "depth": { "type": "integer", "minimum": 0, "description": "Tree depth (0 = direct relationship)." },
+        "fqn": { "type": "string", "description": "Fully qualified name of the related symbol." },
+        "kind": { "type": ["string", "null"], "description": "Node kind (Method, Class, Property, etc.)." },
+        "file": { "type": ["string", "null"], "description": "Relative file path." },
+        "line": { "type": ["integer", "null"], "description": "1-based line number. Omitted when sites[] is present." },
+        "children": {
+          "type": "array",
+          "description": "Nested child entries (recursive).",
+          "items": { "$ref": "#/$defs/ContextEntry" }
+        },
+        "signature": { "type": "string", "description": "Method/function signature when available." },
+        "implementations": {
+          "type": "array",
+          "description": "Implementation entries for interface methods (USES direction).",
+          "items": { "$ref": "#/$defs/ContextEntry" }
+        },
+        "via_interface": {
+          "type": "boolean",
+          "const": true,
+          "description": "Marks this entry as an interface method grouping (USED BY direction)."
+        },
+        "member_ref": {
+          "$ref": "#/$defs/MemberRef",
+          "description": "Identifies which specific member is referenced. Present in method-level context, suppressed in class-level context."
+        },
+        "arguments": {
+          "type": "array",
+          "description": "Rich argument-to-parameter mappings (method-level context).",
+          "items": { "$ref": "#/$defs/ArgumentInfo" }
+        },
+        "args": {
+          "type": "object",
+          "description": "Flat argument mapping { paramKey: valueExpr } (class-level context).",
+          "additionalProperties": { "type": "string" }
+        },
+        "result_var": { "type": "string", "description": "Local variable that receives this call's return value." },
+        "entry_type": {
+          "type": "string",
+          "description": "Entry classification.",
+          "enum": ["call", "local_variable"]
+        },
+        "variable_name": { "type": "string", "description": "Variable display name for local_variable entries (e.g. '$order')." },
+        "variable_symbol": { "type": "string", "description": "Graph symbol for the variable (e.g. 'local#32$order')." },
+        "variable_type": { "type": "string", "description": "Resolved type name for the variable." },
+        "source_call": {
+          "$ref": "#/$defs/ContextEntry",
+          "description": "Nested call entry that produces this variable (local_variable entries)."
+        },
+        "crossed_from": { "type": "string", "description": "FQN of parameter crossed from (cross-method boundary indicator)." },
+        "refType": {
+          "type": "string",
+          "description": "Reference type classification (class-level context).",
+          "enum": [
+            "instantiation", "extends", "implements", "uses_trait",
+            "type_hint", "parameter_type", "return_type", "property_type",
+            "method_call", "property_access",
+            "override", "inherited", "own_method",
+            "caller", "uses"
+          ]
+        },
+        "callee": { "type": "string", "description": "Short callee name for method_call entries (e.g. 'save()')." },
+        "on": { "type": "string", "description": "Receiver expression (e.g. '$this->orderRepository')." },
+        "onKind": {
+          "type": "string",
+          "description": "Receiver kind.",
+          "enum": ["property", "param", "local", "self"]
+        },
+        "sites": {
+          "type": "array",
+          "description": "Multiple usage sites (replaces single line when present).",
+          "items": { "$ref": "#/$defs/Site" }
+        },
+        "via": { "type": "string", "description": "FQN of interface for via-interface labels." },
+        "property": { "type": "string", "description": "Property name for property_type entries (e.g. '$orderRepository')." },
+        "accessCount": { "type": "integer", "description": "Total access count for property_access groups." },
+        "methodCount": { "type": "integer", "description": "Distinct method count for property_access groups." }
+      },
+      "additionalProperties": false
+    },
+    "MemberRef": {
+      "type": "object",
+      "description": "Identifies a specific member usage within a relationship.",
+      "required": ["target_name", "target_fqn", "target_kind", "file", "line"],
+      "additionalProperties": false,
+      "properties": {
+        "target_name": { "type": "string", "description": "Short member name (e.g. 'save()', '$id')." },
+        "target_fqn": { "type": "string", "description": "Full FQN of the member." },
+        "target_kind": { "type": ["string", "null"], "description": "Member node kind (Method, Property, etc.)." },
+        "file": { "type": ["string", "null"], "description": "File where the reference occurs." },
+        "line": { "type": ["integer", "null"], "description": "1-based line of the reference." },
+        "reference_type": { "type": "string", "description": "Reference classification (method_call, type_hint, instantiation, etc.)." },
+        "access_chain": { "type": "string", "description": "Receiver expression (e.g. '$this->orderRepository')." },
+        "access_chain_symbol": { "type": "string", "description": "FQN of intermediate property in access chain." },
+        "on_kind": { "type": "string", "description": "Kind of the receiver value (local, param, property)." },
+        "on_file": { "type": "string", "description": "File where the receiver value is defined." },
+        "on_line": { "type": "integer", "description": "1-based line where the receiver value is defined." }
+      }
+    },
+    "ArgumentInfo": {
+      "type": "object",
+      "description": "Argument-to-parameter mapping at a call site.",
+      "required": ["position", "param_name", "value_expr", "value_source"],
+      "additionalProperties": false,
+      "properties": {
+        "position": { "type": "integer", "minimum": 0, "description": "0-based argument position." },
+        "param_name": { "type": ["string", "null"], "description": "Formal parameter name from callee." },
+        "value_expr": { "type": ["string", "null"], "description": "Source expression text." },
+        "value_source": { "type": ["string", "null"], "description": "Value kind: parameter, local, literal, result." },
+        "value_type": { "type": "string", "description": "Resolved type name." },
+        "param_fqn": { "type": "string", "description": "Full FQN of the formal parameter." },
+        "value_ref_symbol": { "type": "string", "description": "Graph symbol the value resolves to." },
+        "source_chain": {
+          "type": "array",
+          "description": "Access chain steps when value has no top-level entry.",
+          "items": { "$ref": "#/$defs/SourceChainStep" }
+        }
+      }
+    },
+    "SourceChainStep": {
+      "type": "object",
+      "description": "A step in an argument's source chain showing how a value is accessed.",
+      "properties": {
+        "fqn": { "type": "string" },
+        "kind": { "type": "string" },
+        "reference_type": { "type": "string" },
+        "on": { "type": "string" },
+        "on_kind": { "type": "string" },
+        "on_file": { "type": "string" },
+        "on_line": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "Site": {
+      "type": "object",
+      "description": "A single usage site within a multi-site entry.",
+      "required": ["method", "line"],
+      "additionalProperties": false,
+      "properties": {
+        "method": { "type": "string", "description": "FQN of the method containing this site." },
+        "line": { "type": "integer", "description": "1-based line number." }
+      }
+    },
+    "DefinitionInfo": {
+      "type": "object",
+      "description": "Structural definition metadata for the target symbol.",
+      "required": ["fqn", "kind"],
+      "properties": {
+        "fqn": { "type": "string", "description": "Fully qualified name." },
+        "kind": { "type": "string", "description": "Symbol kind (Method, Class, Interface, Property, Value, etc.)." },
+        "file": { "type": ["string", "null"], "description": "Relative file path." },
+        "line": { "type": ["integer", "null"], "description": "1-based line number." },
+        "signature": { "type": "string", "description": "Method/function signature." },
+        "arguments": {
+          "type": "array",
+          "description": "Formal parameter list (for methods/functions).",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "returnType": {
+          "type": "object",
+          "description": "Return type info (for non-Property methods/functions).",
+          "properties": {
+            "fqn": { "type": "string" },
+            "name": { "type": "string" }
+          }
+        },
+        "type": {
+          "description": "Type name for Property definitions (string) or type info for Value definitions (object).",
+          "oneOf": [
+            { "type": "string" },
+            {
+              "type": "object",
+              "properties": {
+                "fqn": { "type": "string" },
+                "name": { "type": "string" }
+              }
+            }
+          ]
+        },
+        "visibility": { "type": "string", "description": "Visibility for Property definitions." },
+        "promoted": { "type": "boolean", "description": "Whether a Property is promoted (constructor promotion)." },
+        "readonly": { "type": "boolean", "description": "Whether a Property is readonly." },
+        "static": { "type": "boolean", "description": "Whether a Property is static." },
+        "declaredIn": {
+          "type": "object",
+          "description": "Containing symbol (class/method) for non-class kinds.",
+          "properties": {
+            "fqn": { "type": ["string", "null"] },
+            "file": { "type": ["string", "null"] },
+            "line": { "type": ["integer", "null"] }
+          },
+          "additionalProperties": false
+        },
+        "properties": {
+          "type": "array",
+          "description": "Property list for Class/Interface definitions.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "type": ["string", "null"] },
+              "visibility": { "type": "string" },
+              "promoted": { "type": "boolean" },
+              "readonly": { "type": "boolean" },
+              "static": { "type": "boolean" }
+            }
+          }
+        },
+        "methods": {
+          "type": "array",
+          "description": "Method list for Class/Interface definitions.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "signature": { "type": "string" },
+              "tags": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "extends": { "type": "string", "description": "Parent class FQN." },
+        "implements": {
+          "type": "array",
+          "description": "Implemented interface FQNs.",
+          "items": { "type": "string" }
+        },
+        "uses_traits": {
+          "type": "array",
+          "description": "Used trait FQNs.",
+          "items": { "type": "string" }
+        },
+        "value_kind": {
+          "type": "string",
+          "description": "Value sub-kind for Value definitions.",
+          "enum": ["parameter", "local", "result", "literal", "constant"]
+        },
+        "source": {
+          "type": "object",
+          "description": "Source information for Value definitions (where the value comes from).",
+          "properties": {
+            "call_fqn": { "type": "string" },
+            "method_fqn": { "type": "string" },
+            "method_name": { "type": "string" },
+            "line": { "type": ["integer", "null"] }
+          }
+        },
+        "constructorDeps": {
+          "type": "array",
+          "description": "Constructor dependency list for Class definitions.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "type": ["string", "null"] }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

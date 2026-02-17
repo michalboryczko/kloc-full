@@ -65,7 +65,7 @@
     },
     "EdgeType": {
       "type": "string",
-      "description": "Edge type enum — 12 values from kloc-mapper/src/models.py:EdgeType.",
+      "description": "Edge type enum — 13 values from kloc-mapper/src/models.py:EdgeType.",
       "enum": [
         "contains",
         "extends",
