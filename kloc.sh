@@ -19,7 +19,17 @@ set -euo pipefail
 #   data/{project_name}/sot.json    - Source of Truth graph
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BIN_DIR="$SCRIPT_DIR/bin"
 DATA_BASE="$SCRIPT_DIR/data"
+
+# Verify binaries exist
+check_binary() {
+    if [[ ! -x "$BIN_DIR/$1" ]]; then
+        echo "Error: $1 binary not found at $BIN_DIR/$1"
+        echo "Run ./build.sh first to build all binaries."
+        exit 1
+    fi
+}
 
 show_help() {
     echo "kloc - PHP code intelligence pipeline"
@@ -165,9 +175,8 @@ case "$COMMAND" in
 
         # Step 2: Map to sot.json
         echo "[2/2] Mapping index to sot.json..."
-        cd "$SCRIPT_DIR/kloc-mapper"
-        uv run kloc-mapper map "$INDEX_FILE" -o "$SOT_FILE"
-        cd "$SCRIPT_DIR"
+        check_binary kloc-mapper
+        "$BIN_DIR/kloc-mapper" map "$INDEX_FILE" -o "$SOT_FILE"
         echo ""
 
         if [[ ! -f "$SOT_FILE" ]]; then
@@ -192,8 +201,8 @@ case "$COMMAND" in
             exit 1
         fi
 
-        cd "$SCRIPT_DIR/kloc-cli"
-        exec uv run kloc-cli "${CLI_ARGS[@]}" --sot "$SOT_FILE"
+        check_binary kloc-cli
+        exec "$BIN_DIR/kloc-cli" "${CLI_ARGS[@]}" --sot "$SOT_FILE"
         ;;
 
     *)
