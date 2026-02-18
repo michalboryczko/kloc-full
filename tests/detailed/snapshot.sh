@@ -1,23 +1,36 @@
 #!/bin/bash
 set -euo pipefail
 
-# Snapshot test tool for kloc-cli context command
+# Detailed snapshot testing for kloc-cli context command
+# Comprehensive regression testing across all symbol types × depths × impl flag
 #
 # Usage:
-#   ./tests/snapshot.sh capture              # Run all cases, save snapshot
-#   ./tests/snapshot.sh verify <snapshot>    # Compare current output against snapshot
-#   ./tests/snapshot.sh validate [snapshot]  # Validate JSON output against contract schema
-#   ./tests/snapshot.sh list                 # List available snapshots
-#   ./tests/snapshot.sh diff <snapshot>      # Show diffs for failing cases
+#   ./tests/detailed/snapshot.sh generate          # Pick symbols, create cases.json
+#   ./tests/detailed/snapshot.sh capture            # Run all cases, save snapshot
+#   ./tests/detailed/snapshot.sh verify <snapshot>  # Compare current output vs snapshot
+#   ./tests/detailed/snapshot.sh validate [snapshot] # Validate JSON against schema
+#   ./tests/detailed/snapshot.sh summary [snapshot]  # Show pass/fail summary by category
+#   ./tests/detailed/snapshot.sh diff <snapshot>    # Show diffs for failing cases
+#   ./tests/detailed/snapshot.sh list               # List available snapshots
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 CLI_DIR="$REPO_ROOT/kloc-cli"
 CASES_FILE="$SCRIPT_DIR/cases.json"
 VALIDATE_SCRIPT="$REPO_ROOT/kloc-contracts/validate.py"
+GENERATE_SCRIPT="$SCRIPT_DIR/generate_cases.py"
 
-# Read sot_id from cases.json
-SOT_ID=$(python3 -c "import json; print(json.load(open('$CASES_FILE'))['sot_id'])")
+# Read sot_id from cases.json (or use default for generate)
+get_sot_id() {
+    if [[ -f "$CASES_FILE" ]]; then
+        python3 -c "import json; print(json.load(open('$CASES_FILE'))['sot_id'])"
+    else
+        # Fallback: read from main cases.json
+        python3 -c "import json; print(json.load(open('$SCRIPT_DIR/../cases.json'))['sot_id'])"
+    fi
+}
+
+SOT_ID=$(get_sot_id)
 ARTIFACT_DIR="$REPO_ROOT/artifacts/kloc-dev/$SOT_ID"
 SOT_FILE="$ARTIFACT_DIR/sot.json"
 
@@ -50,7 +63,6 @@ run_case() {
 }
 
 run_all_cases() {
-    # Outputs a JSON object: { "case_name": <output>, ... }
     local cases
     cases=$(python3 -c "
 import json, sys
@@ -76,11 +88,13 @@ for c in data['cases']:
         depth=$(echo "$case_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['depth'])")
         impl=$(echo "$case_json" | python3 -c "import json,sys; print(str(json.load(sys.stdin).get('impl', False)).lower())")
 
-        echo "  Running [$current/$total] $name..." >&2
+        # Print progress every 10 cases or on category change
+        if (( current % 10 == 1 )) || (( current == total )); then
+            echo "  Running [$current/$total] $name..." >&2
+        fi
 
         local output
         if output=$(run_case "$symbol" "$depth" "$impl" 2>&1); then
-            # Validate it's valid JSON
             if echo "$output" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null; then
                 if [[ "$first" == "true" ]]; then
                     first=false
@@ -109,8 +123,6 @@ for c in data['cases']:
 }
 
 validate_case_output() {
-    # Validates a single JSON output against the kloc-cli-context schema
-    # Args: $1 = case name, $2 = JSON string
     local name="$1"
     local json_data="$2"
     local tmpfile
@@ -122,7 +134,6 @@ validate_case_output() {
         rm -f "$tmpfile"
         return 0
     else
-        # Capture errors for reporting
         local errors
         errors=$(uv run python3 "$VALIDATE_SCRIPT" kloc-cli-context "$tmpfile" 2>&1 || true)
         rm -f "$tmpfile"
@@ -133,15 +144,41 @@ validate_case_output() {
 
 # --- Commands ---
 
+cmd_generate() {
+    if [[ ! -f "$SOT_FILE" ]]; then
+        regenerate_sot
+    fi
+
+    echo "Generating cases from $SOT_FILE..." >&2
+
+    cd "$CLI_DIR"
+    uv run python3 "$GENERATE_SCRIPT" "$SOT_FILE" --seed 42 --count 20
+
+    # Show summary
+    local total
+    total=$(python3 -c "import json; print(len(json.load(open('$CASES_FILE'))['cases']))")
+    echo "" >&2
+    echo "Total cases: $total" >&2
+}
+
 cmd_capture() {
     regenerate_sot
+
+    if [[ ! -f "$CASES_FILE" ]]; then
+        echo "Error: cases.json not found. Run 'generate' first." >&2
+        exit 1
+    fi
 
     local timestamp
     timestamp=$(date +%d%m%y%H%M)
     local snapshot_file="$SCRIPT_DIR/snapshot-$timestamp.json"
 
-    echo "Capturing snapshot: $snapshot_file" >&2
+    local total
+    total=$(python3 -c "import json; print(len(json.load(open('$CASES_FILE'))['cases']))")
+
+    echo "Capturing detailed snapshot: $snapshot_file" >&2
     echo "SOT: $SOT_FILE" >&2
+    echo "Cases: $total" >&2
     echo "" >&2
 
     run_all_cases > "$snapshot_file"
@@ -149,10 +186,9 @@ cmd_capture() {
     echo "" >&2
     echo "Snapshot saved: $snapshot_file" >&2
 
-    # Count cases
     local count
     count=$(python3 -c "import json; print(len(json.load(open('$snapshot_file'))))")
-    echo "Cases captured: $count" >&2
+    echo "Cases captured: $count / $total" >&2
 }
 
 cmd_verify() {
@@ -160,7 +196,6 @@ cmd_verify() {
 
     local snapshot_file="$1"
 
-    # Resolve relative to tests/ dir if not absolute
     if [[ ! "$snapshot_file" = /* ]]; then
         if [[ -f "$SCRIPT_DIR/$snapshot_file" ]]; then
             snapshot_file="$SCRIPT_DIR/$snapshot_file"
@@ -196,17 +231,23 @@ for c in data['cases']:
     schema_errors=0
     current=0
 
+    # Track failures by category
+    declare -A cat_passed cat_failed cat_errors
+    local failed_names=""
+
     while IFS= read -r case_json; do
         current=$((current + 1))
-        local name symbol depth impl
+        local name symbol depth impl category
         name=$(echo "$case_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['name'])")
         symbol=$(echo "$case_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['symbol'])")
         depth=$(echo "$case_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['depth'])")
         impl=$(echo "$case_json" | python3 -c "import json,sys; print(str(json.load(sys.stdin).get('impl', False)).lower())")
+        category=$(echo "$case_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('category', 'unknown'))")
 
-        echo -n "  [$current/$total] $name... " >&2
+        if (( current % 50 == 1 )); then
+            echo "  [$current/$total] $name..." >&2
+        fi
 
-        # Get expected from snapshot
         local expected
         expected=$(echo "$snapshot" | python3 -c "
 import json, sys
@@ -219,39 +260,64 @@ else:
 " 2>/dev/null)
 
         if [[ "$expected" == "MISSING" ]]; then
-            echo "SKIP (not in snapshot)" >&2
             continue
         fi
 
-        # Run current
         local actual
         if actual=$(run_case "$symbol" "$depth" "$impl" 2>&1); then
             local actual_sorted
             actual_sorted=$(echo "$actual" | python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin), sort_keys=True))" 2>/dev/null)
 
             if [[ "$actual_sorted" == "$expected" ]]; then
-                # Also validate against schema
                 if validate_case_output "$name" "$actual" 2>/dev/null; then
-                    echo "PASS" >&2
+                    passed=$((passed + 1))
+                    cat_passed[$category]=$(( ${cat_passed[$category]:-0} + 1 ))
                 else
-                    echo "PASS (diff) SCHEMA FAIL" >&2
+                    echo "  SCHEMA FAIL: $name" >&2
                     schema_errors=$((schema_errors + 1))
+                    passed=$((passed + 1))
+                    cat_passed[$category]=$(( ${cat_passed[$category]:-0} + 1 ))
                 fi
-                passed=$((passed + 1))
             else
-                echo "FAIL" >&2
+                echo "  DIFF FAIL: $name" >&2
                 failed=$((failed + 1))
+                cat_failed[$category]=$(( ${cat_failed[$category]:-0} + 1 ))
+                failed_names="$failed_names\n  $name"
             fi
         else
-            echo "ERROR (command failed)" >&2
+            echo "  ERROR: $name (command failed)" >&2
             errors=$((errors + 1))
+            cat_errors[$category]=$(( ${cat_errors[$category]:-0} + 1 ))
         fi
     done <<< "$cases"
 
     echo "" >&2
-    echo "Results: $passed passed, $failed failed, $errors errors (out of $total)" >&2
+    echo "=== Results ===" >&2
+    echo "  Total: $total | Passed: $passed | Failed: $failed | Errors: $errors" >&2
     if [[ $schema_errors -gt 0 ]]; then
-        echo "Schema validation: $schema_errors case(s) failed contract schema" >&2
+        echo "  Schema validation failures: $schema_errors" >&2
+    fi
+
+    # Per-category summary
+    echo "" >&2
+    echo "=== By Category ===" >&2
+    for cat in class interface method property value-parameter value-local; do
+        local cp=${cat_passed[$cat]:-0}
+        local cf=${cat_failed[$cat]:-0}
+        local ce=${cat_errors[$cat]:-0}
+        local ct=$((cp + cf + ce))
+        if [[ $ct -gt 0 ]]; then
+            echo "  $cat: $cp/$ct passed" >&2
+            if [[ $cf -gt 0 ]]; then
+                echo "    $cf failed" >&2
+            fi
+        fi
+    done
+
+    if [[ -n "$failed_names" ]]; then
+        echo "" >&2
+        echo "=== Failed Cases ===" >&2
+        echo -e "$failed_names" >&2
     fi
 
     if [[ $failed -gt 0 || $errors -gt 0 ]]; then
@@ -263,12 +329,10 @@ cmd_validate() {
     local source="live"
     local snapshot_file=""
 
-    # If a snapshot file is given, validate from snapshot; otherwise regenerate sot and run live
     if [[ -n "${1:-}" ]]; then
         snapshot_file="$1"
         source="snapshot"
 
-        # Resolve relative to tests/ dir if not absolute
         if [[ ! "$snapshot_file" = /* ]]; then
             if [[ -f "$SCRIPT_DIR/$snapshot_file" ]]; then
                 snapshot_file="$SCRIPT_DIR/$snapshot_file"
@@ -304,7 +368,6 @@ for c in data['cases']:
     errors=0
     current=0
 
-    # Load snapshot if using snapshot source
     local snapshot=""
     if [[ "$source" == "snapshot" ]]; then
         snapshot=$(cat "$snapshot_file")
@@ -318,12 +381,13 @@ for c in data['cases']:
         depth=$(echo "$case_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['depth'])")
         impl=$(echo "$case_json" | python3 -c "import json,sys; print(str(json.load(sys.stdin).get('impl', False)).lower())")
 
-        echo -n "  [$current/$total] $name... " >&2
+        if (( current % 50 == 1 )); then
+            echo "  [$current/$total] $name..." >&2
+        fi
 
         local json_output=""
 
         if [[ "$source" == "snapshot" ]]; then
-            # Extract from snapshot
             json_output=$(echo "$snapshot" | python3 -c "
 import json, sys
 snap = json.load(sys.stdin)
@@ -335,26 +399,22 @@ else:
 " 2>/dev/null)
 
             if [[ "$json_output" == "MISSING" ]]; then
-                echo "SKIP (not in snapshot)" >&2
                 continue
             fi
         else
-            # Run live
             if json_output=$(run_case "$symbol" "$depth" "$impl" 2>&1); then
-                : # success
+                :
             else
-                echo "ERROR (command failed)" >&2
+                echo "  ERROR: $name (command failed)" >&2
                 errors=$((errors + 1))
                 continue
             fi
         fi
 
-        # Validate against schema
         if validate_case_output "$name" "$json_output" 2>/dev/null; then
-            echo "PASS" >&2
             passed=$((passed + 1))
         else
-            echo "FAIL" >&2
+            echo "  SCHEMA FAIL: $name" >&2
             failed=$((failed + 1))
         fi
     done <<< "$cases"
@@ -365,6 +425,60 @@ else:
     if [[ $failed -gt 0 || $errors -gt 0 ]]; then
         exit 1
     fi
+}
+
+cmd_summary() {
+    local snapshot_file="${1:-}"
+
+    if [[ -z "$snapshot_file" ]]; then
+        # Find latest snapshot
+        snapshot_file=$(ls -t "$SCRIPT_DIR"/snapshot-*.json 2>/dev/null | head -1)
+        if [[ -z "$snapshot_file" ]]; then
+            echo "Error: No snapshots found. Run 'capture' first."
+            exit 1
+        fi
+    else
+        if [[ ! "$snapshot_file" = /* ]]; then
+            if [[ -f "$SCRIPT_DIR/$snapshot_file" ]]; then
+                snapshot_file="$SCRIPT_DIR/$snapshot_file"
+            fi
+        fi
+    fi
+
+    echo "Snapshot: $(basename "$snapshot_file")" >&2
+    echo "" >&2
+
+    python3 -c "
+import json, sys
+from collections import defaultdict
+
+with open('$CASES_FILE') as f:
+    cases_data = json.load(f)
+
+with open('$snapshot_file') as f:
+    snapshot = json.load(f)
+
+# Stats by category
+by_cat = defaultdict(lambda: {'total': 0, 'captured': 0, 'depths': set(), 'symbols': set()})
+
+for case in cases_data['cases']:
+    cat = case.get('category', 'unknown')
+    by_cat[cat]['total'] += 1
+    by_cat[cat]['depths'].add(case['depth'])
+    by_cat[cat]['symbols'].add(case['symbol'])
+    if case['name'] in snapshot:
+        by_cat[cat]['captured'] += 1
+
+print(f'Total cases: {len(cases_data[\"cases\"])}')
+print(f'Captured in snapshot: {len(snapshot)}')
+print()
+print(f'{\"Category\":<20} {\"Symbols\":<10} {\"Cases\":<10} {\"Captured\":<10} {\"Rate\":<10}')
+print('-' * 60)
+for cat in sorted(by_cat.keys()):
+    s = by_cat[cat]
+    rate = f\"{s['captured']/s['total']*100:.0f}%\" if s['total'] > 0 else 'N/A'
+    print(f'{cat:<20} {len(s[\"symbols\"]):<10} {s[\"total\"]:<10} {s[\"captured\"]:<10} {rate:<10}')
+"
 }
 
 cmd_diff() {
@@ -398,6 +512,8 @@ for c in data['cases']:
     local snapshot
     snapshot=$(cat "$snapshot_file")
 
+    local diff_count=0
+
     while IFS= read -r case_json; do
         local name symbol depth impl
         name=$(echo "$case_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['name'])")
@@ -428,13 +544,20 @@ else:
                 echo "=== DIFF: $name ==="
                 diff <(echo "$expected") <(echo "$actual_formatted") || true
                 echo ""
+                diff_count=$((diff_count + 1))
             fi
         fi
     done <<< "$cases"
+
+    if [[ $diff_count -eq 0 ]]; then
+        echo "No diffs found." >&2
+    else
+        echo "$diff_count case(s) have differences." >&2
+    fi
 }
 
 cmd_list() {
-    echo "Available snapshots:"
+    echo "Available detailed snapshots:"
     ls -1 "$SCRIPT_DIR"/snapshot-*.json 2>/dev/null | while read -r f; do
         local count
         count=$(python3 -c "import json; print(len(json.load(open('$f'))))" 2>/dev/null || echo "?")
@@ -445,6 +568,9 @@ cmd_list() {
 # --- Main ---
 
 case "${1:-}" in
+    generate)
+        cmd_generate
+        ;;
     capture)
         cmd_capture
         ;;
@@ -458,6 +584,9 @@ case "${1:-}" in
     validate)
         cmd_validate "${2:-}"
         ;;
+    summary)
+        cmd_summary "${2:-}"
+        ;;
     diff)
         if [[ -z "${2:-}" ]]; then
             echo "Usage: $0 diff <snapshot-file>"
@@ -469,14 +598,16 @@ case "${1:-}" in
         cmd_list
         ;;
     *)
-        echo "Usage: $0 {capture|verify|validate|diff|list}"
+        echo "Usage: $0 {generate|capture|verify|validate|summary|diff|list}"
         echo ""
         echo "Commands:"
-        echo "  capture              Run all cases, save snapshot as snapshot-DDMMYYHHMM.json"
-        echo "  verify <snapshot>    Run all cases, compare against snapshot (+ schema validation)"
-        echo "  validate [snapshot]  Validate output against kloc-cli-context contract schema"
-        echo "  diff <snapshot>      Show JSON diffs for failing cases"
-        echo "  list                 List available snapshots"
+        echo "  generate              Analyze sot.json, pick random symbols, create cases.json"
+        echo "  capture               Run all cases, save snapshot as snapshot-DDMMYYHHMM.json"
+        echo "  verify <snapshot>     Run all cases, compare against snapshot (+ schema validation)"
+        echo "  validate [snapshot]   Validate output against kloc-cli-context contract schema"
+        echo "  summary [snapshot]    Show case counts and capture rates by category"
+        echo "  diff <snapshot>       Show JSON diffs for failing cases"
+        echo "  list                  List available snapshots"
         exit 1
         ;;
 esac
