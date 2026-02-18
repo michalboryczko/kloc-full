@@ -6,6 +6,7 @@ kloc-reference-project-php/
 
 # Artifacts
 artifacts/
+data/
 
 # Build outputs (binaries copied here)
 bin/

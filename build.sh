@@ -7,14 +7,38 @@ set -euo pipefail
 # Usage:
 #   ./build.sh              # Build all repos
 #   ./build.sh kloc-cli     # Build only kloc-cli
-#   ./build.sh scip-php     # Build only scip-php
+#   ./build.sh --force      # Clean build dirs first, then build all
+#   ./build.sh --force kloc-cli  # Clean + build specific repo
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-TARGET="${1:-}"  # Empty means all
+# Parse flags
+FORCE=false
+TARGET=""
+for arg in "$@"; do
+    case "$arg" in
+        --force) FORCE=true ;;
+        *) TARGET="$arg" ;;
+    esac
+done
 
 BIN_DIR="$SCRIPT_DIR/bin"
+
+# Force clean: remove build artifacts
+if [ "$FORCE" = true ]; then
+    echo "Force mode: cleaning build directories..."
+    rm -rf "$BIN_DIR"
+    # Clean each repo's build artifacts
+    for dir in kloc-cli kloc-mapper scip-php; do
+        if [ -d "$dir" ]; then
+            rm -rf "$dir/dist" "$dir/build" "$dir/__pycache__" "$dir/.pyinstaller"
+            echo "  Cleaned $dir/dist, $dir/build"
+        fi
+    done
+    echo ""
+fi
+
 mkdir -p "$BIN_DIR"
 
 echo "Building KLOC binaries..."
