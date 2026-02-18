@@ -101,7 +101,7 @@
           "enum": [
             "instantiation", "extends", "implements", "uses_trait",
             "type_hint", "parameter_type", "return_type", "property_type",
-            "method_call", "property_access",
+            "method_call", "property_access", "static_call", "static_property",
             "override", "inherited", "own_method",
             "caller", "uses"
           ]
