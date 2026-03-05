@@ -179,10 +179,7 @@ def execute_query(connection, query):
         )
 
     elif command == "context":
-        from src.db.queries.definition import definition_for_node
-        from src.orchestration.class_context import build_class_used_by, build_class_uses
-        from src.orchestration.generic_context import build_generic_used_by, build_generic_uses
-        from src.models.results import ContextResult
+        from src.orchestration.context import ContextOrchestrator
         from src.models.output import ContextOutput
 
         symbol = args[0]
@@ -190,55 +187,13 @@ def execute_query(connection, query):
         limit = options.get("limit", 100)
         include_impl = options.get("impl", False)
 
-        candidates = resolve_symbol(runner, symbol)
-        if not candidates:
-            return {"error": "Symbol not found", "query": symbol}
-
-        node = candidates[0]
-
-        # Build definition
-        definition = definition_for_node(runner, node.node_id)
-
-        # Build used_by and uses based on kind
-        used_by = []
-        uses = []
-
-        if node.kind == "Class":
-            # Class: grouped, sorted, deduped USED BY (build_class_used_by)
-            used_by = build_class_used_by(runner, node.node_id, depth, limit, include_impl)
-            uses = build_class_uses(runner, node.node_id, depth, limit, include_impl)
-        elif node.kind == "Interface":
-            from src.orchestration.interface_context import build_interface_used_by, build_interface_uses
-            used_by = build_interface_used_by(runner, node.node_id, depth, limit, include_impl)
-            uses = build_interface_uses(runner, node.node_id, depth, limit, include_impl)
-        elif node.kind == "Method":
-            from src.orchestration.method_context import build_method_used_by, build_method_uses
-            used_by = build_method_used_by(runner, node.node_id, depth, limit, include_impl)
-            uses = build_method_uses(runner, node.node_id, depth, limit, include_impl)
-        elif node.kind in ("Enum", "Trait"):
-            # Enum/Trait: generic build_tree (one entry per edge, no refType grouping)
-            used_by = build_generic_used_by(runner, node.node_id, depth, limit, include_impl)
-            uses = build_generic_uses(runner, node.node_id, depth, limit, include_impl)
-        elif node.kind == "Property":
-            from src.orchestration.property_context import build_property_used_by, build_property_uses
-            used_by = build_property_used_by(runner, node.node_id, depth, limit, include_impl)
-            uses = build_property_uses(runner, node.node_id, depth, limit, include_impl)
-        elif node.kind in ("Value", "Constant"):
-            # Value/Constant: generic build_tree
-            used_by = build_generic_used_by(runner, node.node_id, depth, limit, include_impl)
-            uses = build_generic_uses(runner, node.node_id, depth, limit, include_impl)
-        elif node.kind == "File":
-            from src.orchestration.file_context import build_file_used_by, build_file_uses
-            used_by = build_file_used_by(runner, node.node_id, depth, limit, include_impl)
-            uses = build_file_uses(runner, node.node_id, depth, limit, include_impl)
-
-        result = ContextResult(
-            target=node,
-            max_depth=depth,
-            used_by=used_by,
-            uses=uses,
-            definition=definition,
-        )
+        orchestrator = ContextOrchestrator(runner)
+        try:
+            result = orchestrator.execute_symbol(
+                symbol, depth=depth, limit=limit, include_impl=include_impl
+            )
+        except ValueError as e:
+            return {"error": str(e), "query": symbol}
 
         output = ContextOutput.from_result(result)
         return output.to_dict()
