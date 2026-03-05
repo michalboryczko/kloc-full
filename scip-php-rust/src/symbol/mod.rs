@@ -1,0 +1,1 @@
+//! SCIP symbol string construction.
