@@ -96,6 +96,61 @@ def compare_json(expected: Any, actual: Any, path: str = "$") -> list[FieldDiff]
     return diffs
 
 
+def _sort_constructor_deps(data: Any) -> Any:
+    """Sort constructorDeps arrays by name for order-insensitive comparison.
+
+    Neo4j doesn't preserve sot.json edge order, so constructorDeps ordering
+    may differ from kloc-cli. Sort both sides by 'name' before comparison.
+    """
+    if not isinstance(data, dict):
+        return data
+    data = dict(data)  # shallow copy
+    if "definition" in data and isinstance(data["definition"], dict):
+        defn = dict(data["definition"])
+        if "constructorDeps" in defn and isinstance(defn["constructorDeps"], list):
+            defn["constructorDeps"] = sorted(
+                defn["constructorDeps"],
+                key=lambda d: d.get("name", "") if isinstance(d, dict) else "",
+            )
+        data["definition"] = defn
+    return data
+
+
+def _entry_sort_key(entry: dict) -> tuple:
+    """Generate a sort key for usedBy/uses entries for order-insensitive comparison."""
+    return (
+        entry.get("fqn", ""),
+        entry.get("refType", ""),
+        entry.get("file", ""),
+        entry.get("line") or 0,
+    )
+
+
+def _sort_entries_recursive(entries: list) -> list:
+    """Sort a list of entries and their children recursively."""
+    sorted_entries = sorted(entries, key=_entry_sort_key)
+    for entry in sorted_entries:
+        if isinstance(entry, dict) and "children" in entry and isinstance(entry["children"], list):
+            entry["children"] = _sort_entries_recursive(entry["children"])
+    return sorted_entries
+
+
+def _sort_context_arrays(data: Any) -> Any:
+    """Sort usedBy/uses arrays for order-insensitive comparison.
+
+    Neo4j query execution order is non-deterministic, so context arrays
+    may differ in order from kloc-cli. Sort both sides by (fqn, refType, file, line).
+    Also recursively sorts children arrays.
+    """
+    if not isinstance(data, dict):
+        return data
+    data = dict(data)  # shallow copy
+    for key in ("usedBy", "uses"):
+        if key in data and isinstance(data[key], list):
+            data[key] = _sort_entries_recursive(data[key])
+    return data
+
+
 def compare_snapshot(query_id: str, golden: dict, actual_output: Any) -> ComparisonResult:
     """Compare kloc-intelligence output against golden file.
 
@@ -114,6 +169,12 @@ def compare_snapshot(query_id: str, golden: dict, actual_output: Any) -> Compari
             passed=False,
             diffs=[FieldDiff("$", "JSON output", None, "missing")],
         )
+
+    # Normalize ordering for Neo4j non-deterministic results
+    expected = _sort_constructor_deps(expected)
+    actual_output = _sort_constructor_deps(actual_output)
+    expected = _sort_context_arrays(expected)
+    actual_output = _sort_context_arrays(actual_output)
 
     diffs = compare_json(expected, actual_output)
 

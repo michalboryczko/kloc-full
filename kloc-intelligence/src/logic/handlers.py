@@ -42,6 +42,10 @@ class EdgeContext:
     containing_method_fqn: Optional[str] = None
     containing_method_kind: Optional[str] = None
     containing_class_id: Optional[str] = None
+    containing_class_fqn: Optional[str] = None
+    containing_class_kind: Optional[str] = None
+    containing_class_file: Optional[str] = None
+    containing_class_start_line: Optional[int] = None
 
     # Pre-fetched property data (for PropertyTypeHandler)
     resolved_property_id: Optional[str] = None
@@ -291,20 +295,13 @@ class ParamReturnHandler:
 
         # Group by containing class -- traverse up to find class
         cls_id = ctx.containing_class_id
-        cls_fqn = None
-        cls_kind = None
-        cls_file = None
-        cls_line = None
+        cls_fqn = ctx.containing_class_fqn
+        cls_kind = ctx.containing_class_kind
+        cls_file = ctx.containing_class_file
+        cls_line = ctx.containing_class_start_line
 
-        if cls_id:
-            # We have pre-fetched containing class data; but we need full node info
-            # For now, use source data to build the class-level entry
-            # The containing_class_id is set by the orchestrator
-            pass
-
-        # If we don't have class data pre-fetched, try to use source directly
-        # if it's already a class-kind node
-        if not cls_id:
+        # If we don't have class data, try to use source directly
+        if not cls_fqn:
             if ctx.source_kind in ("Class", "Interface", "Trait", "Enum"):
                 cls_id = ctx.source_id
                 cls_fqn = ctx.source_fqn

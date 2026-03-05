@@ -615,6 +615,115 @@ def overrides_cmd(
     conn.close()
 
 
+@app.command()
+def context(
+    query: str = typer.Argument(..., help="Symbol to get context for"),
+    depth: int = typer.Option(1, "--depth", "-d", help="BFS depth for expansion"),
+    limit: int = typer.Option(100, "--limit", "-l", help="Maximum results per direction"),
+    impl: bool = typer.Option(False, "--impl", help="Include polymorphic analysis"),
+    json_output: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
+) -> None:
+    """Get bidirectional context (used_by + uses + definition) for a symbol."""
+    import json as json_mod
+
+    from .db.query_runner import QueryRunner
+    from .db.queries.resolve import resolve_symbol
+    from .db.queries.definition import definition_for_node
+    from .orchestration.class_context import build_class_used_by, build_class_uses
+    from .models.results import ContextResult
+    from .models.output import ContextOutput
+
+    try:
+        conn = _get_connection()
+        conn.verify_connectivity()
+    except Neo4jConnectionError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(code=1)
+
+    runner = QueryRunner(conn)
+    candidates = resolve_symbol(runner, query)
+
+    if not candidates:
+        if json_output:
+            print(json_mod.dumps({"error": "Symbol not found", "query": query}, indent=2, ensure_ascii=False))
+        else:
+            console.print(f"[red]Symbol not found: {query}[/red]")
+        conn.close()
+        raise typer.Exit(code=1)
+
+    if len(candidates) > 1:
+        if json_output:
+            print(json_mod.dumps([
+                {
+                    "id": n.id,
+                    "kind": n.kind,
+                    "fqn": n.fqn,
+                    "file": n.file,
+                    "line": n.start_line + 1 if n.start_line is not None else None,
+                }
+                for n in candidates
+            ], indent=2, ensure_ascii=False))
+        else:
+            console.print(f"[yellow]Found {len(candidates)} candidates:[/yellow]")
+            for i, node in enumerate(candidates, 1):
+                console.print(f"  [{i}] {node.kind}: {node.fqn}")
+                console.print(f"      {node.location_str}")
+        conn.close()
+        raise typer.Exit(code=1)
+
+    node = candidates[0]
+
+    # Build definition
+    definition = definition_for_node(runner, node.node_id)
+
+    # Build used_by and uses based on node kind
+    used_by = []
+    uses = []
+
+    if node.kind in ("Class", "Enum"):
+        used_by = build_class_used_by(runner, node.node_id, depth, limit, impl)
+        uses = build_class_uses(runner, node.node_id, depth, limit, impl)
+    # TODO: Interface, Method, Property, Value context in T10/T11
+
+    result = ContextResult(
+        target=node,
+        max_depth=depth,
+        used_by=used_by,
+        uses=uses,
+        definition=definition,
+    )
+
+    if json_output:
+        output = ContextOutput.from_result(result)
+        print(json_mod.dumps(output.to_dict(), indent=2, ensure_ascii=False))
+    else:
+        console.print(f"[bold]Context for {node.fqn} (depth={depth}):[/bold]")
+        if result.definition:
+            console.print(f"  [bold]DEFINITION:[/bold] {result.definition.kind}: {result.definition.fqn}")
+        console.print(f"  [bold]USED BY ({len(result.used_by)}):[/bold]")
+        for entry in result.used_by:
+            _print_context_entry(entry)
+        console.print(f"  [bold]USES ({len(result.uses)}):[/bold]")
+        for entry in result.uses:
+            _print_context_entry(entry)
+
+    conn.close()
+
+
+def _print_context_entry(entry, indent: str = "    ") -> None:
+    """Print a context tree entry to console."""
+    ref_info = f" [{entry.ref_type}]" if entry.ref_type else ""
+    file_info = ""
+    if entry.file:
+        file_info = f" ({entry.file}"
+        if entry.line is not None:
+            file_info += f":{entry.line + 1}"
+        file_info += ")"
+    console.print(f"{indent}[{entry.depth}]{ref_info} {entry.fqn}{file_info}")
+    for child in entry.children:
+        _print_context_entry(child, indent + "  ")
+
+
 def _print_tree_entry(entry: dict, indent: str = "  ") -> None:
     """Print a tree entry to console with indentation."""
     file_info = ""

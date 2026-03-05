@@ -88,6 +88,7 @@ WHERE val.kind = 'Value' AND val.value_kind = 'parameter' AND val.fqn CONTAINS '
 OPTIONAL MATCH (prop)-[:TYPE_HINT]->(prop_type:Node)
 RETURN prop.name AS prop_name, prop.fqn AS prop_fqn,
        prop_type.name AS type_name
+ORDER BY val.start_line ASC
 """
 
 # ─────────────────────────────────────────────────────────────────────

@@ -112,6 +112,16 @@ def infer_reference_type(
         if target_kind == "Variable":
             return "variable_ref"
 
+    # TYPE_HINT edges: classify by source node kind
+    if edge_type == "type_hint" and source_kind:
+        if source_kind == "Argument":
+            return "parameter_type"
+        if source_kind == "Property":
+            return "property_type"
+        if source_kind in ("Method", "Function"):
+            return "return_type"
+        return "type_hint"
+
     # Fallback for unknown edge types or missing target node
     return "uses"
 

@@ -21,7 +21,7 @@ GOLDEN_DIR = Path(__file__).parent / "snapshots" / "golden"
 
 # Commands that have been implemented.
 # Updated as T04-T12 are completed.
-IMPLEMENTED_COMMANDS: set[str] = {"resolve", "usages", "deps", "owners", "inherit", "overrides"}
+IMPLEMENTED_COMMANDS: set[str] = {"resolve", "usages", "deps", "owners", "inherit", "overrides", "context"}
 
 
 def load_corpus():
@@ -177,6 +177,52 @@ def execute_query(connection, query):
         return overrides_tree_to_dict(
             result["root"], result["direction"], result["max_depth"], result["tree"]
         )
+
+    elif command == "context":
+        from src.db.queries.definition import definition_for_node
+        from src.orchestration.class_context import build_class_used_by, build_class_uses
+        from src.orchestration.generic_context import build_generic_used_by, build_generic_uses
+        from src.models.results import ContextResult
+        from src.models.output import ContextOutput
+
+        symbol = args[0]
+        depth = options.get("depth", 1)
+        limit = options.get("limit", 100)
+        include_impl = options.get("impl", False)
+
+        candidates = resolve_symbol(runner, symbol)
+        if not candidates:
+            return {"error": "Symbol not found", "query": symbol}
+
+        node = candidates[0]
+
+        # Build definition
+        definition = definition_for_node(runner, node.node_id)
+
+        # Build used_by and uses based on kind
+        used_by = []
+        uses = []
+
+        if node.kind == "Class":
+            # Class: grouped, sorted, deduped USED BY (build_class_used_by)
+            used_by = build_class_used_by(runner, node.node_id, depth, limit, include_impl)
+            uses = build_class_uses(runner, node.node_id, depth, limit, include_impl)
+        elif node.kind in ("Enum", "Trait"):
+            # Enum/Trait: generic build_tree (one entry per edge, no refType grouping)
+            used_by = build_generic_used_by(runner, node.node_id, depth, limit, include_impl)
+            uses = build_generic_uses(runner, node.node_id, depth, limit, include_impl)
+        # TODO: Interface, Method, Property, Value in T10/T11
+
+        result = ContextResult(
+            target=node,
+            max_depth=depth,
+            used_by=used_by,
+            uses=uses,
+            definition=definition,
+        )
+
+        output = ContextOutput.from_result(result)
+        return output.to_dict()
 
     # Other commands: not yet implemented
     raise NotImplementedError(f"Query not implemented: {command}")

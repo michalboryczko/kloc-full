@@ -7,6 +7,8 @@ from .owners import owners_chain
 from .inherit import inherit_tree
 from .overrides import overrides_tree
 from .definition import definition_for_node, fetch_definition_data
+from .context_class import fetch_class_used_by_data, fetch_caller_chain
+from .context_class_uses import fetch_class_uses_data
 
 __all__ = [
     "resolve_symbol",
@@ -16,4 +18,6 @@ __all__ = [
     "inherit_tree",
     "overrides_tree",
     "definition_for_node", "fetch_definition_data",
+    "fetch_class_used_by_data", "fetch_caller_chain",
+    "fetch_class_uses_data",
 ]
