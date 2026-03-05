@@ -1,5 +1,6 @@
 //! CST parsing via tree-sitter-php and AST adapter layer.
 
+pub mod ast;
 pub mod cst;
 pub mod position;
 
