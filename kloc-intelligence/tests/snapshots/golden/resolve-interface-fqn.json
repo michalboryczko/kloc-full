@@ -1,0 +1,12 @@
+{
+  "query_id": "resolve-interface-fqn",
+  "command": "resolve",
+  "args": [
+    "App\\Domain\\Repository\\EstateRepository"
+  ],
+  "options": {},
+  "exit_code": 0,
+  "stdout": "Interface: App\\Domain\\Repository\\EstateRepository\n  File: src/Domain/Repository/EstateRepository.php:10\n  Doc: ```php\ninterface EstateRepository\n```...\n",
+  "stderr": "warning: `VIRTUAL_ENV=/Users/michal/dev/ai/kloc/kloc-intelligence/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\n",
+  "json_output": null
+}

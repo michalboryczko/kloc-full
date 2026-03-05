@@ -1,0 +1,309 @@
+# Snapshot test corpus for kloc-intelligence behavioral parity validation.
+# Each query is run against both kloc-cli (golden) and kloc-intelligence (actual).
+# Dataset: data/uestate/sot.json (15K nodes, 33K edges)
+
+dataset: "data/uestate/sot.json"
+
+queries:
+  # === resolve ===
+  - id: resolve-class-fqn
+    command: resolve
+    args: ["App\\Domain\\Model\\Estate\\Estate"]
+    description: "Resolve class by exact FQN"
+
+  - id: resolve-method-fqn
+    command: resolve
+    args: ["App\\Domain\\Model\\Estate\\Estate::getId()"]
+    description: "Resolve method by FQN"
+
+  - id: resolve-interface-fqn
+    command: resolve
+    args: ["App\\Domain\\Repository\\EstateRepository"]
+    description: "Resolve interface by FQN"
+
+  - id: resolve-property-fqn
+    command: resolve
+    args: ["App\\Domain\\Model\\Estate\\Estate::$id"]
+    description: "Resolve property by FQN"
+
+  - id: resolve-const-fqn
+    command: resolve
+    args: ["App\\Infrastructure\\Persistence\\DataFixtures\\PropertyFixtures::PROPERTY_4_ID"]
+    description: "Resolve const by FQN"
+
+  - id: resolve-enum-fqn
+    command: resolve
+    args: ["App\\Domain\\Model\\DepositPolicyCharge\\ChargeType"]
+    description: "Resolve enum by FQN"
+
+  - id: resolve-no-match
+    command: resolve
+    args: ["NonExistentClass"]
+    description: "Resolve with no matches"
+
+  # === usages ===
+  - id: usages-class-flat
+    command: usages
+    args: ["App\\Domain\\Model\\Estate\\Estate"]
+    options: {json: true}
+    description: "Flat usages of a class"
+
+  - id: usages-class-depth2
+    command: usages
+    args: ["App\\Domain\\Model\\Estate\\Estate"]
+    options: {json: true, depth: 2}
+    description: "Usages tree at depth 2"
+
+  - id: usages-class-depth3
+    command: usages
+    args: ["App\\Domain\\Model\\Estate\\Estate"]
+    options: {json: true, depth: 3}
+    description: "Usages tree at depth 3"
+
+  - id: usages-method
+    command: usages
+    args: ["App\\Domain\\Model\\Estate\\Estate::getId()"]
+    options: {json: true}
+    description: "Usages of a method"
+
+  - id: usages-interface
+    command: usages
+    args: ["App\\Domain\\Repository\\EstateRepository"]
+    options: {json: true}
+    description: "Usages of an interface"
+
+  - id: usages-property
+    command: usages
+    args: ["App\\Domain\\Model\\Estate\\Estate::$id"]
+    options: {json: true}
+    description: "Usages of a property"
+
+  - id: usages-enum
+    command: usages
+    args: ["App\\Domain\\Model\\DepositPolicyCharge\\ChargeType"]
+    options: {json: true}
+    description: "Usages of an enum"
+
+  - id: usages-const
+    command: usages
+    args: ["App\\Infrastructure\\Persistence\\DataFixtures\\PropertyFixtures::PROPERTY_4_ID"]
+    options: {json: true}
+    description: "Usages of a constant"
+
+  # === deps ===
+  - id: deps-class-flat
+    command: deps
+    args: ["App\\Domain\\Model\\Estate\\Estate"]
+    options: {json: true}
+    description: "Flat dependencies of a class"
+
+  - id: deps-class-depth2
+    command: deps
+    args: ["App\\Domain\\Model\\Estate\\Estate"]
+    options: {json: true, depth: 2}
+    description: "Deps tree at depth 2"
+
+  - id: deps-method
+    command: deps
+    args: ["App\\Domain\\Model\\Estate\\Estate::getId()"]
+    options: {json: true}
+    description: "Dependencies of a method"
+
+  - id: deps-method-depth2
+    command: deps
+    args: ["App\\Domain\\Model\\Estate\\Estate::create()"]
+    options: {json: true, depth: 2}
+    description: "Method deps tree at depth 2"
+
+  - id: deps-interface
+    command: deps
+    args: ["App\\Domain\\Repository\\EstateRepository"]
+    options: {json: true}
+    description: "Dependencies of an interface"
+
+  - id: deps-enum
+    command: deps
+    args: ["App\\Domain\\Model\\DepositPolicyCharge\\ChargeType"]
+    options: {json: true}
+    description: "Dependencies of an enum"
+
+  # === owners ===
+  - id: owners-method
+    command: owners
+    args: ["App\\Domain\\Model\\Estate\\Estate::getId()"]
+    options: {json: true}
+    description: "Ownership chain for a method"
+
+  - id: owners-property
+    command: owners
+    args: ["App\\Domain\\Model\\Estate\\Estate::$id"]
+    options: {json: true}
+    description: "Ownership chain for a property"
+
+  - id: owners-class
+    command: owners
+    args: ["App\\Domain\\Model\\Estate\\Estate"]
+    options: {json: true}
+    description: "Ownership chain for a class (should be File only)"
+
+  - id: owners-const
+    command: owners
+    args: ["App\\Infrastructure\\Persistence\\DataFixtures\\PropertyFixtures::PROPERTY_4_ID"]
+    options: {json: true}
+    description: "Ownership chain for a constant"
+
+  - id: owners-enum-case
+    command: owners
+    args: ["App\\Domain\\Model\\DepositPolicyCharge\\ChargeType::PRIOR_TO_ARRIVAL"]
+    description: "Ownership chain for an enum case"
+    options: {json: true}
+
+  # === inherit ===
+  - id: inherit-class-up
+    command: inherit
+    args: ["App\\Application\\EventListener\\Estate\\EstateCreatedEventListener"]
+    options: {json: true, direction: "up"}
+    description: "Ancestors of a class (extends chain)"
+
+  - id: inherit-class-down
+    command: inherit
+    args: ["App\\Application\\EventListener\\AbstractEventListener"]
+    options: {json: true, direction: "down"}
+    description: "Descendants of a base class"
+
+  - id: inherit-interface-down
+    command: inherit
+    args: ["App\\Domain\\Repository\\EstateRepository"]
+    options: {json: true, direction: "down"}
+    description: "Implementors of an interface"
+
+  - id: inherit-interface-up
+    command: inherit
+    args: ["App\\Domain\\Repository\\EstateRepository"]
+    options: {json: true, direction: "up"}
+    description: "Parent interfaces"
+
+  - id: inherit-enum-up
+    command: inherit
+    args: ["App\\Domain\\Model\\DepositPolicyCharge\\ChargeType"]
+    options: {json: true, direction: "up"}
+    description: "Enum inheritance (should be empty or minimal)"
+
+  - id: inherit-class-depth2
+    command: inherit
+    args: ["App\\Application\\EventListener\\Estate\\EstateCreatedEventListener"]
+    options: {json: true, direction: "up", depth: 2}
+    description: "Multi-level inheritance"
+
+  # === overrides ===
+  - id: overrides-method-up
+    command: overrides
+    args: ["App\\Application\\EventListener\\Estate\\EstateCreatedEventListener::__construct()"]
+    options: {json: true, direction: "up"}
+    description: "Method overrides upward"
+
+  - id: overrides-method-down
+    command: overrides
+    args: ["App\\Application\\EventListener\\AbstractEventListener::__construct()"]
+    options: {json: true, direction: "down"}
+    description: "Method overrides downward"
+
+  - id: overrides-interface-method
+    command: overrides
+    args: ["App\\Application\\Dto\\Request\\ListPaginationDto::getLimit()"]
+    options: {json: true, direction: "up"}
+    description: "Interface method override"
+
+  - id: overrides-no-match
+    command: overrides
+    args: ["App\\Domain\\Model\\Estate\\Estate::getId()"]
+    options: {json: true, direction: "up"}
+    description: "Method with no overrides"
+
+  # === context ===
+  - id: context-class-d1
+    command: context
+    args: ["App\\Domain\\Model\\Estate\\Estate"]
+    options: {json: true, depth: 1}
+    description: "Class context at depth 1"
+
+  - id: context-class-d2
+    command: context
+    args: ["App\\Domain\\Model\\Estate\\Estate"]
+    options: {json: true, depth: 2}
+    description: "Class context at depth 2"
+
+  - id: context-interface-d1
+    command: context
+    args: ["App\\Domain\\Repository\\EstateRepository"]
+    options: {json: true, depth: 1}
+    description: "Interface context at depth 1"
+
+  - id: context-interface-d2
+    command: context
+    args: ["App\\Domain\\Repository\\EstateRepository"]
+    options: {json: true, depth: 2}
+    description: "Interface context at depth 2"
+
+  - id: context-method-d1
+    command: context
+    args: ["App\\Domain\\Model\\Estate\\Estate::create()"]
+    options: {json: true, depth: 1}
+    description: "Method context at depth 1"
+
+  - id: context-method-d2
+    command: context
+    args: ["App\\Domain\\Model\\Estate\\Estate::create()"]
+    options: {json: true, depth: 2}
+    description: "Method context at depth 2"
+
+  - id: context-property
+    command: context
+    args: ["App\\Domain\\Model\\Estate\\Estate::$id"]
+    options: {json: true, depth: 1}
+    description: "Property context"
+
+  - id: context-enum
+    command: context
+    args: ["App\\Domain\\Model\\DepositPolicyCharge\\ChargeType"]
+    options: {json: true, depth: 1}
+    description: "Enum context"
+
+  - id: context-const
+    command: context
+    args: ["App\\Infrastructure\\Persistence\\DataFixtures\\PropertyFixtures::PROPERTY_4_ID"]
+    options: {json: true, depth: 1}
+    description: "Constant context"
+
+  - id: context-trait
+    command: context
+    args: ["App\\Domain\\Model\\EnumHelper"]
+    options: {json: true, depth: 1}
+    description: "Trait context"
+
+  - id: context-file
+    command: context
+    args: ["src/Domain/Model/Estate/Estate.php"]
+    options: {json: true, depth: 1}
+    description: "File context"
+
+  - id: context-small-class
+    command: context
+    args: ["App\\Domain\\VO\\Country"]
+    options: {json: true, depth: 2}
+    description: "Small class context for easier diffing"
+
+  - id: context-factory
+    command: context
+    args: ["App\\Domain\\Factory\\Uuid\\DeterministicUuidFactory"]
+    options: {json: true, depth: 1}
+    description: "Factory class context"
+
+  - id: context-event
+    command: context
+    args: ["App\\Domain\\Event\\AbstractEvent"]
+    options: {json: true, depth: 1}
+    description: "Abstract event context"
+
+  # === import ===
+  # (import tested separately in T02, not snapshot-tested)

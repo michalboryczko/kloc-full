@@ -1,0 +1,723 @@
+{
+  "query_id": "usages-class-flat",
+  "command": "usages",
+  "args": [
+    "App\\Domain\\Model\\Estate\\Estate"
+  ],
+  "options": {
+    "json": true
+  },
+  "exit_code": 0,
+  "stdout": "{\n  \"target\": {\n    \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\Estate\",\n    \"file\": \"src/Domain/Model/Estate/Estate.php\"\n  },\n  \"max_depth\": 1,\n  \"total\": 100,\n  \"tree\": [\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\CancellationPolicy\\\\CancellationPolicy::getEstate()\",\n      \"file\": \"src/Domain/Model/CancellationPolicy/CancellationPolicy.php\",\n      \"line\": 74,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\RateTypeFixtures::createRateType()\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/RateTypeFixtures.php\",\n      \"line\": 83,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Dto\\\\DepositPolicy\\\\CreateDepositPolicyRequest::__construct()\",\n      \"file\": \"src/Ui/Dto/DepositPolicy/CreateDepositPolicyRequest.php\",\n      \"line\": 23,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Dto\\\\CancellationPolicy\\\\CreateCancellationPolicyRequest::__construct()\",\n      \"file\": \"src/Ui/Dto/CancellationPolicy/CreateCancellationPolicyRequest.php\",\n      \"line\": 41,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\PropertyFixtures::load()\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/PropertyFixtures.php\",\n      \"line\": 157,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Offer\\\\Offer::__construct()\",\n      \"file\": \"src/Domain/Model/Offer/Offer.php\",\n      \"line\": 17,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Infrastructure/Persistence/DataFixtures/DepositPolicyFixtures.php\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/DepositPolicyFixtures.php\",\n      \"line\": 16,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Offer\\\\Offer::create()\",\n      \"file\": \"src/Domain/Model/Offer/Offer.php\",\n      \"line\": 22,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Repository\\\\EstateRepository::get()\",\n      \"file\": \"src/Domain/Repository/EstateRepository.php\",\n      \"line\": 15,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Application/Estate/EstateStatusChecker.php\",\n      \"file\": \"src/Application/Estate/EstateStatusChecker.php\",\n      \"line\": 7,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"tests/Domain/Model/DepositPolicy/DepositPolicySoftDeleteTest.php\",\n      \"file\": \"tests/Domain/Model/DepositPolicy/DepositPolicySoftDeleteTest.php\",\n      \"line\": 11,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"tests/Application/Estate/EstateStatusCheckerTest.php\",\n      \"file\": \"tests/Application/Estate/EstateStatusCheckerTest.php\",\n      \"line\": 8,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Season\\\\Season::__construct()\",\n      \"file\": \"src/Domain/Model/Season/Season.php\",\n      \"line\": 23,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\DepositPolicy\\\\DepositPolicy::__construct()\",\n      \"file\": \"src/Domain/Model/DepositPolicy/DepositPolicy.php\",\n      \"line\": 20,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\Estate::create()\",\n      \"file\": \"src/Domain/Model/Estate/Estate.php\",\n      \"line\": 74,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Domain/Factory/EstateAdditionalFeeFactory.php\",\n      \"file\": \"src/Domain/Factory/EstateAdditionalFeeFactory.php\",\n      \"line\": 12,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicy\\\\DepositPolicySoftDeleteTest::testDepositPolicyCanBeSoftDeleted()\",\n      \"file\": \"tests/Domain/Model/DepositPolicy/DepositPolicySoftDeleteTest.php\",\n      \"line\": 19,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Application/EventListener/Estate/EstateUpdatedEventListener.php\",\n      \"file\": \"src/Application/EventListener/Estate/EstateUpdatedEventListener.php\",\n      \"line\": 13,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 15,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\UseCase\\\\UpdateEstate::updateContact()\",\n      \"file\": \"src/Application/Estate/UseCase/UpdateEstate.php\",\n      \"line\": 166,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\DepositPolicyFixtures::createDepositPolicy()\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/DepositPolicyFixtures.php\",\n      \"line\": 95,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeSoftDeleteTest::testDepositPolicyChargeCanBeSoftDeleted()\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeSoftDeleteTest.php\",\n      \"line\": 22,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Dto\\\\Property\\\\CreatePropertyRequest::__construct()\",\n      \"file\": \"src/Ui/Dto/Property/CreatePropertyRequest.php\",\n      \"line\": 27,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Property\\\\Property::getEstate()\",\n      \"file\": \"src/Domain/Model/Property/Property.php\",\n      \"line\": 61,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Dto\\\\Offer\\\\CreateOfferRequest::__construct()\",\n      \"file\": \"src/Ui/Dto/Offer/CreateOfferRequest.php\",\n      \"line\": 24,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Infrastructure/Persistence/DataFixtures/PropertyFixtures.php\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/PropertyFixtures.php\",\n      \"line\": 8,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\RateType\\\\RateType::__construct()\",\n      \"file\": \"src/Domain/Model/RateType/RateType.php\",\n      \"line\": 19,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"tests/Domain/Factory/SeasonDateRangeFactoryTest.php\",\n      \"file\": \"tests/Domain/Factory/SeasonDateRangeFactoryTest.php\",\n      \"line\": 9,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\AdditionalFee\\\\EstateAdditionalFee::create()\",\n      \"file\": \"src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php\",\n      \"line\": 35,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\DepositPolicy\\\\DepositPolicy::getEstate()\",\n      \"file\": \"src/Domain/Model/DepositPolicy/DepositPolicy.php\",\n      \"line\": 84,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Factory\\\\SeasonFactoryTest::testCreateWithGeneratedId()\",\n      \"file\": \"tests/Domain/Factory/SeasonFactoryTest.php\",\n      \"line\": 43,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\CancellationPolicy\\\\CancellationPolicy::create()\",\n      \"file\": \"src/Domain/Model/CancellationPolicy/CancellationPolicy.php\",\n      \"line\": 36,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\EstateFixtures::createEstate1()\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/EstateFixtures.php\",\n      \"line\": 136,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\CancellationPolicyFixtures::load()\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/CancellationPolicyFixtures.php\",\n      \"line\": 39,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Application\\\\Estate\\\\EstateStatusCheckerTest::testShouldSyncEstateData()\",\n      \"file\": \"tests/Application/Estate/EstateStatusCheckerTest.php\",\n      \"line\": 29,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Infrastructure/Persistence/Repository/EstateDoctrineRepository.php\",\n      \"file\": \"src/Infrastructure/Persistence/Repository/EstateDoctrineRepository.php\",\n      \"line\": 8,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Infrastructure/Persistence/DataFixtures/SeasonFixtures.php\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/SeasonFixtures.php\",\n      \"line\": 8,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php\",\n      \"file\": \"src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php\",\n      \"line\": 7,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Domain/Event/Estate/EstateAdditionalFeeUpdated.php\",\n      \"file\": \"src/Domain/Event/Estate/EstateAdditionalFeeUpdated.php\",\n      \"line\": 9,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\AdditionalFee\\\\EstateAdditionalFee::getEstate()\",\n      \"file\": \"src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php\",\n      \"line\": 54,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Domain/Event/Estate/EstateUpdated.php\",\n      \"file\": \"src/Domain/Event/Estate/EstateUpdated.php\",\n      \"line\": 8,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\UseCase\\\\UpdateEstate::__invoke()\",\n      \"file\": \"src/Application/Estate/UseCase/UpdateEstate.php\",\n      \"line\": 46,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Property\\\\Property::__construct()\",\n      \"file\": \"src/Domain/Model/Property/Property.php\",\n      \"line\": 23,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\OfferFixtures::createOffer()\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/OfferFixtures.php\",\n      \"line\": 79,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\AdditionalFee\\\\EstateAdditionalFee::__construct()\",\n      \"file\": \"src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php\",\n      \"line\": 23,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\UseCase\\\\UpdateEstate::updateLanguage()\",\n      \"file\": \"src/Application/Estate/UseCase/UpdateEstate.php\",\n      \"line\": 75,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Ui/Dto/Estate/CreateEstateRequest.php\",\n      \"file\": \"src/Ui/Dto/Estate/CreateEstateRequest.php\",\n      \"line\": 7,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Offer\\\\Offer::getEstate()\",\n      \"file\": \"src/Domain/Model/Offer/Offer.php\",\n      \"line\": 48,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Application/Estate/UseCase/CreateEstate.php\",\n      \"file\": \"src/Application/Estate/UseCase/CreateEstate.php\",\n      \"line\": 20,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Ui/Controller/Estate/EstateController.php\",\n      \"file\": \"src/Ui/Controller/Estate/EstateController.php\",\n      \"line\": 8,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Domain/Model/Season/Season.php\",\n      \"file\": \"src/Domain/Model/Season/Season.php\",\n      \"line\": 7,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Domain/Model/Property/Property.php\",\n      \"file\": \"src/Domain/Model/Property/Property.php\",\n      \"line\": 7,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\Repository\\\\EstateDoctrineRepository::save()\",\n      \"file\": \"src/Infrastructure/Persistence/Repository/EstateDoctrineRepository.php\",\n      \"line\": 35,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeSoftDeleteTest.php\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeSoftDeleteTest.php\",\n      \"line\": 14,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\CancellationPolicyFixtures::createCancellationPolicy()\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/CancellationPolicyFixtures.php\",\n      \"line\": 143,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Domain/Model/RateType/RateType.php\",\n      \"file\": \"src/Domain/Model/RateType/RateType.php\",\n      \"line\": 7,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\Repository\\\\EstateDoctrineRepository::__construct()\",\n      \"file\": \"src/Infrastructure/Persistence/Repository/EstateDoctrineRepository.php\",\n      \"line\": 21,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Ui/Dto/Offer/CreateOfferRequest.php\",\n      \"file\": \"src/Ui/Dto/Offer/CreateOfferRequest.php\",\n      \"line\": 7,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"tests/Domain/Factory/SeasonFactoryTest.php\",\n      \"file\": \"tests/Domain/Factory/SeasonFactoryTest.php\",\n      \"line\": 10,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Infrastructure/Persistence/DataFixtures/EstateFixtures.php\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/EstateFixtures.php\",\n      \"line\": 11,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Controller\\\\Estate\\\\EstateController::updateAction()\",\n      \"file\": \"src/Ui/Controller/Estate/EstateController.php\",\n      \"line\": 61,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Ui/Controller/Estate/EstateRateTypeController.php\",\n      \"file\": \"src/Ui/Controller/Estate/EstateRateTypeController.php\",\n      \"line\": 7,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\RateTypeFixtures::load()\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/RateTypeFixtures.php\",\n      \"line\": 50,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\AdditionalFee\\\\EstateAdditionalFee::setEstate()\",\n      \"file\": \"src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php\",\n      \"line\": 124,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Ui/Dto/Season/CreateSeasonRequest.php\",\n      \"file\": \"src/Ui/Dto/Season/CreateSeasonRequest.php\",\n      \"line\": 7,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Infrastructure/Persistence/DataFixtures/Bottles/PropertyFixtures.php\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/Bottles/PropertyFixtures.php\",\n      \"line\": 7,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Ui/Dto/RateType/CreateRateTypeRequest.php\",\n      \"file\": \"src/Ui/Dto/RateType/CreateRateTypeRequest.php\",\n      \"line\": 7,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\RateType\\\\RateType::create()\",\n      \"file\": \"src/Domain/Model/RateType/RateType.php\",\n      \"line\": 27,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\Bottles\\\\EstateFixtures::createEstates()\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/Bottles/EstateFixtures.php\",\n      \"line\": 41,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\UseCase\\\\UpdateEstate::updateAddress()\",\n      \"file\": \"src/Application/Estate/UseCase/UpdateEstate.php\",\n      \"line\": 101,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Season\\\\Season::getEstate()\",\n      \"file\": \"src/Domain/Model/Season/Season.php\",\n      \"line\": 44,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::setUp()\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 29,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicy\\\\DepositPolicySoftDeleteTest::testDepositPolicyCanBeUndeleted()\",\n      \"file\": \"tests/Domain/Model/DepositPolicy/DepositPolicySoftDeleteTest.php\",\n      \"line\": 45,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Ui/Dto/DepositPolicy/CreateDepositPolicyRequest.php\",\n      \"file\": \"src/Ui/Dto/DepositPolicy/CreateDepositPolicyRequest.php\",\n      \"line\": 10,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"tests/Domain/Factory/EstateFactoryTest.php\",\n      \"file\": \"tests/Domain/Factory/EstateFactoryTest.php\",\n      \"line\": 9,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Factory\\\\RateTypeFactoryTest::testCreateWithGeneratedIdWithNullName()\",\n      \"file\": \"tests/Domain/Factory/RateTypeFactoryTest.php\",\n      \"line\": 75,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Factory\\\\SeasonDateRangeFactoryTest::testCreateWithGeneratedIdThrowsOnInvalidDate()\",\n      \"file\": \"tests/Domain/Factory/SeasonDateRangeFactoryTest.php\",\n      \"line\": 90,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Factory\\\\EstateFactory::create()\",\n      \"file\": \"src/Domain/Factory/EstateFactory.php\",\n      \"line\": 45,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Dto\\\\Season\\\\UpdateSeasonRequest::__construct()\",\n      \"file\": \"src/Ui/Dto/Season/UpdateSeasonRequest.php\",\n      \"line\": 21,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Factory\\\\SeasonDateRangeFactoryTest::testCreateActiveWithGeneratedId()\",\n      \"file\": \"tests/Domain/Factory/SeasonDateRangeFactoryTest.php\",\n      \"line\": 40,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Dto\\\\Season\\\\CreateSeasonRequest::__construct()\",\n      \"file\": \"src/Ui/Dto/Season/CreateSeasonRequest.php\",\n      \"line\": 28,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Factory\\\\EstateAdditionalFeeFactory::create()\",\n      \"file\": \"src/Domain/Factory/EstateAdditionalFeeFactory.php\",\n      \"line\": 28,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\Repository\\\\EstateDoctrineRepository::get()\",\n      \"file\": \"src/Infrastructure/Persistence/Repository/EstateDoctrineRepository.php\",\n      \"line\": 24,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Domain/Model/CancellationPolicy/CancellationPolicy.php\",\n      \"file\": \"src/Domain/Model/CancellationPolicy/CancellationPolicy.php\",\n      \"line\": 7,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"tests/Domain/Factory/RateTypeFactoryTest.php\",\n      \"file\": \"tests/Domain/Factory/RateTypeFactoryTest.php\",\n      \"line\": 10,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Repository\\\\EstateRepository::save()\",\n      \"file\": \"src/Domain/Repository/EstateRepository.php\",\n      \"line\": 17,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Controller\\\\Estate\\\\EstateRateTypeController::getRateTypesAction()\",\n      \"file\": \"src/Ui/Controller/Estate/EstateRateTypeController.php\",\n      \"line\": 45,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Infrastructure/Persistence/DataFixtures/Bottles/EstateFixtures.php\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/Bottles/EstateFixtures.php\",\n      \"line\": 7,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Domain/Model/DepositPolicy/DepositPolicy.php\",\n      \"file\": \"src/Domain/Model/DepositPolicy/DepositPolicy.php\",\n      \"line\": 8,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Factory\\\\Estate\\\\GetEstateResponseFactory::__invoke()\",\n      \"file\": \"src/Ui/Factory/Estate/GetEstateResponseFactory.php\",\n      \"line\": 19,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\RateType\\\\RateType::getEstate()\",\n      \"file\": \"src/Domain/Model/RateType/RateType.php\",\n      \"line\": 55,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Application/EventListener/Estate/EstateCreatedEventListener.php\",\n      \"file\": \"src/Application/EventListener/Estate/EstateCreatedEventListener.php\",\n      \"line\": 12,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Factory\\\\SeasonDateRangeFactoryTest::testCreateDeletedWithGeneratedId()\",\n      \"file\": \"tests/Domain/Factory/SeasonDateRangeFactoryTest.php\",\n      \"line\": 67,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Ui/Dto/CancellationPolicy/CreateCancellationPolicyRequest.php\",\n      \"file\": \"src/Ui/Dto/CancellationPolicy/CreateCancellationPolicyRequest.php\",\n      \"line\": 10,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"src/Infrastructure/Persistence/DataFixtures/RateTypeFixtures.php\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/RateTypeFixtures.php\",\n      \"line\": 8,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\EstateFixtures::createEstate0()\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/EstateFixtures.php\",\n      \"line\": 61,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\UseCase\\\\CreateEstate::__invoke()\",\n      \"file\": \"src/Application/Estate/UseCase/CreateEstate.php\",\n      \"line\": 48,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\CancellationPolicy\\\\CancellationPolicy::__construct()\",\n      \"file\": \"src/Domain/Model/CancellationPolicy/CancellationPolicy.php\",\n      \"line\": 22,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\Bottles\\\\PropertyFixtures::load()\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/Bottles/PropertyFixtures.php\",\n      \"line\": 34,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\UseCase\\\\UpdateEstate::updateHotelTax()\",\n      \"file\": \"src/Application/Estate/UseCase/UpdateEstate.php\",\n      \"line\": 206,\n      \"children\": []\n    }\n  ]\n}\n",
+  "stderr": "warning: `VIRTUAL_ENV=/Users/michal/dev/ai/kloc/kloc-intelligence/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\n",
+  "json_output": {
+    "target": {
+      "fqn": "App\\Domain\\Model\\Estate\\Estate",
+      "file": "src/Domain/Model/Estate/Estate.php"
+    },
+    "max_depth": 1,
+    "total": 100,
+    "tree": [
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\CancellationPolicy\\CancellationPolicy::getEstate()",
+        "file": "src/Domain/Model/CancellationPolicy/CancellationPolicy.php",
+        "line": 74,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\RateTypeFixtures::createRateType()",
+        "file": "src/Infrastructure/Persistence/DataFixtures/RateTypeFixtures.php",
+        "line": 83,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Dto\\DepositPolicy\\CreateDepositPolicyRequest::__construct()",
+        "file": "src/Ui/Dto/DepositPolicy/CreateDepositPolicyRequest.php",
+        "line": 23,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Dto\\CancellationPolicy\\CreateCancellationPolicyRequest::__construct()",
+        "file": "src/Ui/Dto/CancellationPolicy/CreateCancellationPolicyRequest.php",
+        "line": 41,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\PropertyFixtures::load()",
+        "file": "src/Infrastructure/Persistence/DataFixtures/PropertyFixtures.php",
+        "line": 157,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Offer\\Offer::__construct()",
+        "file": "src/Domain/Model/Offer/Offer.php",
+        "line": 17,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Infrastructure/Persistence/DataFixtures/DepositPolicyFixtures.php",
+        "file": "src/Infrastructure/Persistence/DataFixtures/DepositPolicyFixtures.php",
+        "line": 16,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Offer\\Offer::create()",
+        "file": "src/Domain/Model/Offer/Offer.php",
+        "line": 22,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Repository\\EstateRepository::get()",
+        "file": "src/Domain/Repository/EstateRepository.php",
+        "line": 15,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Application/Estate/EstateStatusChecker.php",
+        "file": "src/Application/Estate/EstateStatusChecker.php",
+        "line": 7,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "tests/Domain/Model/DepositPolicy/DepositPolicySoftDeleteTest.php",
+        "file": "tests/Domain/Model/DepositPolicy/DepositPolicySoftDeleteTest.php",
+        "line": 11,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "tests/Application/Estate/EstateStatusCheckerTest.php",
+        "file": "tests/Application/Estate/EstateStatusCheckerTest.php",
+        "line": 8,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Season\\Season::__construct()",
+        "file": "src/Domain/Model/Season/Season.php",
+        "line": 23,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\DepositPolicy\\DepositPolicy::__construct()",
+        "file": "src/Domain/Model/DepositPolicy/DepositPolicy.php",
+        "line": 20,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Estate\\Estate::create()",
+        "file": "src/Domain/Model/Estate/Estate.php",
+        "line": 74,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Domain/Factory/EstateAdditionalFeeFactory.php",
+        "file": "src/Domain/Factory/EstateAdditionalFeeFactory.php",
+        "line": 12,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicy\\DepositPolicySoftDeleteTest::testDepositPolicyCanBeSoftDeleted()",
+        "file": "tests/Domain/Model/DepositPolicy/DepositPolicySoftDeleteTest.php",
+        "line": 19,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Application/EventListener/Estate/EstateUpdatedEventListener.php",
+        "file": "src/Application/EventListener/Estate/EstateUpdatedEventListener.php",
+        "line": 13,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 15,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\UseCase\\UpdateEstate::updateContact()",
+        "file": "src/Application/Estate/UseCase/UpdateEstate.php",
+        "line": 166,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\DepositPolicyFixtures::createDepositPolicy()",
+        "file": "src/Infrastructure/Persistence/DataFixtures/DepositPolicyFixtures.php",
+        "line": 95,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeSoftDeleteTest::testDepositPolicyChargeCanBeSoftDeleted()",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeSoftDeleteTest.php",
+        "line": 22,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Dto\\Property\\CreatePropertyRequest::__construct()",
+        "file": "src/Ui/Dto/Property/CreatePropertyRequest.php",
+        "line": 27,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Property\\Property::getEstate()",
+        "file": "src/Domain/Model/Property/Property.php",
+        "line": 61,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Dto\\Offer\\CreateOfferRequest::__construct()",
+        "file": "src/Ui/Dto/Offer/CreateOfferRequest.php",
+        "line": 24,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Infrastructure/Persistence/DataFixtures/PropertyFixtures.php",
+        "file": "src/Infrastructure/Persistence/DataFixtures/PropertyFixtures.php",
+        "line": 8,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\RateType\\RateType::__construct()",
+        "file": "src/Domain/Model/RateType/RateType.php",
+        "line": 19,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "tests/Domain/Factory/SeasonDateRangeFactoryTest.php",
+        "file": "tests/Domain/Factory/SeasonDateRangeFactoryTest.php",
+        "line": 9,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Estate\\AdditionalFee\\EstateAdditionalFee::create()",
+        "file": "src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php",
+        "line": 35,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\DepositPolicy\\DepositPolicy::getEstate()",
+        "file": "src/Domain/Model/DepositPolicy/DepositPolicy.php",
+        "line": 84,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Factory\\SeasonFactoryTest::testCreateWithGeneratedId()",
+        "file": "tests/Domain/Factory/SeasonFactoryTest.php",
+        "line": 43,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\CancellationPolicy\\CancellationPolicy::create()",
+        "file": "src/Domain/Model/CancellationPolicy/CancellationPolicy.php",
+        "line": 36,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\EstateFixtures::createEstate1()",
+        "file": "src/Infrastructure/Persistence/DataFixtures/EstateFixtures.php",
+        "line": 136,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\CancellationPolicyFixtures::load()",
+        "file": "src/Infrastructure/Persistence/DataFixtures/CancellationPolicyFixtures.php",
+        "line": 39,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Application\\Estate\\EstateStatusCheckerTest::testShouldSyncEstateData()",
+        "file": "tests/Application/Estate/EstateStatusCheckerTest.php",
+        "line": 29,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Infrastructure/Persistence/Repository/EstateDoctrineRepository.php",
+        "file": "src/Infrastructure/Persistence/Repository/EstateDoctrineRepository.php",
+        "line": 8,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Infrastructure/Persistence/DataFixtures/SeasonFixtures.php",
+        "file": "src/Infrastructure/Persistence/DataFixtures/SeasonFixtures.php",
+        "line": 8,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php",
+        "file": "src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php",
+        "line": 7,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Domain/Event/Estate/EstateAdditionalFeeUpdated.php",
+        "file": "src/Domain/Event/Estate/EstateAdditionalFeeUpdated.php",
+        "line": 9,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Estate\\AdditionalFee\\EstateAdditionalFee::getEstate()",
+        "file": "src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php",
+        "line": 54,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Domain/Event/Estate/EstateUpdated.php",
+        "file": "src/Domain/Event/Estate/EstateUpdated.php",
+        "line": 8,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\UseCase\\UpdateEstate::__invoke()",
+        "file": "src/Application/Estate/UseCase/UpdateEstate.php",
+        "line": 46,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Property\\Property::__construct()",
+        "file": "src/Domain/Model/Property/Property.php",
+        "line": 23,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\OfferFixtures::createOffer()",
+        "file": "src/Infrastructure/Persistence/DataFixtures/OfferFixtures.php",
+        "line": 79,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Estate\\AdditionalFee\\EstateAdditionalFee::__construct()",
+        "file": "src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php",
+        "line": 23,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\UseCase\\UpdateEstate::updateLanguage()",
+        "file": "src/Application/Estate/UseCase/UpdateEstate.php",
+        "line": 75,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Ui/Dto/Estate/CreateEstateRequest.php",
+        "file": "src/Ui/Dto/Estate/CreateEstateRequest.php",
+        "line": 7,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Offer\\Offer::getEstate()",
+        "file": "src/Domain/Model/Offer/Offer.php",
+        "line": 48,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Application/Estate/UseCase/CreateEstate.php",
+        "file": "src/Application/Estate/UseCase/CreateEstate.php",
+        "line": 20,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Ui/Controller/Estate/EstateController.php",
+        "file": "src/Ui/Controller/Estate/EstateController.php",
+        "line": 8,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Domain/Model/Season/Season.php",
+        "file": "src/Domain/Model/Season/Season.php",
+        "line": 7,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Domain/Model/Property/Property.php",
+        "file": "src/Domain/Model/Property/Property.php",
+        "line": 7,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\Repository\\EstateDoctrineRepository::save()",
+        "file": "src/Infrastructure/Persistence/Repository/EstateDoctrineRepository.php",
+        "line": 35,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeSoftDeleteTest.php",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeSoftDeleteTest.php",
+        "line": 14,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\CancellationPolicyFixtures::createCancellationPolicy()",
+        "file": "src/Infrastructure/Persistence/DataFixtures/CancellationPolicyFixtures.php",
+        "line": 143,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Domain/Model/RateType/RateType.php",
+        "file": "src/Domain/Model/RateType/RateType.php",
+        "line": 7,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\Repository\\EstateDoctrineRepository::__construct()",
+        "file": "src/Infrastructure/Persistence/Repository/EstateDoctrineRepository.php",
+        "line": 21,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Ui/Dto/Offer/CreateOfferRequest.php",
+        "file": "src/Ui/Dto/Offer/CreateOfferRequest.php",
+        "line": 7,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "tests/Domain/Factory/SeasonFactoryTest.php",
+        "file": "tests/Domain/Factory/SeasonFactoryTest.php",
+        "line": 10,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Infrastructure/Persistence/DataFixtures/EstateFixtures.php",
+        "file": "src/Infrastructure/Persistence/DataFixtures/EstateFixtures.php",
+        "line": 11,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Controller\\Estate\\EstateController::updateAction()",
+        "file": "src/Ui/Controller/Estate/EstateController.php",
+        "line": 61,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Ui/Controller/Estate/EstateRateTypeController.php",
+        "file": "src/Ui/Controller/Estate/EstateRateTypeController.php",
+        "line": 7,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\RateTypeFixtures::load()",
+        "file": "src/Infrastructure/Persistence/DataFixtures/RateTypeFixtures.php",
+        "line": 50,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Estate\\AdditionalFee\\EstateAdditionalFee::setEstate()",
+        "file": "src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php",
+        "line": 124,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Ui/Dto/Season/CreateSeasonRequest.php",
+        "file": "src/Ui/Dto/Season/CreateSeasonRequest.php",
+        "line": 7,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Infrastructure/Persistence/DataFixtures/Bottles/PropertyFixtures.php",
+        "file": "src/Infrastructure/Persistence/DataFixtures/Bottles/PropertyFixtures.php",
+        "line": 7,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Ui/Dto/RateType/CreateRateTypeRequest.php",
+        "file": "src/Ui/Dto/RateType/CreateRateTypeRequest.php",
+        "line": 7,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\RateType\\RateType::create()",
+        "file": "src/Domain/Model/RateType/RateType.php",
+        "line": 27,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\Bottles\\EstateFixtures::createEstates()",
+        "file": "src/Infrastructure/Persistence/DataFixtures/Bottles/EstateFixtures.php",
+        "line": 41,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\UseCase\\UpdateEstate::updateAddress()",
+        "file": "src/Application/Estate/UseCase/UpdateEstate.php",
+        "line": 101,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Season\\Season::getEstate()",
+        "file": "src/Domain/Model/Season/Season.php",
+        "line": 44,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::setUp()",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 29,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicy\\DepositPolicySoftDeleteTest::testDepositPolicyCanBeUndeleted()",
+        "file": "tests/Domain/Model/DepositPolicy/DepositPolicySoftDeleteTest.php",
+        "line": 45,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Ui/Dto/DepositPolicy/CreateDepositPolicyRequest.php",
+        "file": "src/Ui/Dto/DepositPolicy/CreateDepositPolicyRequest.php",
+        "line": 10,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "tests/Domain/Factory/EstateFactoryTest.php",
+        "file": "tests/Domain/Factory/EstateFactoryTest.php",
+        "line": 9,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Factory\\RateTypeFactoryTest::testCreateWithGeneratedIdWithNullName()",
+        "file": "tests/Domain/Factory/RateTypeFactoryTest.php",
+        "line": 75,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Factory\\SeasonDateRangeFactoryTest::testCreateWithGeneratedIdThrowsOnInvalidDate()",
+        "file": "tests/Domain/Factory/SeasonDateRangeFactoryTest.php",
+        "line": 90,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Factory\\EstateFactory::create()",
+        "file": "src/Domain/Factory/EstateFactory.php",
+        "line": 45,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Dto\\Season\\UpdateSeasonRequest::__construct()",
+        "file": "src/Ui/Dto/Season/UpdateSeasonRequest.php",
+        "line": 21,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Factory\\SeasonDateRangeFactoryTest::testCreateActiveWithGeneratedId()",
+        "file": "tests/Domain/Factory/SeasonDateRangeFactoryTest.php",
+        "line": 40,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Dto\\Season\\CreateSeasonRequest::__construct()",
+        "file": "src/Ui/Dto/Season/CreateSeasonRequest.php",
+        "line": 28,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Factory\\EstateAdditionalFeeFactory::create()",
+        "file": "src/Domain/Factory/EstateAdditionalFeeFactory.php",
+        "line": 28,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\Repository\\EstateDoctrineRepository::get()",
+        "file": "src/Infrastructure/Persistence/Repository/EstateDoctrineRepository.php",
+        "line": 24,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Domain/Model/CancellationPolicy/CancellationPolicy.php",
+        "file": "src/Domain/Model/CancellationPolicy/CancellationPolicy.php",
+        "line": 7,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "tests/Domain/Factory/RateTypeFactoryTest.php",
+        "file": "tests/Domain/Factory/RateTypeFactoryTest.php",
+        "line": 10,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Repository\\EstateRepository::save()",
+        "file": "src/Domain/Repository/EstateRepository.php",
+        "line": 17,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Controller\\Estate\\EstateRateTypeController::getRateTypesAction()",
+        "file": "src/Ui/Controller/Estate/EstateRateTypeController.php",
+        "line": 45,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Infrastructure/Persistence/DataFixtures/Bottles/EstateFixtures.php",
+        "file": "src/Infrastructure/Persistence/DataFixtures/Bottles/EstateFixtures.php",
+        "line": 7,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Domain/Model/DepositPolicy/DepositPolicy.php",
+        "file": "src/Domain/Model/DepositPolicy/DepositPolicy.php",
+        "line": 8,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Factory\\Estate\\GetEstateResponseFactory::__invoke()",
+        "file": "src/Ui/Factory/Estate/GetEstateResponseFactory.php",
+        "line": 19,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\RateType\\RateType::getEstate()",
+        "file": "src/Domain/Model/RateType/RateType.php",
+        "line": 55,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Application/EventListener/Estate/EstateCreatedEventListener.php",
+        "file": "src/Application/EventListener/Estate/EstateCreatedEventListener.php",
+        "line": 12,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Factory\\SeasonDateRangeFactoryTest::testCreateDeletedWithGeneratedId()",
+        "file": "tests/Domain/Factory/SeasonDateRangeFactoryTest.php",
+        "line": 67,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Ui/Dto/CancellationPolicy/CreateCancellationPolicyRequest.php",
+        "file": "src/Ui/Dto/CancellationPolicy/CreateCancellationPolicyRequest.php",
+        "line": 10,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "src/Infrastructure/Persistence/DataFixtures/RateTypeFixtures.php",
+        "file": "src/Infrastructure/Persistence/DataFixtures/RateTypeFixtures.php",
+        "line": 8,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\EstateFixtures::createEstate0()",
+        "file": "src/Infrastructure/Persistence/DataFixtures/EstateFixtures.php",
+        "line": 61,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\UseCase\\CreateEstate::__invoke()",
+        "file": "src/Application/Estate/UseCase/CreateEstate.php",
+        "line": 48,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\CancellationPolicy\\CancellationPolicy::__construct()",
+        "file": "src/Domain/Model/CancellationPolicy/CancellationPolicy.php",
+        "line": 22,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\Bottles\\PropertyFixtures::load()",
+        "file": "src/Infrastructure/Persistence/DataFixtures/Bottles/PropertyFixtures.php",
+        "line": 34,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\UseCase\\UpdateEstate::updateHotelTax()",
+        "file": "src/Application/Estate/UseCase/UpdateEstate.php",
+        "line": 206,
+        "children": []
+      }
+    ]
+  }
+}

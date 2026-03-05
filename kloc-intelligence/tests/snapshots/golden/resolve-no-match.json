@@ -1,0 +1,12 @@
+{
+  "query_id": "resolve-no-match",
+  "command": "resolve",
+  "args": [
+    "NonExistentClass"
+  ],
+  "options": {},
+  "exit_code": 1,
+  "stdout": "Symbol not found: NonExistentClass\n",
+  "stderr": "warning: `VIRTUAL_ENV=/Users/michal/dev/ai/kloc/kloc-intelligence/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\n",
+  "json_output": null
+}

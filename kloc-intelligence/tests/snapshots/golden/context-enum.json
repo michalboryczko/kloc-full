@@ -1,0 +1,371 @@
+{
+  "query_id": "context-enum",
+  "command": "context",
+  "args": [
+    "App\\Domain\\Model\\DepositPolicyCharge\\ChargeType"
+  ],
+  "options": {
+    "json": true,
+    "depth": 1
+  },
+  "exit_code": 0,
+  "stdout": "{\n  \"target\": {\n    \"fqn\": \"App\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\ChargeType\",\n    \"file\": \"src/Domain/Model/DepositPolicyCharge/ChargeType.php\",\n    \"line\": 9\n  },\n  \"maxDepth\": 1,\n  \"usedBy\": [\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Factory\\\\DepositPolicyCharge\\\\DepositPolicyChargeFactory::createWithGeneratedId()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Domain/Factory/DepositPolicyCharge/DepositPolicyChargeFactory.php\",\n      \"line\": 50,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyCharge::__construct()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Domain/Model/DepositPolicyCharge/DepositPolicyCharge.php\",\n      \"line\": 18,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyCharge::create()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Domain/Model/DepositPolicyCharge/DepositPolicyCharge.php\",\n      \"line\": 36,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyCharge::update()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Domain/Model/DepositPolicyCharge/DepositPolicyCharge.php\",\n      \"line\": 62,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyCharge::getChargeType()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Domain/Model/DepositPolicyCharge/DepositPolicyCharge.php\",\n      \"line\": 148,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\DepositPolicyChargeFixtures::load()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/DepositPolicyChargeFixtures.php\",\n      \"line\": 41,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\DepositPolicyChargeFixtures::load()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/DepositPolicyChargeFixtures.php\",\n      \"line\": 41,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\DepositPolicyChargeFixtures::load()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/DepositPolicyChargeFixtures.php\",\n      \"line\": 56,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\DepositPolicyChargeFixtures::load()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/DepositPolicyChargeFixtures.php\",\n      \"line\": 71,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\DepositPolicyChargeFixtures::createDepositPolicyCharge()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/DepositPolicyChargeFixtures.php\",\n      \"line\": 92,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Dto\\\\DepositPolicyCharge\\\\CreateDepositPolicyChargeRequest::__construct()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Dto/DepositPolicyCharge/CreateDepositPolicyChargeRequest.php\",\n      \"line\": 26,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Dto\\\\DepositPolicyCharge\\\\UpdateDepositPolicyChargeRequest::__construct()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Dto/DepositPolicyCharge/UpdateDepositPolicyChargeRequest.php\",\n      \"line\": 16,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Service\\\\DepositPolicyCharge\\\\UpdateDepositPolicyChargeHandler::execute()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Service/DepositPolicyCharge/UpdateDepositPolicyChargeHandler.php\",\n      \"line\": 29,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeSoftDeleteTest::testDepositPolicyChargeCanBeSoftDeleted()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeSoftDeleteTest.php\",\n      \"line\": 39,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeSoftDeleteTest::testDepositPolicyChargeCanBeSoftDeleted()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeSoftDeleteTest.php\",\n      \"line\": 39,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testCreateSuccessWithNumberDaysBeforeArrival()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 53,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testCreateSuccessWithNumberDaysBeforeArrival()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 53,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testCreateSuccessWithAtTimeOfBooking()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 84,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testCreateSuccessWithAtTimeOfBooking()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 84,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testCreateFailsWhenDepositDueDaysIsNullForNumberDaysBeforeArrival()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 110,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testCreateFailsWhenDepositDueDaysIsNullForNumberDaysBeforeArrival()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 110,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testCreateFailsWhenDepositDueDaysIsNullForNumberDaysAfterBooking()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 133,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testCreateFailsWhenDepositDueDaysIsNullForNumberDaysAfterBooking()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 133,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testCreateFailsWhenDepositDueDaysIsNotNullForAtTimeOfBooking()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 156,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testCreateFailsWhenDepositDueDaysIsNotNullForAtTimeOfBooking()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 156,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testCreateFailsWhenDepositDueDaysIsTooLow()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 179,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testCreateFailsWhenDepositDueDaysIsTooLow()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 179,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testCreateFailsWhenDepositDueDaysIsTooHigh()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 202,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testCreateFailsWhenDepositDueDaysIsTooHigh()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 202,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testCreateFailsWhenChargeValueIsNegative()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 225,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testCreateFailsWhenChargeValueIsNegative()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 225,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testCreateFailsWhenDepositOrPrepaymentDueTimeIsTooLow()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 248,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testCreateFailsWhenDepositOrPrepaymentDueTimeIsTooLow()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 248,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testCreateFailsWhenDepositOrPrepaymentDueTimeIsTooHigh()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 271,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testCreateFailsWhenDepositOrPrepaymentDueTimeIsTooHigh()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 271,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testUpdateSuccessfully()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 291,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testUpdateSuccessfully()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 291,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testUpdateSuccessfully()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 303,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testUpdateFailsWithInvalidDepositDueDays()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 332,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testUpdateFailsWithInvalidDepositDueDays()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 332,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\DepositPolicyChargeTest::testUpdateFailsWithInvalidDepositDueDays()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php\",\n      \"line\": 347,\n      \"children\": []\n    }\n  ],\n  \"uses\": [\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\EnumHelper\",\n      \"kind\": \"Trait\",\n      \"file\": \"src/Domain/Model/DepositPolicyCharge/ChargeType.php\",\n      \"line\": 11,\n      \"children\": []\n    }\n  ],\n  \"definition\": {\n    \"fqn\": \"App\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\ChargeType\",\n    \"kind\": \"Enum\",\n    \"file\": \"src/Domain/Model/DepositPolicyCharge/ChargeType.php\",\n    \"line\": 9,\n    \"uses_traits\": [\n      \"App\\\\Domain\\\\Model\\\\EnumHelper\"\n    ]\n  }\n}\n",
+  "stderr": "warning: `VIRTUAL_ENV=/Users/michal/dev/ai/kloc/kloc-intelligence/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\n",
+  "json_output": {
+    "target": {
+      "fqn": "App\\Domain\\Model\\DepositPolicyCharge\\ChargeType",
+      "file": "src/Domain/Model/DepositPolicyCharge/ChargeType.php",
+      "line": 9
+    },
+    "maxDepth": 1,
+    "usedBy": [
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Factory\\DepositPolicyCharge\\DepositPolicyChargeFactory::createWithGeneratedId()",
+        "kind": "Method",
+        "file": "src/Domain/Factory/DepositPolicyCharge/DepositPolicyChargeFactory.php",
+        "line": 50,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyCharge::__construct()",
+        "kind": "Method",
+        "file": "src/Domain/Model/DepositPolicyCharge/DepositPolicyCharge.php",
+        "line": 18,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyCharge::create()",
+        "kind": "Method",
+        "file": "src/Domain/Model/DepositPolicyCharge/DepositPolicyCharge.php",
+        "line": 36,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyCharge::update()",
+        "kind": "Method",
+        "file": "src/Domain/Model/DepositPolicyCharge/DepositPolicyCharge.php",
+        "line": 62,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyCharge::getChargeType()",
+        "kind": "Method",
+        "file": "src/Domain/Model/DepositPolicyCharge/DepositPolicyCharge.php",
+        "line": 148,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\DepositPolicyChargeFixtures::load()",
+        "kind": "Method",
+        "file": "src/Infrastructure/Persistence/DataFixtures/DepositPolicyChargeFixtures.php",
+        "line": 41,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\DepositPolicyChargeFixtures::load()",
+        "kind": "Method",
+        "file": "src/Infrastructure/Persistence/DataFixtures/DepositPolicyChargeFixtures.php",
+        "line": 41,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\DepositPolicyChargeFixtures::load()",
+        "kind": "Method",
+        "file": "src/Infrastructure/Persistence/DataFixtures/DepositPolicyChargeFixtures.php",
+        "line": 56,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\DepositPolicyChargeFixtures::load()",
+        "kind": "Method",
+        "file": "src/Infrastructure/Persistence/DataFixtures/DepositPolicyChargeFixtures.php",
+        "line": 71,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\DepositPolicyChargeFixtures::createDepositPolicyCharge()",
+        "kind": "Method",
+        "file": "src/Infrastructure/Persistence/DataFixtures/DepositPolicyChargeFixtures.php",
+        "line": 92,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Dto\\DepositPolicyCharge\\CreateDepositPolicyChargeRequest::__construct()",
+        "kind": "Method",
+        "file": "src/Ui/Dto/DepositPolicyCharge/CreateDepositPolicyChargeRequest.php",
+        "line": 26,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Dto\\DepositPolicyCharge\\UpdateDepositPolicyChargeRequest::__construct()",
+        "kind": "Method",
+        "file": "src/Ui/Dto/DepositPolicyCharge/UpdateDepositPolicyChargeRequest.php",
+        "line": 16,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Service\\DepositPolicyCharge\\UpdateDepositPolicyChargeHandler::execute()",
+        "kind": "Method",
+        "file": "src/Ui/Service/DepositPolicyCharge/UpdateDepositPolicyChargeHandler.php",
+        "line": 29,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeSoftDeleteTest::testDepositPolicyChargeCanBeSoftDeleted()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeSoftDeleteTest.php",
+        "line": 39,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeSoftDeleteTest::testDepositPolicyChargeCanBeSoftDeleted()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeSoftDeleteTest.php",
+        "line": 39,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testCreateSuccessWithNumberDaysBeforeArrival()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 53,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testCreateSuccessWithNumberDaysBeforeArrival()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 53,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testCreateSuccessWithAtTimeOfBooking()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 84,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testCreateSuccessWithAtTimeOfBooking()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 84,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testCreateFailsWhenDepositDueDaysIsNullForNumberDaysBeforeArrival()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 110,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testCreateFailsWhenDepositDueDaysIsNullForNumberDaysBeforeArrival()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 110,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testCreateFailsWhenDepositDueDaysIsNullForNumberDaysAfterBooking()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 133,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testCreateFailsWhenDepositDueDaysIsNullForNumberDaysAfterBooking()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 133,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testCreateFailsWhenDepositDueDaysIsNotNullForAtTimeOfBooking()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 156,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testCreateFailsWhenDepositDueDaysIsNotNullForAtTimeOfBooking()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 156,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testCreateFailsWhenDepositDueDaysIsTooLow()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 179,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testCreateFailsWhenDepositDueDaysIsTooLow()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 179,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testCreateFailsWhenDepositDueDaysIsTooHigh()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 202,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testCreateFailsWhenDepositDueDaysIsTooHigh()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 202,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testCreateFailsWhenChargeValueIsNegative()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 225,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testCreateFailsWhenChargeValueIsNegative()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 225,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testCreateFailsWhenDepositOrPrepaymentDueTimeIsTooLow()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 248,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testCreateFailsWhenDepositOrPrepaymentDueTimeIsTooLow()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 248,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testCreateFailsWhenDepositOrPrepaymentDueTimeIsTooHigh()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 271,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testCreateFailsWhenDepositOrPrepaymentDueTimeIsTooHigh()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 271,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testUpdateSuccessfully()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 291,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testUpdateSuccessfully()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 291,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testUpdateSuccessfully()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 303,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testUpdateFailsWithInvalidDepositDueDays()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 332,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testUpdateFailsWithInvalidDepositDueDays()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 332,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Model\\DepositPolicyCharge\\DepositPolicyChargeTest::testUpdateFailsWithInvalidDepositDueDays()",
+        "kind": "Method",
+        "file": "tests/Domain/Model/DepositPolicyCharge/DepositPolicyChargeTest.php",
+        "line": 347,
+        "children": []
+      }
+    ],
+    "uses": [
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\EnumHelper",
+        "kind": "Trait",
+        "file": "src/Domain/Model/DepositPolicyCharge/ChargeType.php",
+        "line": 11,
+        "children": []
+      }
+    ],
+    "definition": {
+      "fqn": "App\\Domain\\Model\\DepositPolicyCharge\\ChargeType",
+      "kind": "Enum",
+      "file": "src/Domain/Model/DepositPolicyCharge/ChargeType.php",
+      "line": 9,
+      "uses_traits": [
+        "App\\Domain\\Model\\EnumHelper"
+      ]
+    }
+  }
+}

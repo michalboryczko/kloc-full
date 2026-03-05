@@ -1,0 +1,35 @@
+{
+  "query_id": "context-const",
+  "command": "context",
+  "args": [
+    "App\\Infrastructure\\Persistence\\DataFixtures\\PropertyFixtures::PROPERTY_4_ID"
+  ],
+  "options": {
+    "json": true,
+    "depth": 1
+  },
+  "exit_code": 0,
+  "stdout": "{\n  \"target\": {\n    \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\PropertyFixtures::PROPERTY_4_ID\",\n    \"file\": \"src/Infrastructure/Persistence/DataFixtures/PropertyFixtures.php\",\n    \"line\": 34\n  },\n  \"maxDepth\": 1,\n  \"usedBy\": [],\n  \"uses\": [],\n  \"definition\": {\n    \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\PropertyFixtures::PROPERTY_4_ID\",\n    \"kind\": \"Const\",\n    \"file\": \"src/Infrastructure/Persistence/DataFixtures/PropertyFixtures.php\",\n    \"line\": 34,\n    \"declaredIn\": {\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\PropertyFixtures\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/PropertyFixtures.php\",\n      \"line\": 26\n    }\n  }\n}\n",
+  "stderr": "warning: `VIRTUAL_ENV=/Users/michal/dev/ai/kloc/kloc-intelligence/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\n",
+  "json_output": {
+    "target": {
+      "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\PropertyFixtures::PROPERTY_4_ID",
+      "file": "src/Infrastructure/Persistence/DataFixtures/PropertyFixtures.php",
+      "line": 34
+    },
+    "maxDepth": 1,
+    "usedBy": [],
+    "uses": [],
+    "definition": {
+      "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\PropertyFixtures::PROPERTY_4_ID",
+      "kind": "Const",
+      "file": "src/Infrastructure/Persistence/DataFixtures/PropertyFixtures.php",
+      "line": 34,
+      "declaredIn": {
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\PropertyFixtures",
+        "file": "src/Infrastructure/Persistence/DataFixtures/PropertyFixtures.php",
+        "line": 26
+      }
+    }
+  }
+}

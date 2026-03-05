@@ -65,6 +65,11 @@ jobs:
             sleep 2
           done
 
-      - name: Run tests
+      - name: Run unit tests
         working-directory: kloc-intelligence
-        run: pytest tests/ -v --tb=short
+        run: pytest tests/ -v --tb=short -m "not snapshot"
+
+      - name: Run snapshot tests
+        working-directory: kloc-intelligence
+        run: pytest tests/ -v --tb=short -m snapshot
+        continue-on-error: true

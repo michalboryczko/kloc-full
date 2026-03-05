@@ -1,0 +1,1573 @@
+{
+  "query_id": "context-class-d2",
+  "command": "context",
+  "args": [
+    "App\\Domain\\Model\\Estate\\Estate"
+  ],
+  "options": {
+    "json": true,
+    "depth": 2
+  },
+  "exit_code": 0,
+  "stdout": "{\n  \"target\": {\n    \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\Estate\",\n    \"file\": \"src/Domain/Model/Estate/Estate.php\",\n    \"line\": 13\n  },\n  \"maxDepth\": 2,\n  \"usedBy\": [\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\Bottles\\\\EstateFixtures::createEstates()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/Bottles/EstateFixtures.php\",\n      \"line\": 41,\n      \"children\": [\n        {\n          \"depth\": 2,\n          \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\Bottles\\\\EstateFixtures::load()\",\n          \"kind\": \"Method\",\n          \"file\": \"src/Infrastructure/Persistence/DataFixtures/Bottles/EstateFixtures.php\",\n          \"line\": 24,\n          \"children\": [],\n          \"crossed_from\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\Bottles\\\\EstateFixtures::createEstates()\",\n          \"refType\": \"method_call\",\n          \"callee\": \"createEstates()\",\n          \"on\": \"$this\",\n          \"onKind\": \"self\"\n        }\n      ],\n      \"args\": {\n        \"Estate::$id\": \"new \\\\App\\\\Domain\\\\VO\\\\UuidVO(self::BOHO_ESTATE_ID)\",\n        \"Estate::$name\": \"'Boho Hotel fixtures'\",\n        \"Estate::$shortName\": \"'Boho Hotel'\",\n        \"Estate::$status\": \"\\\\App\\\\Domain\\\\Model\\\\Estate\\\\EstateStatus::ACTIVE\",\n        \"Estate::$pricingType\": \"\\\\App\\\\Domain\\\\Model\\\\Estate\\\\EstatePricingType::STAYDATE\",\n        \"Estate::$currency\": \"'USD'\",\n        \"Estate::$legacyId\": \"$legacyId\",\n        \"Estate::$newChannelNotificationEmail\": \"null\",\n        \"Estate::$reservationDeliveryEmailAddress\": \"null\",\n        \"Estate::$isSmithProperty\": \"false\",\n        \"Estate::$address\": \"null\",\n        \"Estate::$contact\": \"null\",\n        \"Estate::$language\": \"null\",\n        \"Estate::$hotelTax\": \"null\",\n        \"Estate::__construct().$additionalFees\": \"new \\\\Doctrine\\\\Common\\\\Collections\\\\ArrayCollection()\"\n      },\n      \"refType\": \"instantiation\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\CancellationPolicy\\\\CancellationPolicy::$estate\",\n      \"kind\": \"Property\",\n      \"file\": \"src/Domain/Model/CancellationPolicy/CancellationPolicy.php\",\n      \"line\": 22,\n      \"children\": [],\n      \"refType\": \"property_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\DepositPolicy\\\\DepositPolicy::$estate\",\n      \"kind\": \"Property\",\n      \"file\": \"src/Domain/Model/DepositPolicy/DepositPolicy.php\",\n      \"line\": 20,\n      \"children\": [\n        {\n          \"depth\": 2,\n          \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\Estate::getIdAsString()\",\n          \"kind\": \"Method\",\n          \"file\": \"src/Domain/Model/DepositPolicy/DepositPolicy.php\",\n          \"line\": 92,\n          \"children\": [],\n          \"crossed_from\": \"App\\\\Domain\\\\Model\\\\DepositPolicy\\\\DepositPolicy\",\n          \"refType\": \"method_call\",\n          \"callee\": \"getIdAsString()\",\n          \"on\": \"$this->estate\",\n          \"onKind\": \"property\"\n        }\n      ],\n      \"refType\": \"property_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\AdditionalFee\\\\EstateAdditionalFee::$estate\",\n      \"kind\": \"Property\",\n      \"file\": \"src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php\",\n      \"line\": 23,\n      \"children\": [],\n      \"refType\": \"property_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Offer\\\\Offer::$estate\",\n      \"kind\": \"Property\",\n      \"file\": \"src/Domain/Model/Offer/Offer.php\",\n      \"line\": 17,\n      \"children\": [],\n      \"refType\": \"property_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Property\\\\Property::$estate\",\n      \"kind\": \"Property\",\n      \"file\": \"src/Domain/Model/Property/Property.php\",\n      \"line\": 23,\n      \"children\": [],\n      \"refType\": \"property_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\RateType\\\\RateType::$estate\",\n      \"kind\": \"Property\",\n      \"file\": \"src/Domain/Model/RateType/RateType.php\",\n      \"line\": 19,\n      \"children\": [],\n      \"refType\": \"property_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Season\\\\Season::$estate\",\n      \"kind\": \"Property\",\n      \"file\": \"src/Domain/Model/Season/Season.php\",\n      \"line\": 23,\n      \"children\": [],\n      \"refType\": \"property_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\EstateStatusChecker::shouldSyncEstateData()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Application/Estate/EstateStatusChecker.php\",\n      \"line\": 14,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getStatus()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\UseCase\\\\ApplyEstateAdditionalFee::__invoke()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Application/Estate/UseCase/ApplyEstateAdditionalFee.php\",\n      \"line\": 23,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getAdditionalFees()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"local\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\UseCase\\\\UpdateEstate::__invoke()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Application/Estate/UseCase/UpdateEstate.php\",\n      \"line\": 50,\n      \"children\": [],\n      \"args\": {\n        \"Estate::updateEstateDetails().$name\": \"$input->name\",\n        \"Estate::updateEstateDetails().$shortName\": \"$input->shortName\",\n        \"Estate::updateEstateDetails().$currency\": \"$input->currency\",\n        \"Estate::updateEstateDetails().$newChannelNotificationEmail\": \"$input->newChannelNotificationEmail\",\n        \"Estate::updateEstateDetails().$reservationDeliveryEmailAddress\": \"$this->emailResolver->resolveEmail($input->reservationDeliveryEmailAddress)\",\n        \"Estate::updateEstateDetails().$isSmithProperty\": \"$input->isSmithProperty\"\n      },\n      \"refType\": \"method_call\",\n      \"callee\": \"updateEstateDetails()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\UseCase\\\\UpdateEstate::updateLanguage()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Application/Estate/UseCase/UpdateEstate.php\",\n      \"line\": 77,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getLanguage()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\UseCase\\\\UpdateEstate::updateLanguage()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Application/Estate/UseCase/UpdateEstate.php\",\n      \"line\": 98,\n      \"children\": [],\n      \"args\": {\n        \"Estate::updateLanguage().$language\": \"$newLanguageEntity\"\n      },\n      \"refType\": \"method_call\",\n      \"callee\": \"updateLanguage()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\UseCase\\\\UpdateEstate::updateAddress()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Application/Estate/UseCase/UpdateEstate.php\",\n      \"line\": 103,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getAddress()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\UseCase\\\\UpdateEstate::updateAddress()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Application/Estate/UseCase/UpdateEstate.php\",\n      \"line\": 163,\n      \"children\": [],\n      \"args\": {\n        \"Estate::updateAddress().$address\": \"$newAddressEntity\"\n      },\n      \"refType\": \"method_call\",\n      \"callee\": \"updateAddress()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\UseCase\\\\UpdateEstate::updateContact()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Application/Estate/UseCase/UpdateEstate.php\",\n      \"line\": 168,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getContact()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\UseCase\\\\UpdateEstate::updateContact()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Application/Estate/UseCase/UpdateEstate.php\",\n      \"line\": 203,\n      \"children\": [],\n      \"args\": {\n        \"Estate::updateContact().$contact\": \"$newContactEntity\"\n      },\n      \"refType\": \"method_call\",\n      \"callee\": \"updateContact()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\UseCase\\\\UpdateEstate::updateHotelTax()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Application/Estate/UseCase/UpdateEstate.php\",\n      \"line\": 211,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getHotelTax()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\UseCase\\\\UpdateEstate::updateHotelTax()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Application/Estate/UseCase/UpdateEstate.php\",\n      \"line\": 219,\n      \"children\": [],\n      \"args\": {\n        \"Estate::updateHotelTax().$hotelTax\": \"$hotelTaxObject\"\n      },\n      \"refType\": \"method_call\",\n      \"callee\": \"updateHotelTax()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\UseCase\\\\UpdateEstate::updateAdditionalFees()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Application/Estate/UseCase/UpdateEstate.php\",\n      \"line\": 237,\n      \"children\": [],\n      \"args\": {\n        \"Estate::updateAdditionalFees().$additionalFees\": \"$additionalFees\"\n      },\n      \"refType\": \"method_call\",\n      \"callee\": \"updateAdditionalFees()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\UseCase\\\\UpdateEstate::dispatchEstateRelatedEvents()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Application/Estate/UseCase/UpdateEstate.php\",\n      \"line\": 257,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getAdditionalFees()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\Estate\\\\EstateUpdatedEventListener::resyncEstateData()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Application/EventListener/Estate/EstateUpdatedEventListener.php\",\n      \"line\": 57,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getProperties()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Event\\\\DepositPolicy\\\\DepositPolicyUpdated::createFromDepositPolicy()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Domain/Event/DepositPolicy/DepositPolicyUpdated.php\",\n      \"line\": 45,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getIdAsString()\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Event\\\\Estate\\\\EstateAdditionalFeeUpdated::createFromEstateAdditionalFee()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Domain/Event/Estate/EstateAdditionalFeeUpdated.php\",\n      \"line\": 34,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getIdAsString()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Event\\\\Estate\\\\EstateTaxRateUpdated::createFromEstate()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Domain/Event/Estate/EstateTaxRateUpdated.php\",\n      \"line\": 30,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getHotelTax()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Event\\\\Estate\\\\EstateTaxRateUpdated::createFromEstate()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Domain/Event/Estate/EstateTaxRateUpdated.php\",\n      \"line\": 38,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getIdAsString()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Event\\\\Offer\\\\OfferEvent::createForOffer()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Domain/Event/Offer/OfferEvent.php\",\n      \"line\": 18,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getIdAsString()\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Event\\\\RateType\\\\RateTypeEvent::createForRateType()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Domain/Event/RateType/RateTypeEvent.php\",\n      \"line\": 18,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getIdAsString()\",\n      \"on\": \"$rateType\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\DepositPolicyFixtures::load()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/DepositPolicyFixtures.php\",\n      \"line\": 50,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getIdAsString()\",\n      \"on\": \"$estate1\",\n      \"onKind\": \"local\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Controller\\\\Estate\\\\EstateRateTypeController::getRateTypesAction()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Controller/Estate/EstateRateTypeController.php\",\n      \"line\": 47,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getId()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Controller\\\\Offer\\\\OfferController::getAction()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Controller/Offer/OfferController.php\",\n      \"line\": 98,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getIdAsString()\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Controller\\\\RateType\\\\RateTypeController::getAction()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Controller/RateType/RateTypeController.php\",\n      \"line\": 93,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getIdAsString()\",\n      \"on\": \"?->getIdAsString()->getIdAsString()->getIdAsString()->getIdAsString()->getIdAsString()->getIdAsString()->getIdAsString()->getIdAsString()->getIdAsString()->getIdAsString()\",\n      \"onKind\": \"property\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Controller\\\\Season\\\\SeasonController::getAction()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Controller/Season/SeasonController.php\",\n      \"line\": 108,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getId()\",\n      \"on\": \"?->getId()->getId()->getId()->getId()->getId()->getId()->getId()->getId()->getId()->getId()\",\n      \"onKind\": \"property\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Factory\\\\Estate\\\\GetEstateResponseFactory::__invoke()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Factory/Estate/GetEstateResponseFactory.php\",\n      \"line\": 22,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getIdAsString()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Factory\\\\Estate\\\\GetEstateResponseFactory::__invoke()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Factory/Estate/GetEstateResponseFactory.php\",\n      \"line\": 23,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getName()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Factory\\\\Estate\\\\GetEstateResponseFactory::__invoke()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Factory/Estate/GetEstateResponseFactory.php\",\n      \"line\": 24,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"isSmithProperty()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Factory\\\\Estate\\\\GetEstateResponseFactory::__invoke()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Factory/Estate/GetEstateResponseFactory.php\",\n      \"line\": 25,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getShortName()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Factory\\\\Estate\\\\GetEstateResponseFactory::__invoke()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Factory/Estate/GetEstateResponseFactory.php\",\n      \"line\": 26,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getStatus()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Factory\\\\Estate\\\\GetEstateResponseFactory::__invoke()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Factory/Estate/GetEstateResponseFactory.php\",\n      \"line\": 27,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getLegacyId()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Factory\\\\Estate\\\\GetEstateResponseFactory::__invoke()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Factory/Estate/GetEstateResponseFactory.php\",\n      \"line\": 28,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getPricingType()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Factory\\\\Estate\\\\GetEstateResponseFactory::__invoke()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Factory/Estate/GetEstateResponseFactory.php\",\n      \"line\": 29,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getCurrency()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Factory\\\\Estate\\\\GetEstateResponseFactory::__invoke()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Factory/Estate/GetEstateResponseFactory.php\",\n      \"line\": 30,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getNewChannelNotificationEmail()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Factory\\\\Estate\\\\GetEstateResponseFactory::__invoke()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Factory/Estate/GetEstateResponseFactory.php\",\n      \"line\": 31,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getReservationDeliveryEmailAddress()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Factory\\\\Estate\\\\GetEstateResponseFactory::__invoke()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Factory/Estate/GetEstateResponseFactory.php\",\n      \"line\": 32,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getAddress()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Factory\\\\Estate\\\\GetEstateResponseFactory::__invoke()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Factory/Estate/GetEstateResponseFactory.php\",\n      \"line\": 33,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getContact()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Factory\\\\Estate\\\\GetEstateResponseFactory::__invoke()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Factory/Estate/GetEstateResponseFactory.php\",\n      \"line\": 34,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getLanguage()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Factory\\\\Estate\\\\GetEstateResponseFactory::__invoke()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Factory/Estate/GetEstateResponseFactory.php\",\n      \"line\": 35,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getHotelTax()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Factory\\\\Estate\\\\GetEstateResponseFactory::__invoke()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Factory/Estate/GetEstateResponseFactory.php\",\n      \"line\": 38,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getAdditionalFees()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"param\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Factory\\\\Property\\\\GetPropertyResponseFactory::__invoke()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Ui/Factory/Property/GetPropertyResponseFactory.php\",\n      \"line\": 19,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getIdAsString()\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Factory\\\\EstateFactoryTest::testCreateEstateWithDeterministicUuid()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Factory/EstateFactoryTest.php\",\n      \"line\": 50,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getName()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"local\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Factory\\\\EstateFactoryTest::testCreateEstateWithDeterministicUuid()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Factory/EstateFactoryTest.php\",\n      \"line\": 51,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getShortName()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"local\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Factory\\\\EstateFactoryTest::testCreateEstateWithDeterministicUuid()\",\n      \"kind\": \"Method\",\n      \"file\": \"tests/Domain/Factory/EstateFactoryTest.php\",\n      \"line\": 52,\n      \"children\": [],\n      \"refType\": \"method_call\",\n      \"callee\": \"getLegacyId()\",\n      \"on\": \"$estate\",\n      \"onKind\": \"local\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\EstateStatusChecker\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Application/Estate/EstateStatusChecker.php\",\n      \"line\": 10,\n      \"children\": [],\n      \"refType\": \"parameter_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\UseCase\\\\CreateEstate::__invoke()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Application/Estate/UseCase/CreateEstate.php\",\n      \"line\": 48,\n      \"children\": [],\n      \"refType\": \"return_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\Estate\\\\UseCase\\\\UpdateEstate\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Application/Estate/UseCase/UpdateEstate.php\",\n      \"line\": 29,\n      \"children\": [],\n      \"refType\": \"parameter_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\Estate\\\\EstateUpdatedEventListener\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Application/EventListener/Estate/EstateUpdatedEventListener.php\",\n      \"line\": 19,\n      \"children\": [],\n      \"refType\": \"parameter_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Event\\\\Estate\\\\EstateAdditionalFeeUpdated\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Domain/Event/Estate/EstateAdditionalFeeUpdated.php\",\n      \"line\": 12,\n      \"children\": [],\n      \"refType\": \"parameter_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Event\\\\Estate\\\\EstateTaxRateUpdated\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Domain/Event/Estate/EstateTaxRateUpdated.php\",\n      \"line\": 11,\n      \"children\": [],\n      \"refType\": \"parameter_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Factory\\\\EstateAdditionalFeeFactory\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Domain/Factory/EstateAdditionalFeeFactory.php\",\n      \"line\": 14,\n      \"children\": [],\n      \"refType\": \"parameter_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Factory\\\\EstateFactory::create()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Domain/Factory/EstateFactory.php\",\n      \"line\": 30,\n      \"children\": [],\n      \"refType\": \"return_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\CancellationPolicy\\\\CancellationPolicy\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Domain/Model/CancellationPolicy/CancellationPolicy.php\",\n      \"line\": 10,\n      \"children\": [],\n      \"refType\": \"parameter_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\CancellationPolicy\\\\CancellationPolicy::getEstate()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Domain/Model/CancellationPolicy/CancellationPolicy.php\",\n      \"line\": 74,\n      \"children\": [],\n      \"refType\": \"return_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\DepositPolicy\\\\DepositPolicy\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Domain/Model/DepositPolicy/DepositPolicy.php\",\n      \"line\": 13,\n      \"children\": [],\n      \"refType\": \"parameter_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\DepositPolicy\\\\DepositPolicy::getEstate()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Domain/Model/DepositPolicy/DepositPolicy.php\",\n      \"line\": 84,\n      \"children\": [],\n      \"refType\": \"return_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\AdditionalFee\\\\EstateAdditionalFee\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php\",\n      \"line\": 10,\n      \"children\": [],\n      \"refType\": \"parameter_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\AdditionalFee\\\\EstateAdditionalFee::getEstate()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php\",\n      \"line\": 54,\n      \"children\": [],\n      \"refType\": \"return_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Offer\\\\Offer\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Domain/Model/Offer/Offer.php\",\n      \"line\": 11,\n      \"children\": [],\n      \"refType\": \"parameter_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Offer\\\\Offer::getEstate()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Domain/Model/Offer/Offer.php\",\n      \"line\": 48,\n      \"children\": [],\n      \"refType\": \"return_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Property\\\\Property::getEstate()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Domain/Model/Property/Property.php\",\n      \"line\": 61,\n      \"children\": [],\n      \"refType\": \"return_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\RateType\\\\RateType\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Domain/Model/RateType/RateType.php\",\n      \"line\": 11,\n      \"children\": [],\n      \"refType\": \"parameter_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\RateType\\\\RateType::getEstate()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Domain/Model/RateType/RateType.php\",\n      \"line\": 55,\n      \"children\": [],\n      \"refType\": \"return_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Season\\\\Season::getEstate()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Domain/Model/Season/Season.php\",\n      \"line\": 44,\n      \"children\": [],\n      \"refType\": \"return_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Repository\\\\EstateRepository\",\n      \"kind\": \"Interface\",\n      \"file\": \"src/Domain/Repository/EstateRepository.php\",\n      \"line\": 10,\n      \"children\": [],\n      \"refType\": \"parameter_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Repository\\\\EstateRepository::get()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Domain/Repository/EstateRepository.php\",\n      \"line\": 15,\n      \"children\": [],\n      \"refType\": \"return_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\Bottles\\\\PropertyFixtures\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/Bottles/PropertyFixtures.php\",\n      \"line\": 21,\n      \"children\": [],\n      \"refType\": \"type_hint\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\CancellationPolicyFixtures\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/CancellationPolicyFixtures.php\",\n      \"line\": 20,\n      \"children\": [],\n      \"refType\": \"type_hint\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\DepositPolicyFixtures\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/DepositPolicyFixtures.php\",\n      \"line\": 24,\n      \"children\": [],\n      \"refType\": \"parameter_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\EstateFixtures::createEstate0()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/EstateFixtures.php\",\n      \"line\": 61,\n      \"children\": [],\n      \"refType\": \"return_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\EstateFixtures::createEstate1()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/EstateFixtures.php\",\n      \"line\": 136,\n      \"children\": [],\n      \"refType\": \"return_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\EstateFixtures::createEstate2()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/EstateFixtures.php\",\n      \"line\": 201,\n      \"children\": [],\n      \"refType\": \"return_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\OfferFixtures\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/OfferFixtures.php\",\n      \"line\": 19,\n      \"children\": [],\n      \"refType\": \"parameter_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\PropertyFixtures\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/PropertyFixtures.php\",\n      \"line\": 26,\n      \"children\": [],\n      \"refType\": \"type_hint\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\RateTypeFixtures\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/RateTypeFixtures.php\",\n      \"line\": 19,\n      \"children\": [],\n      \"refType\": \"parameter_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\SeasonFixtures\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Infrastructure/Persistence/DataFixtures/SeasonFixtures.php\",\n      \"line\": 21,\n      \"children\": [],\n      \"refType\": \"type_hint\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\Repository\\\\EstateDoctrineRepository\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Infrastructure/Persistence/Repository/EstateDoctrineRepository.php\",\n      \"line\": 16,\n      \"children\": [],\n      \"refType\": \"parameter_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\Repository\\\\EstateDoctrineRepository::get()\",\n      \"kind\": \"Method\",\n      \"file\": \"src/Infrastructure/Persistence/Repository/EstateDoctrineRepository.php\",\n      \"line\": 24,\n      \"children\": [],\n      \"refType\": \"return_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Controller\\\\Estate\\\\EstateController\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Ui/Controller/Estate/EstateController.php\",\n      \"line\": 28,\n      \"children\": [],\n      \"refType\": \"parameter_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Controller\\\\Estate\\\\EstateRateTypeController\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Ui/Controller/Estate/EstateRateTypeController.php\",\n      \"line\": 21,\n      \"children\": [],\n      \"refType\": \"parameter_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Dto\\\\CancellationPolicy\\\\CreateCancellationPolicyRequest\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Ui/Dto/CancellationPolicy/CreateCancellationPolicyRequest.php\",\n      \"line\": 18,\n      \"children\": [],\n      \"refType\": \"type_hint\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Dto\\\\DepositPolicy\\\\CreateDepositPolicyRequest\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Ui/Dto/DepositPolicy/CreateDepositPolicyRequest.php\",\n      \"line\": 18,\n      \"children\": [],\n      \"refType\": \"type_hint\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Dto\\\\Estate\\\\CreateEstateRequest\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Ui/Dto/Estate/CreateEstateRequest.php\",\n      \"line\": 16,\n      \"children\": [],\n      \"refType\": \"type_hint\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Dto\\\\Offer\\\\CreateOfferRequest\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Ui/Dto/Offer/CreateOfferRequest.php\",\n      \"line\": 17,\n      \"children\": [],\n      \"refType\": \"type_hint\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Dto\\\\Property\\\\CreatePropertyRequest\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Ui/Dto/Property/CreatePropertyRequest.php\",\n      \"line\": 16,\n      \"children\": [],\n      \"refType\": \"type_hint\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Dto\\\\RateType\\\\CreateRateTypeRequest\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Ui/Dto/RateType/CreateRateTypeRequest.php\",\n      \"line\": 16,\n      \"children\": [],\n      \"refType\": \"type_hint\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Dto\\\\Season\\\\CreateSeasonRequest\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Ui/Dto/Season/CreateSeasonRequest.php\",\n      \"line\": 17,\n      \"children\": [],\n      \"refType\": \"type_hint\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Dto\\\\Season\\\\UpdateSeasonRequest\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Ui/Dto/Season/UpdateSeasonRequest.php\",\n      \"line\": 13,\n      \"children\": [],\n      \"refType\": \"type_hint\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Ui\\\\Factory\\\\Estate\\\\GetEstateResponseFactory\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Ui/Factory/Estate/GetEstateResponseFactory.php\",\n      \"line\": 9,\n      \"children\": [],\n      \"refType\": \"parameter_type\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Application\\\\Estate\\\\EstateStatusCheckerTest\",\n      \"kind\": \"Class\",\n      \"file\": \"tests/Application/Estate/EstateStatusCheckerTest.php\",\n      \"line\": 15,\n      \"children\": [],\n      \"refType\": \"type_hint\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Factory\\\\EstateFactoryTest\",\n      \"kind\": \"Class\",\n      \"file\": \"tests/Domain/Factory/EstateFactoryTest.php\",\n      \"line\": 16,\n      \"children\": [],\n      \"refType\": \"type_hint\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Tests\\\\Domain\\\\Factory\\\\RateTypeFactoryTest\",\n      \"kind\": \"Class\",\n      \"file\": \"tests/Domain/Factory/RateTypeFactoryTest.php\",\n      \"line\": 18,\n      \"children\": [],\n      \"refType\": \"type_hint\"\n    }\n  ],\n  \"uses\": [\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\VO\\\\UuidVO\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Domain/Model/Estate/Estate.php\",\n      \"line\": 31,\n      \"children\": [\n        {\n          \"depth\": 2,\n          \"fqn\": \"App\\\\Domain\\\\VO\\\\UuidVO::getId()\",\n          \"kind\": \"Method\",\n          \"file\": \"src/Domain/Model/Estate/Estate.php\",\n          \"line\": 118,\n          \"children\": [],\n          \"refType\": \"method_call\",\n          \"callee\": \"getId()\",\n          \"on\": \"$this->id\",\n          \"onKind\": \"property\"\n        }\n      ],\n      \"refType\": \"property_type\",\n      \"property\": \"$id\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\EstateStatus\",\n      \"kind\": \"Enum\",\n      \"file\": \"src/Domain/Model/Estate/Estate.php\",\n      \"line\": 34,\n      \"children\": [],\n      \"refType\": \"property_type\",\n      \"property\": \"$status\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\EstatePricingType\",\n      \"kind\": \"Enum\",\n      \"file\": \"src/Domain/Model/Estate/Estate.php\",\n      \"line\": 35,\n      \"children\": [],\n      \"refType\": \"property_type\",\n      \"property\": \"$pricingType\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\EstateAddress\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Domain/Model/Estate/Estate.php\",\n      \"line\": 41,\n      \"children\": [],\n      \"refType\": \"property_type\",\n      \"property\": \"$address\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\EstateContact\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Domain/Model/Estate/Estate.php\",\n      \"line\": 42,\n      \"children\": [],\n      \"refType\": \"property_type\",\n      \"property\": \"$contact\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\EstateLanguage\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Domain/Model/Estate/Estate.php\",\n      \"line\": 43,\n      \"children\": [],\n      \"refType\": \"property_type\",\n      \"property\": \"$language\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\EstateTaxRate\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Domain/Model/Estate/Estate.php\",\n      \"line\": 44,\n      \"children\": [],\n      \"refType\": \"property_type\",\n      \"property\": \"$hotelTax\"\n    },\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\AdditionalFee\\\\EstateAdditionalFee\",\n      \"kind\": \"Class\",\n      \"file\": \"src/Domain/Model/Estate/Estate.php\",\n      \"line\": 283,\n      \"children\": [\n        {\n          \"depth\": 2,\n          \"fqn\": \"App\\\\Domain\\\\VO\\\\UuidVO\",\n          \"kind\": \"Class\",\n          \"file\": \"src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php\",\n          \"line\": 28,\n          \"children\": [],\n          \"refType\": \"parameter_type\"\n        },\n        {\n          \"depth\": 2,\n          \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\AdditionalFee\\\\EstateAdditionalFeeAmountQualifier\",\n          \"kind\": \"Enum\",\n          \"file\": \"src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php\",\n          \"line\": 32,\n          \"children\": [],\n          \"refType\": \"parameter_type\"\n        },\n        {\n          \"depth\": 2,\n          \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\AdditionalFee\\\\EstateAdditionalFeeChargeWhen\",\n          \"kind\": \"Enum\",\n          \"file\": \"src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php\",\n          \"line\": 33,\n          \"children\": [],\n          \"refType\": \"parameter_type\"\n        },\n        {\n          \"depth\": 2,\n          \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\AdditionalFee\\\\EstateAdditionalFeeChargeQualifier\",\n          \"kind\": \"Enum\",\n          \"file\": \"src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php\",\n          \"line\": 69,\n          \"children\": [],\n          \"refType\": \"return_type\"\n        }\n      ],\n      \"refType\": \"parameter_type\"\n    }\n  ],\n  \"definition\": {\n    \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\Estate\",\n    \"kind\": \"Class\",\n    \"file\": \"src/Domain/Model/Estate/Estate.php\",\n    \"line\": 13,\n    \"properties\": [\n      {\n        \"name\": \"$offers\",\n        \"visibility\": \"private\",\n        \"type\": \"Collection\"\n      },\n      {\n        \"name\": \"$reservationDeliveryEmailAddress\",\n        \"visibility\": \"private\",\n        \"type\": \"?string\",\n        \"promoted\": true\n      },\n      {\n        \"name\": \"$cancellationPolicies\",\n        \"visibility\": \"private\",\n        \"type\": \"Collection\"\n      },\n      {\n        \"name\": \"$newChannelNotificationEmail\",\n        \"visibility\": \"private\",\n        \"type\": \"?string\",\n        \"promoted\": true\n      },\n      {\n        \"name\": \"$pricingType\",\n        \"type\": \"EstatePricingType\",\n        \"visibility\": \"private\",\n        \"promoted\": true\n      },\n      {\n        \"name\": \"$language\",\n        \"type\": \"EstateLanguage\",\n        \"visibility\": \"private\",\n        \"promoted\": true\n      },\n      {\n        \"name\": \"$seasons\",\n        \"visibility\": \"private\",\n        \"type\": \"Collection\"\n      },\n      {\n        \"name\": \"$address\",\n        \"type\": \"EstateAddress\",\n        \"visibility\": \"private\",\n        \"promoted\": true\n      },\n      {\n        \"name\": \"$id\",\n        \"type\": \"UuidVO\",\n        \"visibility\": \"private\",\n        \"promoted\": true\n      },\n      {\n        \"name\": \"$currency\",\n        \"visibility\": \"private\",\n        \"type\": \"string\",\n        \"promoted\": true\n      },\n      {\n        \"name\": \"$legacyId\",\n        \"visibility\": \"private\",\n        \"type\": \"?int\",\n        \"promoted\": true\n      },\n      {\n        \"name\": \"$rateTypes\",\n        \"visibility\": \"private\",\n        \"type\": \"Collection\"\n      },\n      {\n        \"name\": \"$name\",\n        \"visibility\": \"private\",\n        \"type\": \"string\",\n        \"promoted\": true\n      },\n      {\n        \"name\": \"$status\",\n        \"type\": \"EstateStatus\",\n        \"visibility\": \"private\",\n        \"promoted\": true\n      },\n      {\n        \"name\": \"$hotelTax\",\n        \"type\": \"EstateTaxRate\",\n        \"visibility\": \"private\",\n        \"promoted\": true\n      },\n      {\n        \"name\": \"$isSmithProperty\",\n        \"visibility\": \"private\",\n        \"type\": \"bool\",\n        \"promoted\": true\n      },\n      {\n        \"name\": \"$additionalFees\",\n        \"visibility\": \"private\",\n        \"type\": \"Collection\"\n      },\n      {\n        \"name\": \"$shortName\",\n        \"visibility\": \"private\",\n        \"type\": \"string\",\n        \"promoted\": true\n      },\n      {\n        \"name\": \"$contact\",\n        \"type\": \"EstateContact\",\n        \"visibility\": \"private\",\n        \"promoted\": true\n      },\n      {\n        \"name\": \"$properties\",\n        \"visibility\": \"private\",\n        \"type\": \"Collection\"\n      }\n    ],\n    \"methods\": [\n      {\n        \"name\": \"getId\",\n        \"signature\": \"getId(): \\\\App\\\\Domain\\\\VO\\\\UuidVO\"\n      },\n      {\n        \"name\": \"updateAdditionalFees\",\n        \"signature\": \"updateAdditionalFees(?array $additionalFees): void\"\n      },\n      {\n        \"name\": \"create\",\n        \"signature\": \"create(\\\\App\\\\Domain\\\\VO\\\\UuidVO $uuidVO, string $name, string $shortName, \\\\App\\\\Domain\\\\Model\\\\Estate\\\\EstateStatus $status, \\\\App\\\\Domain\\\\Model\\\\Estate\\\\EstatePricingType $pricingType, string $currency, ?int $legacyId = null, ?string $newChannelNotificationEmail = null, ?string $reservationDeliveryEmailAddress = null, bool $isSmithProperty = false, ?\\\\App\\\\Domain\\\\Model\\\\Estate\\\\EstateAddress $address = null, ?\\\\App\\\\Domain\\\\Model\\\\Estate\\\\EstateContact $contact = null, ?\\\\App\\\\Domain\\\\Model\\\\Estate\\\\EstateLanguage $language = null, ?\\\\App\\\\Domain\\\\Model\\\\Estate\\\\EstateTaxRate $hotelTax = null, ?\\\\Doctrine\\\\Common\\\\Collections\\\\Collection $additionalFees = null): self\"\n      },\n      {\n        \"name\": \"getContact\",\n        \"signature\": \"getContact(): ?\\\\App\\\\Domain\\\\Model\\\\Estate\\\\EstateContact\"\n      },\n      {\n        \"name\": \"getAdditionalFees\",\n        \"signature\": \"getAdditionalFees(): \\\\Doctrine\\\\Common\\\\Collections\\\\Collection\"\n      },\n      {\n        \"name\": \"getAddress\",\n        \"signature\": \"getAddress(): ?\\\\App\\\\Domain\\\\Model\\\\Estate\\\\EstateAddress\"\n      },\n      {\n        \"name\": \"getStatus\",\n        \"signature\": \"getStatus(): \\\\App\\\\Domain\\\\Model\\\\Estate\\\\EstateStatus\"\n      },\n      {\n        \"name\": \"getCancellationPolicies\",\n        \"signature\": \"getCancellationPolicies(): \\\\Doctrine\\\\Common\\\\Collections\\\\Collection\"\n      },\n      {\n        \"name\": \"setCancellationPolicies\",\n        \"signature\": \"setCancellationPolicies(\\\\Doctrine\\\\Common\\\\Collections\\\\Collection $cancellationPolicies): void\"\n      },\n      {\n        \"name\": \"getIdAsString\",\n        \"signature\": \"getIdAsString(): string\"\n      },\n      {\n        \"name\": \"getPricingType\",\n        \"signature\": \"getPricingType(): \\\\App\\\\Domain\\\\Model\\\\Estate\\\\EstatePricingType\"\n      },\n      {\n        \"name\": \"isSmithProperty\",\n        \"signature\": \"isSmithProperty(): bool\"\n      },\n      {\n        \"name\": \"updateLanguage\",\n        \"signature\": \"updateLanguage(\\\\App\\\\Domain\\\\Model\\\\Estate\\\\EstateLanguage $language): void\"\n      },\n      {\n        \"name\": \"getHotelTax\",\n        \"signature\": \"getHotelTax(): ?\\\\App\\\\Domain\\\\Model\\\\Estate\\\\EstateTaxRate\"\n      },\n      {\n        \"name\": \"__clone\",\n        \"signature\": \"__clone()\"\n      },\n      {\n        \"name\": \"updateEstateDetails\",\n        \"signature\": \"updateEstateDetails(string $name, string $shortName, \\\\App\\\\Domain\\\\Model\\\\Estate\\\\EstateStatus $status, \\\\App\\\\Domain\\\\Model\\\\Estate\\\\EstatePricingType $pricingType, string $currency, ?string $newChannelNotificationEmail = null, ?string $reservationDeliveryEmailAddress = null, ?bool $isSmithProperty = null): void\"\n      },\n      {\n        \"name\": \"getCurrency\",\n        \"signature\": \"getCurrency(): string\"\n      },\n      {\n        \"name\": \"getLanguage\",\n        \"signature\": \"getLanguage(): ?\\\\App\\\\Domain\\\\Model\\\\Estate\\\\EstateLanguage\"\n      },\n      {\n        \"name\": \"getProperties\",\n        \"signature\": \"getProperties(): \\\\Doctrine\\\\Common\\\\Collections\\\\Collection\"\n      },\n      {\n        \"name\": \"getNewChannelNotificationEmail\",\n        \"signature\": \"getNewChannelNotificationEmail(): ?string\"\n      },\n      {\n        \"name\": \"getLegacyId\",\n        \"signature\": \"getLegacyId(): ?int\"\n      },\n      {\n        \"name\": \"getName\",\n        \"signature\": \"getName(): string\"\n      },\n      {\n        \"name\": \"updateAddress\",\n        \"signature\": \"updateAddress(\\\\App\\\\Domain\\\\Model\\\\Estate\\\\EstateAddress $address): void\"\n      },\n      {\n        \"name\": \"getRateTypes\",\n        \"signature\": \"getRateTypes(): \\\\Doctrine\\\\Common\\\\Collections\\\\Collection\"\n      },\n      {\n        \"name\": \"clearAdditionalFees\",\n        \"signature\": \"clearAdditionalFees(): void\"\n      },\n      {\n        \"name\": \"addAdditionalFee\",\n        \"signature\": \"addAdditionalFee(\\\\App\\\\Domain\\\\Model\\\\Estate\\\\AdditionalFee\\\\EstateAdditionalFee $additionalFee): void\"\n      },\n      {\n        \"name\": \"setRateTypes\",\n        \"signature\": \"setRateTypes(\\\\Doctrine\\\\Common\\\\Collections\\\\Collection $rateTypes): void\"\n      },\n      {\n        \"name\": \"removeAdditionalFee\",\n        \"signature\": \"removeAdditionalFee(\\\\App\\\\Domain\\\\Model\\\\Estate\\\\AdditionalFee\\\\EstateAdditionalFee $additionalFee): void\"\n      },\n      {\n        \"name\": \"getSeasons\",\n        \"signature\": \"getSeasons(): \\\\Doctrine\\\\Common\\\\Collections\\\\Collection\"\n      },\n      {\n        \"name\": \"setOffers\",\n        \"signature\": \"setOffers(\\\\Doctrine\\\\Common\\\\Collections\\\\Collection $offers): void\"\n      },\n      {\n        \"name\": \"updateHotelTax\",\n        \"signature\": \"updateHotelTax(\\\\App\\\\Domain\\\\Model\\\\Estate\\\\EstateTaxRate $hotelTax): void\"\n      },\n      {\n        \"name\": \"getReservationDeliveryEmailAddress\",\n        \"signature\": \"getReservationDeliveryEmailAddress(): ?string\"\n      },\n      {\n        \"name\": \"getOffers\",\n        \"signature\": \"getOffers(): \\\\Doctrine\\\\Common\\\\Collections\\\\Collection\"\n      },\n      {\n        \"name\": \"getShortName\",\n        \"signature\": \"getShortName(): string\"\n      },\n      {\n        \"name\": \"updateContact\",\n        \"signature\": \"updateContact(\\\\App\\\\Domain\\\\Model\\\\Estate\\\\EstateContact $contact): void\"\n      },\n      {\n        \"name\": \"update\",\n        \"signature\": \"update(string $name): void\"\n      }\n    ],\n    \"constructorDeps\": [\n      {\n        \"name\": \"$reservationDeliveryEmailAddress\",\n        \"type\": \"?string\"\n      },\n      {\n        \"name\": \"$newChannelNotificationEmail\",\n        \"type\": \"?string\"\n      },\n      {\n        \"name\": \"$pricingType\",\n        \"type\": \"EstatePricingType\"\n      },\n      {\n        \"name\": \"$language\",\n        \"type\": \"EstateLanguage\"\n      },\n      {\n        \"name\": \"$address\",\n        \"type\": \"EstateAddress\"\n      },\n      {\n        \"name\": \"$id\",\n        \"type\": \"UuidVO\"\n      },\n      {\n        \"name\": \"$currency\",\n        \"type\": \"string\"\n      },\n      {\n        \"name\": \"$legacyId\",\n        \"type\": \"?int\"\n      },\n      {\n        \"name\": \"$name\",\n        \"type\": \"string\"\n      },\n      {\n        \"name\": \"$status\",\n        \"type\": \"EstateStatus\"\n      },\n      {\n        \"name\": \"$hotelTax\",\n        \"type\": \"EstateTaxRate\"\n      },\n      {\n        \"name\": \"$isSmithProperty\",\n        \"type\": \"bool\"\n      },\n      {\n        \"name\": \"$shortName\",\n        \"type\": \"string\"\n      },\n      {\n        \"name\": \"$contact\",\n        \"type\": \"EstateContact\"\n      }\n    ]\n  }\n}\n",
+  "stderr": "warning: `VIRTUAL_ENV=/Users/michal/dev/ai/kloc/kloc-intelligence/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\n",
+  "json_output": {
+    "target": {
+      "fqn": "App\\Domain\\Model\\Estate\\Estate",
+      "file": "src/Domain/Model/Estate/Estate.php",
+      "line": 13
+    },
+    "maxDepth": 2,
+    "usedBy": [
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\Bottles\\EstateFixtures::createEstates()",
+        "kind": "Method",
+        "file": "src/Infrastructure/Persistence/DataFixtures/Bottles/EstateFixtures.php",
+        "line": 41,
+        "children": [
+          {
+            "depth": 2,
+            "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\Bottles\\EstateFixtures::load()",
+            "kind": "Method",
+            "file": "src/Infrastructure/Persistence/DataFixtures/Bottles/EstateFixtures.php",
+            "line": 24,
+            "children": [],
+            "crossed_from": "App\\Infrastructure\\Persistence\\DataFixtures\\Bottles\\EstateFixtures::createEstates()",
+            "refType": "method_call",
+            "callee": "createEstates()",
+            "on": "$this",
+            "onKind": "self"
+          }
+        ],
+        "args": {
+          "Estate::$id": "new \\App\\Domain\\VO\\UuidVO(self::BOHO_ESTATE_ID)",
+          "Estate::$name": "'Boho Hotel fixtures'",
+          "Estate::$shortName": "'Boho Hotel'",
+          "Estate::$status": "\\App\\Domain\\Model\\Estate\\EstateStatus::ACTIVE",
+          "Estate::$pricingType": "\\App\\Domain\\Model\\Estate\\EstatePricingType::STAYDATE",
+          "Estate::$currency": "'USD'",
+          "Estate::$legacyId": "$legacyId",
+          "Estate::$newChannelNotificationEmail": "null",
+          "Estate::$reservationDeliveryEmailAddress": "null",
+          "Estate::$isSmithProperty": "false",
+          "Estate::$address": "null",
+          "Estate::$contact": "null",
+          "Estate::$language": "null",
+          "Estate::$hotelTax": "null",
+          "Estate::__construct().$additionalFees": "new \\Doctrine\\Common\\Collections\\ArrayCollection()"
+        },
+        "refType": "instantiation"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\CancellationPolicy\\CancellationPolicy::$estate",
+        "kind": "Property",
+        "file": "src/Domain/Model/CancellationPolicy/CancellationPolicy.php",
+        "line": 22,
+        "children": [],
+        "refType": "property_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\DepositPolicy\\DepositPolicy::$estate",
+        "kind": "Property",
+        "file": "src/Domain/Model/DepositPolicy/DepositPolicy.php",
+        "line": 20,
+        "children": [
+          {
+            "depth": 2,
+            "fqn": "App\\Domain\\Model\\Estate\\Estate::getIdAsString()",
+            "kind": "Method",
+            "file": "src/Domain/Model/DepositPolicy/DepositPolicy.php",
+            "line": 92,
+            "children": [],
+            "crossed_from": "App\\Domain\\Model\\DepositPolicy\\DepositPolicy",
+            "refType": "method_call",
+            "callee": "getIdAsString()",
+            "on": "$this->estate",
+            "onKind": "property"
+          }
+        ],
+        "refType": "property_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Estate\\AdditionalFee\\EstateAdditionalFee::$estate",
+        "kind": "Property",
+        "file": "src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php",
+        "line": 23,
+        "children": [],
+        "refType": "property_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Offer\\Offer::$estate",
+        "kind": "Property",
+        "file": "src/Domain/Model/Offer/Offer.php",
+        "line": 17,
+        "children": [],
+        "refType": "property_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Property\\Property::$estate",
+        "kind": "Property",
+        "file": "src/Domain/Model/Property/Property.php",
+        "line": 23,
+        "children": [],
+        "refType": "property_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\RateType\\RateType::$estate",
+        "kind": "Property",
+        "file": "src/Domain/Model/RateType/RateType.php",
+        "line": 19,
+        "children": [],
+        "refType": "property_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Season\\Season::$estate",
+        "kind": "Property",
+        "file": "src/Domain/Model/Season/Season.php",
+        "line": 23,
+        "children": [],
+        "refType": "property_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\EstateStatusChecker::shouldSyncEstateData()",
+        "kind": "Method",
+        "file": "src/Application/Estate/EstateStatusChecker.php",
+        "line": 14,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getStatus()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\UseCase\\ApplyEstateAdditionalFee::__invoke()",
+        "kind": "Method",
+        "file": "src/Application/Estate/UseCase/ApplyEstateAdditionalFee.php",
+        "line": 23,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getAdditionalFees()",
+        "on": "$estate",
+        "onKind": "local"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\UseCase\\UpdateEstate::__invoke()",
+        "kind": "Method",
+        "file": "src/Application/Estate/UseCase/UpdateEstate.php",
+        "line": 50,
+        "children": [],
+        "args": {
+          "Estate::updateEstateDetails().$name": "$input->name",
+          "Estate::updateEstateDetails().$shortName": "$input->shortName",
+          "Estate::updateEstateDetails().$currency": "$input->currency",
+          "Estate::updateEstateDetails().$newChannelNotificationEmail": "$input->newChannelNotificationEmail",
+          "Estate::updateEstateDetails().$reservationDeliveryEmailAddress": "$this->emailResolver->resolveEmail($input->reservationDeliveryEmailAddress)",
+          "Estate::updateEstateDetails().$isSmithProperty": "$input->isSmithProperty"
+        },
+        "refType": "method_call",
+        "callee": "updateEstateDetails()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\UseCase\\UpdateEstate::updateLanguage()",
+        "kind": "Method",
+        "file": "src/Application/Estate/UseCase/UpdateEstate.php",
+        "line": 77,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getLanguage()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\UseCase\\UpdateEstate::updateLanguage()",
+        "kind": "Method",
+        "file": "src/Application/Estate/UseCase/UpdateEstate.php",
+        "line": 98,
+        "children": [],
+        "args": {
+          "Estate::updateLanguage().$language": "$newLanguageEntity"
+        },
+        "refType": "method_call",
+        "callee": "updateLanguage()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\UseCase\\UpdateEstate::updateAddress()",
+        "kind": "Method",
+        "file": "src/Application/Estate/UseCase/UpdateEstate.php",
+        "line": 103,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getAddress()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\UseCase\\UpdateEstate::updateAddress()",
+        "kind": "Method",
+        "file": "src/Application/Estate/UseCase/UpdateEstate.php",
+        "line": 163,
+        "children": [],
+        "args": {
+          "Estate::updateAddress().$address": "$newAddressEntity"
+        },
+        "refType": "method_call",
+        "callee": "updateAddress()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\UseCase\\UpdateEstate::updateContact()",
+        "kind": "Method",
+        "file": "src/Application/Estate/UseCase/UpdateEstate.php",
+        "line": 168,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getContact()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\UseCase\\UpdateEstate::updateContact()",
+        "kind": "Method",
+        "file": "src/Application/Estate/UseCase/UpdateEstate.php",
+        "line": 203,
+        "children": [],
+        "args": {
+          "Estate::updateContact().$contact": "$newContactEntity"
+        },
+        "refType": "method_call",
+        "callee": "updateContact()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\UseCase\\UpdateEstate::updateHotelTax()",
+        "kind": "Method",
+        "file": "src/Application/Estate/UseCase/UpdateEstate.php",
+        "line": 211,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getHotelTax()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\UseCase\\UpdateEstate::updateHotelTax()",
+        "kind": "Method",
+        "file": "src/Application/Estate/UseCase/UpdateEstate.php",
+        "line": 219,
+        "children": [],
+        "args": {
+          "Estate::updateHotelTax().$hotelTax": "$hotelTaxObject"
+        },
+        "refType": "method_call",
+        "callee": "updateHotelTax()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\UseCase\\UpdateEstate::updateAdditionalFees()",
+        "kind": "Method",
+        "file": "src/Application/Estate/UseCase/UpdateEstate.php",
+        "line": 237,
+        "children": [],
+        "args": {
+          "Estate::updateAdditionalFees().$additionalFees": "$additionalFees"
+        },
+        "refType": "method_call",
+        "callee": "updateAdditionalFees()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\UseCase\\UpdateEstate::dispatchEstateRelatedEvents()",
+        "kind": "Method",
+        "file": "src/Application/Estate/UseCase/UpdateEstate.php",
+        "line": 257,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getAdditionalFees()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\EventListener\\Estate\\EstateUpdatedEventListener::resyncEstateData()",
+        "kind": "Method",
+        "file": "src/Application/EventListener/Estate/EstateUpdatedEventListener.php",
+        "line": 57,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getProperties()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Event\\DepositPolicy\\DepositPolicyUpdated::createFromDepositPolicy()",
+        "kind": "Method",
+        "file": "src/Domain/Event/DepositPolicy/DepositPolicyUpdated.php",
+        "line": 45,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getIdAsString()"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Event\\Estate\\EstateAdditionalFeeUpdated::createFromEstateAdditionalFee()",
+        "kind": "Method",
+        "file": "src/Domain/Event/Estate/EstateAdditionalFeeUpdated.php",
+        "line": 34,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getIdAsString()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Event\\Estate\\EstateTaxRateUpdated::createFromEstate()",
+        "kind": "Method",
+        "file": "src/Domain/Event/Estate/EstateTaxRateUpdated.php",
+        "line": 30,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getHotelTax()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Event\\Estate\\EstateTaxRateUpdated::createFromEstate()",
+        "kind": "Method",
+        "file": "src/Domain/Event/Estate/EstateTaxRateUpdated.php",
+        "line": 38,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getIdAsString()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Event\\Offer\\OfferEvent::createForOffer()",
+        "kind": "Method",
+        "file": "src/Domain/Event/Offer/OfferEvent.php",
+        "line": 18,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getIdAsString()"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Event\\RateType\\RateTypeEvent::createForRateType()",
+        "kind": "Method",
+        "file": "src/Domain/Event/RateType/RateTypeEvent.php",
+        "line": 18,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getIdAsString()",
+        "on": "$rateType",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\DepositPolicyFixtures::load()",
+        "kind": "Method",
+        "file": "src/Infrastructure/Persistence/DataFixtures/DepositPolicyFixtures.php",
+        "line": 50,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getIdAsString()",
+        "on": "$estate1",
+        "onKind": "local"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Controller\\Estate\\EstateRateTypeController::getRateTypesAction()",
+        "kind": "Method",
+        "file": "src/Ui/Controller/Estate/EstateRateTypeController.php",
+        "line": 47,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getId()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Controller\\Offer\\OfferController::getAction()",
+        "kind": "Method",
+        "file": "src/Ui/Controller/Offer/OfferController.php",
+        "line": 98,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getIdAsString()"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Controller\\RateType\\RateTypeController::getAction()",
+        "kind": "Method",
+        "file": "src/Ui/Controller/RateType/RateTypeController.php",
+        "line": 93,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getIdAsString()",
+        "on": "?->getIdAsString()->getIdAsString()->getIdAsString()->getIdAsString()->getIdAsString()->getIdAsString()->getIdAsString()->getIdAsString()->getIdAsString()->getIdAsString()",
+        "onKind": "property"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Controller\\Season\\SeasonController::getAction()",
+        "kind": "Method",
+        "file": "src/Ui/Controller/Season/SeasonController.php",
+        "line": 108,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getId()",
+        "on": "?->getId()->getId()->getId()->getId()->getId()->getId()->getId()->getId()->getId()->getId()",
+        "onKind": "property"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Factory\\Estate\\GetEstateResponseFactory::__invoke()",
+        "kind": "Method",
+        "file": "src/Ui/Factory/Estate/GetEstateResponseFactory.php",
+        "line": 22,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getIdAsString()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Factory\\Estate\\GetEstateResponseFactory::__invoke()",
+        "kind": "Method",
+        "file": "src/Ui/Factory/Estate/GetEstateResponseFactory.php",
+        "line": 23,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getName()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Factory\\Estate\\GetEstateResponseFactory::__invoke()",
+        "kind": "Method",
+        "file": "src/Ui/Factory/Estate/GetEstateResponseFactory.php",
+        "line": 24,
+        "children": [],
+        "refType": "method_call",
+        "callee": "isSmithProperty()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Factory\\Estate\\GetEstateResponseFactory::__invoke()",
+        "kind": "Method",
+        "file": "src/Ui/Factory/Estate/GetEstateResponseFactory.php",
+        "line": 25,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getShortName()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Factory\\Estate\\GetEstateResponseFactory::__invoke()",
+        "kind": "Method",
+        "file": "src/Ui/Factory/Estate/GetEstateResponseFactory.php",
+        "line": 26,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getStatus()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Factory\\Estate\\GetEstateResponseFactory::__invoke()",
+        "kind": "Method",
+        "file": "src/Ui/Factory/Estate/GetEstateResponseFactory.php",
+        "line": 27,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getLegacyId()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Factory\\Estate\\GetEstateResponseFactory::__invoke()",
+        "kind": "Method",
+        "file": "src/Ui/Factory/Estate/GetEstateResponseFactory.php",
+        "line": 28,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getPricingType()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Factory\\Estate\\GetEstateResponseFactory::__invoke()",
+        "kind": "Method",
+        "file": "src/Ui/Factory/Estate/GetEstateResponseFactory.php",
+        "line": 29,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getCurrency()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Factory\\Estate\\GetEstateResponseFactory::__invoke()",
+        "kind": "Method",
+        "file": "src/Ui/Factory/Estate/GetEstateResponseFactory.php",
+        "line": 30,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getNewChannelNotificationEmail()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Factory\\Estate\\GetEstateResponseFactory::__invoke()",
+        "kind": "Method",
+        "file": "src/Ui/Factory/Estate/GetEstateResponseFactory.php",
+        "line": 31,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getReservationDeliveryEmailAddress()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Factory\\Estate\\GetEstateResponseFactory::__invoke()",
+        "kind": "Method",
+        "file": "src/Ui/Factory/Estate/GetEstateResponseFactory.php",
+        "line": 32,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getAddress()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Factory\\Estate\\GetEstateResponseFactory::__invoke()",
+        "kind": "Method",
+        "file": "src/Ui/Factory/Estate/GetEstateResponseFactory.php",
+        "line": 33,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getContact()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Factory\\Estate\\GetEstateResponseFactory::__invoke()",
+        "kind": "Method",
+        "file": "src/Ui/Factory/Estate/GetEstateResponseFactory.php",
+        "line": 34,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getLanguage()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Factory\\Estate\\GetEstateResponseFactory::__invoke()",
+        "kind": "Method",
+        "file": "src/Ui/Factory/Estate/GetEstateResponseFactory.php",
+        "line": 35,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getHotelTax()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Factory\\Estate\\GetEstateResponseFactory::__invoke()",
+        "kind": "Method",
+        "file": "src/Ui/Factory/Estate/GetEstateResponseFactory.php",
+        "line": 38,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getAdditionalFees()",
+        "on": "$estate",
+        "onKind": "param"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Factory\\Property\\GetPropertyResponseFactory::__invoke()",
+        "kind": "Method",
+        "file": "src/Ui/Factory/Property/GetPropertyResponseFactory.php",
+        "line": 19,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getIdAsString()"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Factory\\EstateFactoryTest::testCreateEstateWithDeterministicUuid()",
+        "kind": "Method",
+        "file": "tests/Domain/Factory/EstateFactoryTest.php",
+        "line": 50,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getName()",
+        "on": "$estate",
+        "onKind": "local"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Factory\\EstateFactoryTest::testCreateEstateWithDeterministicUuid()",
+        "kind": "Method",
+        "file": "tests/Domain/Factory/EstateFactoryTest.php",
+        "line": 51,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getShortName()",
+        "on": "$estate",
+        "onKind": "local"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Factory\\EstateFactoryTest::testCreateEstateWithDeterministicUuid()",
+        "kind": "Method",
+        "file": "tests/Domain/Factory/EstateFactoryTest.php",
+        "line": 52,
+        "children": [],
+        "refType": "method_call",
+        "callee": "getLegacyId()",
+        "on": "$estate",
+        "onKind": "local"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\EstateStatusChecker",
+        "kind": "Class",
+        "file": "src/Application/Estate/EstateStatusChecker.php",
+        "line": 10,
+        "children": [],
+        "refType": "parameter_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\UseCase\\CreateEstate::__invoke()",
+        "kind": "Method",
+        "file": "src/Application/Estate/UseCase/CreateEstate.php",
+        "line": 48,
+        "children": [],
+        "refType": "return_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\Estate\\UseCase\\UpdateEstate",
+        "kind": "Class",
+        "file": "src/Application/Estate/UseCase/UpdateEstate.php",
+        "line": 29,
+        "children": [],
+        "refType": "parameter_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\EventListener\\Estate\\EstateUpdatedEventListener",
+        "kind": "Class",
+        "file": "src/Application/EventListener/Estate/EstateUpdatedEventListener.php",
+        "line": 19,
+        "children": [],
+        "refType": "parameter_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Event\\Estate\\EstateAdditionalFeeUpdated",
+        "kind": "Class",
+        "file": "src/Domain/Event/Estate/EstateAdditionalFeeUpdated.php",
+        "line": 12,
+        "children": [],
+        "refType": "parameter_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Event\\Estate\\EstateTaxRateUpdated",
+        "kind": "Class",
+        "file": "src/Domain/Event/Estate/EstateTaxRateUpdated.php",
+        "line": 11,
+        "children": [],
+        "refType": "parameter_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Factory\\EstateAdditionalFeeFactory",
+        "kind": "Class",
+        "file": "src/Domain/Factory/EstateAdditionalFeeFactory.php",
+        "line": 14,
+        "children": [],
+        "refType": "parameter_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Factory\\EstateFactory::create()",
+        "kind": "Method",
+        "file": "src/Domain/Factory/EstateFactory.php",
+        "line": 30,
+        "children": [],
+        "refType": "return_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\CancellationPolicy\\CancellationPolicy",
+        "kind": "Class",
+        "file": "src/Domain/Model/CancellationPolicy/CancellationPolicy.php",
+        "line": 10,
+        "children": [],
+        "refType": "parameter_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\CancellationPolicy\\CancellationPolicy::getEstate()",
+        "kind": "Method",
+        "file": "src/Domain/Model/CancellationPolicy/CancellationPolicy.php",
+        "line": 74,
+        "children": [],
+        "refType": "return_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\DepositPolicy\\DepositPolicy",
+        "kind": "Class",
+        "file": "src/Domain/Model/DepositPolicy/DepositPolicy.php",
+        "line": 13,
+        "children": [],
+        "refType": "parameter_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\DepositPolicy\\DepositPolicy::getEstate()",
+        "kind": "Method",
+        "file": "src/Domain/Model/DepositPolicy/DepositPolicy.php",
+        "line": 84,
+        "children": [],
+        "refType": "return_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Estate\\AdditionalFee\\EstateAdditionalFee",
+        "kind": "Class",
+        "file": "src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php",
+        "line": 10,
+        "children": [],
+        "refType": "parameter_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Estate\\AdditionalFee\\EstateAdditionalFee::getEstate()",
+        "kind": "Method",
+        "file": "src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php",
+        "line": 54,
+        "children": [],
+        "refType": "return_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Offer\\Offer",
+        "kind": "Class",
+        "file": "src/Domain/Model/Offer/Offer.php",
+        "line": 11,
+        "children": [],
+        "refType": "parameter_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Offer\\Offer::getEstate()",
+        "kind": "Method",
+        "file": "src/Domain/Model/Offer/Offer.php",
+        "line": 48,
+        "children": [],
+        "refType": "return_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Property\\Property::getEstate()",
+        "kind": "Method",
+        "file": "src/Domain/Model/Property/Property.php",
+        "line": 61,
+        "children": [],
+        "refType": "return_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\RateType\\RateType",
+        "kind": "Class",
+        "file": "src/Domain/Model/RateType/RateType.php",
+        "line": 11,
+        "children": [],
+        "refType": "parameter_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\RateType\\RateType::getEstate()",
+        "kind": "Method",
+        "file": "src/Domain/Model/RateType/RateType.php",
+        "line": 55,
+        "children": [],
+        "refType": "return_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Season\\Season::getEstate()",
+        "kind": "Method",
+        "file": "src/Domain/Model/Season/Season.php",
+        "line": 44,
+        "children": [],
+        "refType": "return_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Repository\\EstateRepository",
+        "kind": "Interface",
+        "file": "src/Domain/Repository/EstateRepository.php",
+        "line": 10,
+        "children": [],
+        "refType": "parameter_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Repository\\EstateRepository::get()",
+        "kind": "Method",
+        "file": "src/Domain/Repository/EstateRepository.php",
+        "line": 15,
+        "children": [],
+        "refType": "return_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\Bottles\\PropertyFixtures",
+        "kind": "Class",
+        "file": "src/Infrastructure/Persistence/DataFixtures/Bottles/PropertyFixtures.php",
+        "line": 21,
+        "children": [],
+        "refType": "type_hint"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\CancellationPolicyFixtures",
+        "kind": "Class",
+        "file": "src/Infrastructure/Persistence/DataFixtures/CancellationPolicyFixtures.php",
+        "line": 20,
+        "children": [],
+        "refType": "type_hint"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\DepositPolicyFixtures",
+        "kind": "Class",
+        "file": "src/Infrastructure/Persistence/DataFixtures/DepositPolicyFixtures.php",
+        "line": 24,
+        "children": [],
+        "refType": "parameter_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\EstateFixtures::createEstate0()",
+        "kind": "Method",
+        "file": "src/Infrastructure/Persistence/DataFixtures/EstateFixtures.php",
+        "line": 61,
+        "children": [],
+        "refType": "return_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\EstateFixtures::createEstate1()",
+        "kind": "Method",
+        "file": "src/Infrastructure/Persistence/DataFixtures/EstateFixtures.php",
+        "line": 136,
+        "children": [],
+        "refType": "return_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\EstateFixtures::createEstate2()",
+        "kind": "Method",
+        "file": "src/Infrastructure/Persistence/DataFixtures/EstateFixtures.php",
+        "line": 201,
+        "children": [],
+        "refType": "return_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\OfferFixtures",
+        "kind": "Class",
+        "file": "src/Infrastructure/Persistence/DataFixtures/OfferFixtures.php",
+        "line": 19,
+        "children": [],
+        "refType": "parameter_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\PropertyFixtures",
+        "kind": "Class",
+        "file": "src/Infrastructure/Persistence/DataFixtures/PropertyFixtures.php",
+        "line": 26,
+        "children": [],
+        "refType": "type_hint"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\RateTypeFixtures",
+        "kind": "Class",
+        "file": "src/Infrastructure/Persistence/DataFixtures/RateTypeFixtures.php",
+        "line": 19,
+        "children": [],
+        "refType": "parameter_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\SeasonFixtures",
+        "kind": "Class",
+        "file": "src/Infrastructure/Persistence/DataFixtures/SeasonFixtures.php",
+        "line": 21,
+        "children": [],
+        "refType": "type_hint"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\Repository\\EstateDoctrineRepository",
+        "kind": "Class",
+        "file": "src/Infrastructure/Persistence/Repository/EstateDoctrineRepository.php",
+        "line": 16,
+        "children": [],
+        "refType": "parameter_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Infrastructure\\Persistence\\Repository\\EstateDoctrineRepository::get()",
+        "kind": "Method",
+        "file": "src/Infrastructure/Persistence/Repository/EstateDoctrineRepository.php",
+        "line": 24,
+        "children": [],
+        "refType": "return_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Controller\\Estate\\EstateController",
+        "kind": "Class",
+        "file": "src/Ui/Controller/Estate/EstateController.php",
+        "line": 28,
+        "children": [],
+        "refType": "parameter_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Controller\\Estate\\EstateRateTypeController",
+        "kind": "Class",
+        "file": "src/Ui/Controller/Estate/EstateRateTypeController.php",
+        "line": 21,
+        "children": [],
+        "refType": "parameter_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Dto\\CancellationPolicy\\CreateCancellationPolicyRequest",
+        "kind": "Class",
+        "file": "src/Ui/Dto/CancellationPolicy/CreateCancellationPolicyRequest.php",
+        "line": 18,
+        "children": [],
+        "refType": "type_hint"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Dto\\DepositPolicy\\CreateDepositPolicyRequest",
+        "kind": "Class",
+        "file": "src/Ui/Dto/DepositPolicy/CreateDepositPolicyRequest.php",
+        "line": 18,
+        "children": [],
+        "refType": "type_hint"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Dto\\Estate\\CreateEstateRequest",
+        "kind": "Class",
+        "file": "src/Ui/Dto/Estate/CreateEstateRequest.php",
+        "line": 16,
+        "children": [],
+        "refType": "type_hint"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Dto\\Offer\\CreateOfferRequest",
+        "kind": "Class",
+        "file": "src/Ui/Dto/Offer/CreateOfferRequest.php",
+        "line": 17,
+        "children": [],
+        "refType": "type_hint"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Dto\\Property\\CreatePropertyRequest",
+        "kind": "Class",
+        "file": "src/Ui/Dto/Property/CreatePropertyRequest.php",
+        "line": 16,
+        "children": [],
+        "refType": "type_hint"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Dto\\RateType\\CreateRateTypeRequest",
+        "kind": "Class",
+        "file": "src/Ui/Dto/RateType/CreateRateTypeRequest.php",
+        "line": 16,
+        "children": [],
+        "refType": "type_hint"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Dto\\Season\\CreateSeasonRequest",
+        "kind": "Class",
+        "file": "src/Ui/Dto/Season/CreateSeasonRequest.php",
+        "line": 17,
+        "children": [],
+        "refType": "type_hint"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Dto\\Season\\UpdateSeasonRequest",
+        "kind": "Class",
+        "file": "src/Ui/Dto/Season/UpdateSeasonRequest.php",
+        "line": 13,
+        "children": [],
+        "refType": "type_hint"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Ui\\Factory\\Estate\\GetEstateResponseFactory",
+        "kind": "Class",
+        "file": "src/Ui/Factory/Estate/GetEstateResponseFactory.php",
+        "line": 9,
+        "children": [],
+        "refType": "parameter_type"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Application\\Estate\\EstateStatusCheckerTest",
+        "kind": "Class",
+        "file": "tests/Application/Estate/EstateStatusCheckerTest.php",
+        "line": 15,
+        "children": [],
+        "refType": "type_hint"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Factory\\EstateFactoryTest",
+        "kind": "Class",
+        "file": "tests/Domain/Factory/EstateFactoryTest.php",
+        "line": 16,
+        "children": [],
+        "refType": "type_hint"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Tests\\Domain\\Factory\\RateTypeFactoryTest",
+        "kind": "Class",
+        "file": "tests/Domain/Factory/RateTypeFactoryTest.php",
+        "line": 18,
+        "children": [],
+        "refType": "type_hint"
+      }
+    ],
+    "uses": [
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\VO\\UuidVO",
+        "kind": "Class",
+        "file": "src/Domain/Model/Estate/Estate.php",
+        "line": 31,
+        "children": [
+          {
+            "depth": 2,
+            "fqn": "App\\Domain\\VO\\UuidVO::getId()",
+            "kind": "Method",
+            "file": "src/Domain/Model/Estate/Estate.php",
+            "line": 118,
+            "children": [],
+            "refType": "method_call",
+            "callee": "getId()",
+            "on": "$this->id",
+            "onKind": "property"
+          }
+        ],
+        "refType": "property_type",
+        "property": "$id"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Estate\\EstateStatus",
+        "kind": "Enum",
+        "file": "src/Domain/Model/Estate/Estate.php",
+        "line": 34,
+        "children": [],
+        "refType": "property_type",
+        "property": "$status"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Estate\\EstatePricingType",
+        "kind": "Enum",
+        "file": "src/Domain/Model/Estate/Estate.php",
+        "line": 35,
+        "children": [],
+        "refType": "property_type",
+        "property": "$pricingType"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Estate\\EstateAddress",
+        "kind": "Class",
+        "file": "src/Domain/Model/Estate/Estate.php",
+        "line": 41,
+        "children": [],
+        "refType": "property_type",
+        "property": "$address"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Estate\\EstateContact",
+        "kind": "Class",
+        "file": "src/Domain/Model/Estate/Estate.php",
+        "line": 42,
+        "children": [],
+        "refType": "property_type",
+        "property": "$contact"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Estate\\EstateLanguage",
+        "kind": "Class",
+        "file": "src/Domain/Model/Estate/Estate.php",
+        "line": 43,
+        "children": [],
+        "refType": "property_type",
+        "property": "$language"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Estate\\EstateTaxRate",
+        "kind": "Class",
+        "file": "src/Domain/Model/Estate/Estate.php",
+        "line": 44,
+        "children": [],
+        "refType": "property_type",
+        "property": "$hotelTax"
+      },
+      {
+        "depth": 1,
+        "fqn": "App\\Domain\\Model\\Estate\\AdditionalFee\\EstateAdditionalFee",
+        "kind": "Class",
+        "file": "src/Domain/Model/Estate/Estate.php",
+        "line": 283,
+        "children": [
+          {
+            "depth": 2,
+            "fqn": "App\\Domain\\VO\\UuidVO",
+            "kind": "Class",
+            "file": "src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php",
+            "line": 28,
+            "children": [],
+            "refType": "parameter_type"
+          },
+          {
+            "depth": 2,
+            "fqn": "App\\Domain\\Model\\Estate\\AdditionalFee\\EstateAdditionalFeeAmountQualifier",
+            "kind": "Enum",
+            "file": "src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php",
+            "line": 32,
+            "children": [],
+            "refType": "parameter_type"
+          },
+          {
+            "depth": 2,
+            "fqn": "App\\Domain\\Model\\Estate\\AdditionalFee\\EstateAdditionalFeeChargeWhen",
+            "kind": "Enum",
+            "file": "src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php",
+            "line": 33,
+            "children": [],
+            "refType": "parameter_type"
+          },
+          {
+            "depth": 2,
+            "fqn": "App\\Domain\\Model\\Estate\\AdditionalFee\\EstateAdditionalFeeChargeQualifier",
+            "kind": "Enum",
+            "file": "src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFee.php",
+            "line": 69,
+            "children": [],
+            "refType": "return_type"
+          }
+        ],
+        "refType": "parameter_type"
+      }
+    ],
+    "definition": {
+      "fqn": "App\\Domain\\Model\\Estate\\Estate",
+      "kind": "Class",
+      "file": "src/Domain/Model/Estate/Estate.php",
+      "line": 13,
+      "properties": [
+        {
+          "name": "$offers",
+          "visibility": "private",
+          "type": "Collection"
+        },
+        {
+          "name": "$reservationDeliveryEmailAddress",
+          "visibility": "private",
+          "type": "?string",
+          "promoted": true
+        },
+        {
+          "name": "$cancellationPolicies",
+          "visibility": "private",
+          "type": "Collection"
+        },
+        {
+          "name": "$newChannelNotificationEmail",
+          "visibility": "private",
+          "type": "?string",
+          "promoted": true
+        },
+        {
+          "name": "$pricingType",
+          "type": "EstatePricingType",
+          "visibility": "private",
+          "promoted": true
+        },
+        {
+          "name": "$language",
+          "type": "EstateLanguage",
+          "visibility": "private",
+          "promoted": true
+        },
+        {
+          "name": "$seasons",
+          "visibility": "private",
+          "type": "Collection"
+        },
+        {
+          "name": "$address",
+          "type": "EstateAddress",
+          "visibility": "private",
+          "promoted": true
+        },
+        {
+          "name": "$id",
+          "type": "UuidVO",
+          "visibility": "private",
+          "promoted": true
+        },
+        {
+          "name": "$currency",
+          "visibility": "private",
+          "type": "string",
+          "promoted": true
+        },
+        {
+          "name": "$legacyId",
+          "visibility": "private",
+          "type": "?int",
+          "promoted": true
+        },
+        {
+          "name": "$rateTypes",
+          "visibility": "private",
+          "type": "Collection"
+        },
+        {
+          "name": "$name",
+          "visibility": "private",
+          "type": "string",
+          "promoted": true
+        },
+        {
+          "name": "$status",
+          "type": "EstateStatus",
+          "visibility": "private",
+          "promoted": true
+        },
+        {
+          "name": "$hotelTax",
+          "type": "EstateTaxRate",
+          "visibility": "private",
+          "promoted": true
+        },
+        {
+          "name": "$isSmithProperty",
+          "visibility": "private",
+          "type": "bool",
+          "promoted": true
+        },
+        {
+          "name": "$additionalFees",
+          "visibility": "private",
+          "type": "Collection"
+        },
+        {
+          "name": "$shortName",
+          "visibility": "private",
+          "type": "string",
+          "promoted": true
+        },
+        {
+          "name": "$contact",
+          "type": "EstateContact",
+          "visibility": "private",
+          "promoted": true
+        },
+        {
+          "name": "$properties",
+          "visibility": "private",
+          "type": "Collection"
+        }
+      ],
+      "methods": [
+        {
+          "name": "getId",
+          "signature": "getId(): \\App\\Domain\\VO\\UuidVO"
+        },
+        {
+          "name": "updateAdditionalFees",
+          "signature": "updateAdditionalFees(?array $additionalFees): void"
+        },
+        {
+          "name": "create",
+          "signature": "create(\\App\\Domain\\VO\\UuidVO $uuidVO, string $name, string $shortName, \\App\\Domain\\Model\\Estate\\EstateStatus $status, \\App\\Domain\\Model\\Estate\\EstatePricingType $pricingType, string $currency, ?int $legacyId = null, ?string $newChannelNotificationEmail = null, ?string $reservationDeliveryEmailAddress = null, bool $isSmithProperty = false, ?\\App\\Domain\\Model\\Estate\\EstateAddress $address = null, ?\\App\\Domain\\Model\\Estate\\EstateContact $contact = null, ?\\App\\Domain\\Model\\Estate\\EstateLanguage $language = null, ?\\App\\Domain\\Model\\Estate\\EstateTaxRate $hotelTax = null, ?\\Doctrine\\Common\\Collections\\Collection $additionalFees = null): self"
+        },
+        {
+          "name": "getContact",
+          "signature": "getContact(): ?\\App\\Domain\\Model\\Estate\\EstateContact"
+        },
+        {
+          "name": "getAdditionalFees",
+          "signature": "getAdditionalFees(): \\Doctrine\\Common\\Collections\\Collection"
+        },
+        {
+          "name": "getAddress",
+          "signature": "getAddress(): ?\\App\\Domain\\Model\\Estate\\EstateAddress"
+        },
+        {
+          "name": "getStatus",
+          "signature": "getStatus(): \\App\\Domain\\Model\\Estate\\EstateStatus"
+        },
+        {
+          "name": "getCancellationPolicies",
+          "signature": "getCancellationPolicies(): \\Doctrine\\Common\\Collections\\Collection"
+        },
+        {
+          "name": "setCancellationPolicies",
+          "signature": "setCancellationPolicies(\\Doctrine\\Common\\Collections\\Collection $cancellationPolicies): void"
+        },
+        {
+          "name": "getIdAsString",
+          "signature": "getIdAsString(): string"
+        },
+        {
+          "name": "getPricingType",
+          "signature": "getPricingType(): \\App\\Domain\\Model\\Estate\\EstatePricingType"
+        },
+        {
+          "name": "isSmithProperty",
+          "signature": "isSmithProperty(): bool"
+        },
+        {
+          "name": "updateLanguage",
+          "signature": "updateLanguage(\\App\\Domain\\Model\\Estate\\EstateLanguage $language): void"
+        },
+        {
+          "name": "getHotelTax",
+          "signature": "getHotelTax(): ?\\App\\Domain\\Model\\Estate\\EstateTaxRate"
+        },
+        {
+          "name": "__clone",
+          "signature": "__clone()"
+        },
+        {
+          "name": "updateEstateDetails",
+          "signature": "updateEstateDetails(string $name, string $shortName, \\App\\Domain\\Model\\Estate\\EstateStatus $status, \\App\\Domain\\Model\\Estate\\EstatePricingType $pricingType, string $currency, ?string $newChannelNotificationEmail = null, ?string $reservationDeliveryEmailAddress = null, ?bool $isSmithProperty = null): void"
+        },
+        {
+          "name": "getCurrency",
+          "signature": "getCurrency(): string"
+        },
+        {
+          "name": "getLanguage",
+          "signature": "getLanguage(): ?\\App\\Domain\\Model\\Estate\\EstateLanguage"
+        },
+        {
+          "name": "getProperties",
+          "signature": "getProperties(): \\Doctrine\\Common\\Collections\\Collection"
+        },
+        {
+          "name": "getNewChannelNotificationEmail",
+          "signature": "getNewChannelNotificationEmail(): ?string"
+        },
+        {
+          "name": "getLegacyId",
+          "signature": "getLegacyId(): ?int"
+        },
+        {
+          "name": "getName",
+          "signature": "getName(): string"
+        },
+        {
+          "name": "updateAddress",
+          "signature": "updateAddress(\\App\\Domain\\Model\\Estate\\EstateAddress $address): void"
+        },
+        {
+          "name": "getRateTypes",
+          "signature": "getRateTypes(): \\Doctrine\\Common\\Collections\\Collection"
+        },
+        {
+          "name": "clearAdditionalFees",
+          "signature": "clearAdditionalFees(): void"
+        },
+        {
+          "name": "addAdditionalFee",
+          "signature": "addAdditionalFee(\\App\\Domain\\Model\\Estate\\AdditionalFee\\EstateAdditionalFee $additionalFee): void"
+        },
+        {
+          "name": "setRateTypes",
+          "signature": "setRateTypes(\\Doctrine\\Common\\Collections\\Collection $rateTypes): void"
+        },
+        {
+          "name": "removeAdditionalFee",
+          "signature": "removeAdditionalFee(\\App\\Domain\\Model\\Estate\\AdditionalFee\\EstateAdditionalFee $additionalFee): void"
+        },
+        {
+          "name": "getSeasons",
+          "signature": "getSeasons(): \\Doctrine\\Common\\Collections\\Collection"
+        },
+        {
+          "name": "setOffers",
+          "signature": "setOffers(\\Doctrine\\Common\\Collections\\Collection $offers): void"
+        },
+        {
+          "name": "updateHotelTax",
+          "signature": "updateHotelTax(\\App\\Domain\\Model\\Estate\\EstateTaxRate $hotelTax): void"
+        },
+        {
+          "name": "getReservationDeliveryEmailAddress",
+          "signature": "getReservationDeliveryEmailAddress(): ?string"
+        },
+        {
+          "name": "getOffers",
+          "signature": "getOffers(): \\Doctrine\\Common\\Collections\\Collection"
+        },
+        {
+          "name": "getShortName",
+          "signature": "getShortName(): string"
+        },
+        {
+          "name": "updateContact",
+          "signature": "updateContact(\\App\\Domain\\Model\\Estate\\EstateContact $contact): void"
+        },
+        {
+          "name": "update",
+          "signature": "update(string $name): void"
+        }
+      ],
+      "constructorDeps": [
+        {
+          "name": "$reservationDeliveryEmailAddress",
+          "type": "?string"
+        },
+        {
+          "name": "$newChannelNotificationEmail",
+          "type": "?string"
+        },
+        {
+          "name": "$pricingType",
+          "type": "EstatePricingType"
+        },
+        {
+          "name": "$language",
+          "type": "EstateLanguage"
+        },
+        {
+          "name": "$address",
+          "type": "EstateAddress"
+        },
+        {
+          "name": "$id",
+          "type": "UuidVO"
+        },
+        {
+          "name": "$currency",
+          "type": "string"
+        },
+        {
+          "name": "$legacyId",
+          "type": "?int"
+        },
+        {
+          "name": "$name",
+          "type": "string"
+        },
+        {
+          "name": "$status",
+          "type": "EstateStatus"
+        },
+        {
+          "name": "$hotelTax",
+          "type": "EstateTaxRate"
+        },
+        {
+          "name": "$isSmithProperty",
+          "type": "bool"
+        },
+        {
+          "name": "$shortName",
+          "type": "string"
+        },
+        {
+          "name": "$contact",
+          "type": "EstateContact"
+        }
+      ]
+    }
+  }
+}

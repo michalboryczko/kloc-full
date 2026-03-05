@@ -1,0 +1,35 @@
+{
+  "query_id": "owners-enum-case",
+  "command": "owners",
+  "args": [
+    "App\\Domain\\Model\\DepositPolicyCharge\\ChargeType::PRIOR_TO_ARRIVAL"
+  ],
+  "options": {
+    "json": true
+  },
+  "exit_code": 0,
+  "stdout": "{\n  \"chain\": [\n    {\n      \"kind\": \"EnumCase\",\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\AdditionalFee\\\\EstateAdditionalFeeChargeWhen::PRIOR_TO_ARRIVAL\",\n      \"file\": \"src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFeeChargeWhen.php\",\n      \"line\": 15\n    },\n    {\n      \"kind\": \"Enum\",\n      \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\AdditionalFee\\\\EstateAdditionalFeeChargeWhen\",\n      \"file\": \"src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFeeChargeWhen.php\",\n      \"line\": 9\n    },\n    {\n      \"kind\": \"File\",\n      \"fqn\": \"src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFeeChargeWhen.php\",\n      \"file\": \"src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFeeChargeWhen.php\",\n      \"line\": null\n    }\n  ]\n}\n",
+  "stderr": "warning: `VIRTUAL_ENV=/Users/michal/dev/ai/kloc/kloc-intelligence/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\n",
+  "json_output": {
+    "chain": [
+      {
+        "kind": "EnumCase",
+        "fqn": "App\\Domain\\Model\\Estate\\AdditionalFee\\EstateAdditionalFeeChargeWhen::PRIOR_TO_ARRIVAL",
+        "file": "src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFeeChargeWhen.php",
+        "line": 15
+      },
+      {
+        "kind": "Enum",
+        "fqn": "App\\Domain\\Model\\Estate\\AdditionalFee\\EstateAdditionalFeeChargeWhen",
+        "file": "src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFeeChargeWhen.php",
+        "line": 9
+      },
+      {
+        "kind": "File",
+        "fqn": "src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFeeChargeWhen.php",
+        "file": "src/Domain/Model/Estate/AdditionalFee/EstateAdditionalFeeChargeWhen.php",
+        "line": null
+      }
+    ]
+  }
+}

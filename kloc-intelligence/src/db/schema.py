@@ -29,7 +29,7 @@ NODE_KINDS = [
     "File",
 ]
 
-# 13 EdgeTypes from sot.json (matching kloc-mapper/src/models.py)
+# 14 EdgeTypes from sot.json (matching kloc-mapper/src/models.py + uses_trait)
 EDGE_TYPES = [
     "contains",
     "uses",
@@ -44,6 +44,7 @@ EDGE_TYPES = [
     "assigned_from",
     "type_of",
     "return_type",
+    "uses_trait",
 ]
 
 # Unique constraint: node_id must be unique across all Node-labeled nodes
@@ -103,6 +104,7 @@ def drop_all(connection: Neo4jConnection) -> None:
     """Drop all nodes, relationships, constraints, and indexes.
 
     WARNING: Destroys all data. Used by reset scripts and test teardown.
+    Uses batched deletion to handle large datasets (700K+ nodes).
     """
     with connection.session() as session:
         # Drop all constraints first
@@ -118,8 +120,16 @@ def drop_all(connection: Neo4jConnection) -> None:
                 continue
             session.run(f"DROP INDEX {idx['name']} IF EXISTS")
 
-        # Delete all data
-        session.run("MATCH (n) DETACH DELETE n")
+    # Delete all data in batches to handle large datasets
+    while True:
+        with connection.session() as session:
+            result = session.run(
+                "MATCH (n) WITH n LIMIT 10000 DETACH DELETE n RETURN count(*) AS deleted"
+            )
+            record = result.single()
+            deleted = record["deleted"] if record else 0
+            if deleted == 0:
+                break
 
 
 def get_node_count(connection: Neo4jConnection) -> int:

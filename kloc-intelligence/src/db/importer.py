@@ -116,6 +116,7 @@ EDGE_TYPE_TO_REL = {
     "assigned_from": "ASSIGNED_FROM",
     "type_of": "TYPE_OF",
     "return_type": "RETURN_TYPE",
+    "uses_trait": "USES_TRAIT",
 }
 
 

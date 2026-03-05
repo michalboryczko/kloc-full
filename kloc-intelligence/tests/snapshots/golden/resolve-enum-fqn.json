@@ -1,0 +1,12 @@
+{
+  "query_id": "resolve-enum-fqn",
+  "command": "resolve",
+  "args": [
+    "App\\Domain\\Model\\DepositPolicyCharge\\ChargeType"
+  ],
+  "options": {},
+  "exit_code": 0,
+  "stdout": "Enum: App\\Domain\\Model\\DepositPolicyCharge\\ChargeType\n  File: src/Domain/Model/DepositPolicyCharge/ChargeType.php:9\n  Doc: ```php\nenum ChargeType\n```...\n",
+  "stderr": "warning: `VIRTUAL_ENV=/Users/michal/dev/ai/kloc/kloc-intelligence/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\n",
+  "json_output": null
+}

@@ -27,8 +27,8 @@ class TestSchemaConstants:
         assert len(NODE_KINDS) == 13
 
     def test_edge_types_count(self):
-        """There are exactly 13 EdgeTypes."""
-        assert len(EDGE_TYPES) == 13
+        """There are exactly 14 EdgeTypes."""
+        assert len(EDGE_TYPES) == 14
 
     def test_node_kinds_contains_expected(self):
         """NodeKinds includes all expected types."""
@@ -48,7 +48,7 @@ class TestSchemaConstants:
             "overrides", "type_hint",
             "calls", "receiver", "argument",
             "produces", "assigned_from", "type_of",
-            "return_type",
+            "return_type", "uses_trait",
         }
         assert set(EDGE_TYPES) == expected
 

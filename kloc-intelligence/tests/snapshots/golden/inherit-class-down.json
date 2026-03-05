@@ -1,0 +1,177 @@
+{
+  "query_id": "inherit-class-down",
+  "command": "inherit",
+  "args": [
+    "App\\Application\\EventListener\\AbstractEventListener"
+  ],
+  "options": {
+    "json": true,
+    "direction": "down"
+  },
+  "exit_code": 0,
+  "stdout": "{\n  \"root\": {\n    \"fqn\": \"App\\\\Application\\\\EventListener\\\\AbstractEventListener\",\n    \"file\": \"src/Application/EventListener/AbstractEventListener.php\"\n  },\n  \"direction\": \"down\",\n  \"max_depth\": 1,\n  \"total\": 19,\n  \"tree\": [\n    {\n      \"depth\": 1,\n      \"kind\": \"Class\",\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\Estate\\\\EstateUpdatedEventListener\",\n      \"file\": \"src/Application/EventListener/Estate/EstateUpdatedEventListener.php\",\n      \"line\": 19,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"kind\": \"Class\",\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\Estate\\\\EstateAdditionalFeeUpdatedEventListener\",\n      \"file\": \"src/Application/EventListener/Estate/EstateAdditionalFeeUpdatedEventListener.php\",\n      \"line\": 12,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"kind\": \"Class\",\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\Offer\\\\OfferCreatedEventListener\",\n      \"file\": \"src/Application/EventListener/Offer/OfferCreatedEventListener.php\",\n      \"line\": 12,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"kind\": \"Class\",\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\Property\\\\PropertyUpdatedEventListener\",\n      \"file\": \"src/Application/EventListener/Property/PropertyUpdatedEventListener.php\",\n      \"line\": 15,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"kind\": \"Class\",\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\RateType\\\\RateTypeUpdatedEventListener\",\n      \"file\": \"src/Application/EventListener/RateType/RateTypeUpdatedEventListener.php\",\n      \"line\": 12,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"kind\": \"Class\",\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\CancellationPolicy\\\\CancellationPolicyCreatedEventListener\",\n      \"file\": \"src/Application/EventListener/CancellationPolicy/CancellationPolicyCreatedEventListener.php\",\n      \"line\": 12,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"kind\": \"Class\",\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\Estate\\\\EstateTaxRateUpdatedEventListener\",\n      \"file\": \"src/Application/EventListener/Estate/EstateTaxRateUpdatedEventListener.php\",\n      \"line\": 12,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"kind\": \"Class\",\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\CancellationPolicyPenalty\\\\CancellationPolicyPenaltyCreatedEventListener\",\n      \"file\": \"src/Application/EventListener/CancellationPolicyPenalty/CancellationPolicyPenaltyCreatedEventListener.php\",\n      \"line\": 12,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"kind\": \"Class\",\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\RoomType\\\\RoomTypeCreatedEventListener\",\n      \"file\": \"src/Application/EventListener/RoomType/RoomTypeCreatedEventListener.php\",\n      \"line\": 13,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"kind\": \"Class\",\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\Offer\\\\OfferUpdatedEventListener\",\n      \"file\": \"src/Application/EventListener/Offer/OfferUpdatedEventListener.php\",\n      \"line\": 12,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"kind\": \"Class\",\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\CancellationPolicyPenalty\\\\CancellationPolicyPenaltyUpdatedEventListener\",\n      \"file\": \"src/Application/EventListener/CancellationPolicyPenalty/CancellationPolicyPenaltyUpdatedEventListener.php\",\n      \"line\": 12,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"kind\": \"Class\",\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\RateType\\\\RateTypeCreatedEventListener\",\n      \"file\": \"src/Application/EventListener/RateType/RateTypeCreatedEventListener.php\",\n      \"line\": 12,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"kind\": \"Class\",\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\RoomType\\\\RoomTypeUpdatedEventListener\",\n      \"file\": \"src/Application/EventListener/RoomType/RoomTypeUpdatedEventListener.php\",\n      \"line\": 13,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"kind\": \"Class\",\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\DepositPolicy\\\\DepositPolicyCreatedEventListener\",\n      \"file\": \"src/Application/EventListener/DepositPolicy/DepositPolicyCreatedEventListener.php\",\n      \"line\": 12,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"kind\": \"Class\",\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\Estate\\\\EstateCreatedEventListener\",\n      \"file\": \"src/Application/EventListener/Estate/EstateCreatedEventListener.php\",\n      \"line\": 16,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"kind\": \"Class\",\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\CancellationPolicy\\\\CancellationPolicyUpdatedEventListener\",\n      \"file\": \"src/Application/EventListener/CancellationPolicy/CancellationPolicyUpdatedEventListener.php\",\n      \"line\": 12,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"kind\": \"Class\",\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\DepositPolicy\\\\DepositPolicyDeletedEventListener\",\n      \"file\": \"src/Application/EventListener/DepositPolicy/DepositPolicyDeletedEventListener.php\",\n      \"line\": 12,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"kind\": \"Class\",\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\Property\\\\PropertyCreatedEventListener\",\n      \"file\": \"src/Application/EventListener/Property/PropertyCreatedEventListener.php\",\n      \"line\": 13,\n      \"children\": []\n    },\n    {\n      \"depth\": 1,\n      \"kind\": \"Class\",\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\DepositPolicy\\\\DepositPolicyUpdatedEventListener\",\n      \"file\": \"src/Application/EventListener/DepositPolicy/DepositPolicyUpdatedEventListener.php\",\n      \"line\": 12,\n      \"children\": []\n    }\n  ]\n}\n",
+  "stderr": "warning: `VIRTUAL_ENV=/Users/michal/dev/ai/kloc/kloc-intelligence/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\n",
+  "json_output": {
+    "root": {
+      "fqn": "App\\Application\\EventListener\\AbstractEventListener",
+      "file": "src/Application/EventListener/AbstractEventListener.php"
+    },
+    "direction": "down",
+    "max_depth": 1,
+    "total": 19,
+    "tree": [
+      {
+        "depth": 1,
+        "kind": "Class",
+        "fqn": "App\\Application\\EventListener\\Estate\\EstateUpdatedEventListener",
+        "file": "src/Application/EventListener/Estate/EstateUpdatedEventListener.php",
+        "line": 19,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "kind": "Class",
+        "fqn": "App\\Application\\EventListener\\Estate\\EstateAdditionalFeeUpdatedEventListener",
+        "file": "src/Application/EventListener/Estate/EstateAdditionalFeeUpdatedEventListener.php",
+        "line": 12,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "kind": "Class",
+        "fqn": "App\\Application\\EventListener\\Offer\\OfferCreatedEventListener",
+        "file": "src/Application/EventListener/Offer/OfferCreatedEventListener.php",
+        "line": 12,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "kind": "Class",
+        "fqn": "App\\Application\\EventListener\\Property\\PropertyUpdatedEventListener",
+        "file": "src/Application/EventListener/Property/PropertyUpdatedEventListener.php",
+        "line": 15,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "kind": "Class",
+        "fqn": "App\\Application\\EventListener\\RateType\\RateTypeUpdatedEventListener",
+        "file": "src/Application/EventListener/RateType/RateTypeUpdatedEventListener.php",
+        "line": 12,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "kind": "Class",
+        "fqn": "App\\Application\\EventListener\\CancellationPolicy\\CancellationPolicyCreatedEventListener",
+        "file": "src/Application/EventListener/CancellationPolicy/CancellationPolicyCreatedEventListener.php",
+        "line": 12,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "kind": "Class",
+        "fqn": "App\\Application\\EventListener\\Estate\\EstateTaxRateUpdatedEventListener",
+        "file": "src/Application/EventListener/Estate/EstateTaxRateUpdatedEventListener.php",
+        "line": 12,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "kind": "Class",
+        "fqn": "App\\Application\\EventListener\\CancellationPolicyPenalty\\CancellationPolicyPenaltyCreatedEventListener",
+        "file": "src/Application/EventListener/CancellationPolicyPenalty/CancellationPolicyPenaltyCreatedEventListener.php",
+        "line": 12,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "kind": "Class",
+        "fqn": "App\\Application\\EventListener\\RoomType\\RoomTypeCreatedEventListener",
+        "file": "src/Application/EventListener/RoomType/RoomTypeCreatedEventListener.php",
+        "line": 13,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "kind": "Class",
+        "fqn": "App\\Application\\EventListener\\Offer\\OfferUpdatedEventListener",
+        "file": "src/Application/EventListener/Offer/OfferUpdatedEventListener.php",
+        "line": 12,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "kind": "Class",
+        "fqn": "App\\Application\\EventListener\\CancellationPolicyPenalty\\CancellationPolicyPenaltyUpdatedEventListener",
+        "file": "src/Application/EventListener/CancellationPolicyPenalty/CancellationPolicyPenaltyUpdatedEventListener.php",
+        "line": 12,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "kind": "Class",
+        "fqn": "App\\Application\\EventListener\\RateType\\RateTypeCreatedEventListener",
+        "file": "src/Application/EventListener/RateType/RateTypeCreatedEventListener.php",
+        "line": 12,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "kind": "Class",
+        "fqn": "App\\Application\\EventListener\\RoomType\\RoomTypeUpdatedEventListener",
+        "file": "src/Application/EventListener/RoomType/RoomTypeUpdatedEventListener.php",
+        "line": 13,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "kind": "Class",
+        "fqn": "App\\Application\\EventListener\\DepositPolicy\\DepositPolicyCreatedEventListener",
+        "file": "src/Application/EventListener/DepositPolicy/DepositPolicyCreatedEventListener.php",
+        "line": 12,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "kind": "Class",
+        "fqn": "App\\Application\\EventListener\\Estate\\EstateCreatedEventListener",
+        "file": "src/Application/EventListener/Estate/EstateCreatedEventListener.php",
+        "line": 16,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "kind": "Class",
+        "fqn": "App\\Application\\EventListener\\CancellationPolicy\\CancellationPolicyUpdatedEventListener",
+        "file": "src/Application/EventListener/CancellationPolicy/CancellationPolicyUpdatedEventListener.php",
+        "line": 12,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "kind": "Class",
+        "fqn": "App\\Application\\EventListener\\DepositPolicy\\DepositPolicyDeletedEventListener",
+        "file": "src/Application/EventListener/DepositPolicy/DepositPolicyDeletedEventListener.php",
+        "line": 12,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "kind": "Class",
+        "fqn": "App\\Application\\EventListener\\Property\\PropertyCreatedEventListener",
+        "file": "src/Application/EventListener/Property/PropertyCreatedEventListener.php",
+        "line": 13,
+        "children": []
+      },
+      {
+        "depth": 1,
+        "kind": "Class",
+        "fqn": "App\\Application\\EventListener\\DepositPolicy\\DepositPolicyUpdatedEventListener",
+        "file": "src/Application/EventListener/DepositPolicy/DepositPolicyUpdatedEventListener.php",
+        "line": 12,
+        "children": []
+      }
+    ]
+  }
+}

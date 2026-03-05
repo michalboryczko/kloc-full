@@ -1,0 +1,32 @@
+{
+  "query_id": "overrides-method-up",
+  "command": "overrides",
+  "args": [
+    "App\\Application\\EventListener\\Estate\\EstateCreatedEventListener::__construct()"
+  ],
+  "options": {
+    "json": true,
+    "direction": "up"
+  },
+  "exit_code": 0,
+  "stdout": "{\n  \"root\": {\n    \"fqn\": \"App\\\\Application\\\\EventListener\\\\Estate\\\\EstateCreatedEventListener::__construct()\",\n    \"file\": \"src/Application/EventListener/Estate/EstateCreatedEventListener.php\"\n  },\n  \"direction\": \"up\",\n  \"max_depth\": 1,\n  \"total\": 1,\n  \"tree\": [\n    {\n      \"depth\": 1,\n      \"fqn\": \"App\\\\Application\\\\EventListener\\\\AbstractEventListener::__construct()\",\n      \"file\": \"src/Application/EventListener/AbstractEventListener.php\",\n      \"line\": 13,\n      \"children\": []\n    }\n  ]\n}\n",
+  "stderr": "warning: `VIRTUAL_ENV=/Users/michal/dev/ai/kloc/kloc-intelligence/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\n",
+  "json_output": {
+    "root": {
+      "fqn": "App\\Application\\EventListener\\Estate\\EstateCreatedEventListener::__construct()",
+      "file": "src/Application/EventListener/Estate/EstateCreatedEventListener.php"
+    },
+    "direction": "up",
+    "max_depth": 1,
+    "total": 1,
+    "tree": [
+      {
+        "depth": 1,
+        "fqn": "App\\Application\\EventListener\\AbstractEventListener::__construct()",
+        "file": "src/Application/EventListener/AbstractEventListener.php",
+        "line": 13,
+        "children": []
+      }
+    ]
+  }
+}

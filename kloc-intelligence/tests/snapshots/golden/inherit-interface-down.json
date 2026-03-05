@@ -1,0 +1,33 @@
+{
+  "query_id": "inherit-interface-down",
+  "command": "inherit",
+  "args": [
+    "App\\Domain\\Repository\\EstateRepository"
+  ],
+  "options": {
+    "json": true,
+    "direction": "down"
+  },
+  "exit_code": 0,
+  "stdout": "{\n  \"root\": {\n    \"fqn\": \"App\\\\Domain\\\\Repository\\\\EstateRepository\",\n    \"file\": \"src/Domain/Repository/EstateRepository.php\"\n  },\n  \"direction\": \"down\",\n  \"max_depth\": 1,\n  \"total\": 1,\n  \"tree\": [\n    {\n      \"depth\": 1,\n      \"kind\": \"Class\",\n      \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\Repository\\\\EstateDoctrineRepository\",\n      \"file\": \"src/Infrastructure/Persistence/Repository/EstateDoctrineRepository.php\",\n      \"line\": 16,\n      \"children\": []\n    }\n  ]\n}\n",
+  "stderr": "warning: `VIRTUAL_ENV=/Users/michal/dev/ai/kloc/kloc-intelligence/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\n",
+  "json_output": {
+    "root": {
+      "fqn": "App\\Domain\\Repository\\EstateRepository",
+      "file": "src/Domain/Repository/EstateRepository.php"
+    },
+    "direction": "down",
+    "max_depth": 1,
+    "total": 1,
+    "tree": [
+      {
+        "depth": 1,
+        "kind": "Class",
+        "fqn": "App\\Infrastructure\\Persistence\\Repository\\EstateDoctrineRepository",
+        "file": "src/Infrastructure/Persistence/Repository/EstateDoctrineRepository.php",
+        "line": 16,
+        "children": []
+      }
+    ]
+  }
+}

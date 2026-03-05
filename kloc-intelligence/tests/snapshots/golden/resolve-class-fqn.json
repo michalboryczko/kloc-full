@@ -1,0 +1,12 @@
+{
+  "query_id": "resolve-class-fqn",
+  "command": "resolve",
+  "args": [
+    "App\\Domain\\Model\\Estate\\Estate"
+  ],
+  "options": {},
+  "exit_code": 0,
+  "stdout": "Class: App\\Domain\\Model\\Estate\\Estate\n  File: src/Domain/Model/Estate/Estate.php:13\n  Doc: ```php\nclass Estate\n```...\n",
+  "stderr": "warning: `VIRTUAL_ENV=/Users/michal/dev/ai/kloc/kloc-intelligence/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\n",
+  "json_output": null
+}
