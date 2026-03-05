@@ -620,17 +620,27 @@ def context(
     query: str = typer.Argument(..., help="Symbol to get context for"),
     depth: int = typer.Option(1, "--depth", "-d", help="BFS depth for expansion"),
     limit: int = typer.Option(100, "--limit", "-l", help="Maximum results per direction"),
-    impl: bool = typer.Option(False, "--impl", help="Include polymorphic analysis"),
+    impl: bool = typer.Option(False, "--impl", "-i", help="Include implementations/overrides"),
     json_output: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
 ) -> None:
-    """Get bidirectional context (used_by + uses + definition) for a symbol."""
+    """Get bidirectional context (used_by + uses + definition) for a symbol.
+
+    Shows DEFINITION (signature, properties, methods), USED BY (who references
+    this symbol), and USES (what this symbol depends on) in a tree structure.
+
+    With --impl flag (polymorphic analysis):
+      USES direction includes implementations of interfaces and overriding methods.
+      USED BY direction includes usages of interface methods.
+
+    Examples:
+      kloc-intelligence context "App\\Entity\\Order"
+      kloc-intelligence context "App\\Entity\\Order" --depth 2 --json
+      kloc-intelligence context "App\\Entity\\Order::getId()" --impl
+    """
     import json as json_mod
 
     from .db.query_runner import QueryRunner
-    from .db.queries.resolve import resolve_symbol
-    from .db.queries.definition import definition_for_node
-    from .orchestration.class_context import build_class_used_by, build_class_uses
-    from .models.results import ContextResult
+    from .orchestration.context import ContextOrchestrator
     from .models.output import ContextOutput
 
     try:
@@ -641,63 +651,25 @@ def context(
         raise typer.Exit(code=1)
 
     runner = QueryRunner(conn)
-    candidates = resolve_symbol(runner, query)
+    orchestrator = ContextOrchestrator(runner)
 
-    if not candidates:
+    try:
+        result = orchestrator.execute_symbol(
+            query, depth=depth, limit=limit, include_impl=impl
+        )
+    except ValueError as e:
         if json_output:
-            print(json_mod.dumps({"error": "Symbol not found", "query": query}, indent=2, ensure_ascii=False))
+            print(json_mod.dumps({"error": str(e), "query": query}, indent=2, ensure_ascii=False))
         else:
-            console.print(f"[red]Symbol not found: {query}[/red]")
+            console.print(f"[red]{e}[/red]")
         conn.close()
         raise typer.Exit(code=1)
-
-    if len(candidates) > 1:
-        if json_output:
-            print(json_mod.dumps([
-                {
-                    "id": n.id,
-                    "kind": n.kind,
-                    "fqn": n.fqn,
-                    "file": n.file,
-                    "line": n.start_line + 1 if n.start_line is not None else None,
-                }
-                for n in candidates
-            ], indent=2, ensure_ascii=False))
-        else:
-            console.print(f"[yellow]Found {len(candidates)} candidates:[/yellow]")
-            for i, node in enumerate(candidates, 1):
-                console.print(f"  [{i}] {node.kind}: {node.fqn}")
-                console.print(f"      {node.location_str}")
-        conn.close()
-        raise typer.Exit(code=1)
-
-    node = candidates[0]
-
-    # Build definition
-    definition = definition_for_node(runner, node.node_id)
-
-    # Build used_by and uses based on node kind
-    used_by = []
-    uses = []
-
-    if node.kind in ("Class", "Enum"):
-        used_by = build_class_used_by(runner, node.node_id, depth, limit, impl)
-        uses = build_class_uses(runner, node.node_id, depth, limit, impl)
-    # TODO: Interface, Method, Property, Value context in T10/T11
-
-    result = ContextResult(
-        target=node,
-        max_depth=depth,
-        used_by=used_by,
-        uses=uses,
-        definition=definition,
-    )
 
     if json_output:
         output = ContextOutput.from_result(result)
         print(json_mod.dumps(output.to_dict(), indent=2, ensure_ascii=False))
     else:
-        console.print(f"[bold]Context for {node.fqn} (depth={depth}):[/bold]")
+        console.print(f"[bold]Context for {result.target.fqn} (depth={depth}):[/bold]")
         if result.definition:
             console.print(f"  [bold]DEFINITION:[/bold] {result.definition.kind}: {result.definition.fqn}")
         console.print(f"  [bold]USED BY ({len(result.used_by)}):[/bold]")
@@ -708,6 +680,37 @@ def context(
             _print_context_entry(entry)
 
     conn.close()
+
+
+@app.command("mcp-server")
+def mcp_server(
+    config: str = typer.Option(None, "--config", "-c", help="Path to JSON config file with multiple projects"),
+    database: str = typer.Option(None, "--database", "-db", help="Neo4j database name (single project mode)"),
+) -> None:
+    """Start MCP server for AI assistant integration (stdio).
+
+    The MCP server implements JSON-RPC 2.0 over stdio for integration with
+    Claude, Cursor, Copilot, and other MCP-compatible AI assistants.
+
+    Single project mode (default database):
+      kloc-intelligence mcp-server
+
+    Single project mode (specific database):
+      kloc-intelligence mcp-server --database myapp
+
+    Multi-project mode (config file):
+      kloc-intelligence mcp-server --config kloc.json
+
+    Config file format:
+      {
+        "projects": [
+          {"name": "my-app", "database": "myapp"},
+          {"name": "payments", "database": "payments"}
+        ]
+      }
+    """
+    from .server.mcp import run_mcp_server
+    run_mcp_server(config_path=config, database=database)
 
 
 def _print_context_entry(entry, indent: str = "    ") -> None:
