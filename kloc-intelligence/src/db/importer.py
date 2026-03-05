@@ -157,7 +157,7 @@ def parse_sot(sot_path: str | Path) -> tuple[list[dict], list[dict]]:
         data = _decoder.decode(f.read())
 
     nodes = [node_to_props(n) for n in data.nodes]
-    edges = [edge_to_props(e) for e in data.edges]
+    edges = [edge_to_props(e, idx=i) for i, e in enumerate(data.edges)]
 
     return nodes, edges
 
@@ -198,17 +198,19 @@ def node_to_props(node: NodeSpec) -> dict:
     return props
 
 
-def edge_to_props(edge: EdgeSpec) -> dict:
+def edge_to_props(edge: EdgeSpec, idx: int = 0) -> dict:
     """Convert an EdgeSpec to Neo4j-ready property dict.
 
     Key transformations:
     - location dict -> flat loc_file, loc_line
     - type preserved as separate key (used to create typed relationships)
+    - idx preserves original sot.json edge ordering for behavioral parity
     """
     props: dict = {
         "type": edge.type,
         "source_id": edge.source,
         "target_id": edge.target,
+        "edge_idx": idx,
     }
 
     if edge.location:
@@ -330,7 +332,8 @@ def import_edges(
             r.loc_line = props.loc_line,
             r.position = props.position,
             r.expression = props.expression,
-            r.parameter = props.parameter
+            r.parameter = props.parameter,
+            r.edge_idx = props.edge_idx
         """
 
         for i in range(0, len(type_edges), batch_size):

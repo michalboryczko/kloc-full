@@ -21,7 +21,7 @@ GOLDEN_DIR = Path(__file__).parent / "snapshots" / "golden"
 
 # Commands that have been implemented.
 # Updated as T04-T12 are completed.
-IMPLEMENTED_COMMANDS: set[str] = {"resolve"}
+IMPLEMENTED_COMMANDS: set[str] = {"resolve", "usages", "deps"}
 
 
 def load_corpus():
@@ -62,9 +62,11 @@ def execute_query(connection, query):
 
     command = query["command"]
     args = query.get("args", [])
+    options = query.get("options", {})
+
+    runner = QueryRunner(connection)
 
     if command == "resolve":
-        runner = QueryRunner(connection)
         symbol = args[0]
         candidates = resolve_symbol(runner, symbol)
 
@@ -92,6 +94,38 @@ def execute_query(connection, query):
                 }
                 for n in candidates
             ]
+
+    elif command == "usages":
+        from src.db.queries.usages import usages_tree
+        from src.output.json_formatter import usages_tree_to_dict
+
+        symbol = args[0]
+        depth = options.get("depth", 1)
+        limit = options.get("limit", 100)
+
+        candidates = resolve_symbol(runner, symbol)
+        if not candidates:
+            return {"error": "Symbol not found", "query": symbol}
+
+        node = candidates[0]
+        result = usages_tree(runner, node.node_id, depth=depth, limit=limit)
+        return usages_tree_to_dict(result["target"], result["max_depth"], result["tree"])
+
+    elif command == "deps":
+        from src.db.queries.deps import deps_tree
+        from src.output.json_formatter import deps_tree_to_dict
+
+        symbol = args[0]
+        depth = options.get("depth", 1)
+        limit = options.get("limit", 100)
+
+        candidates = resolve_symbol(runner, symbol)
+        if not candidates:
+            return {"error": "Symbol not found", "query": symbol}
+
+        node = candidates[0]
+        result = deps_tree(runner, node.node_id, depth=depth, limit=limit)
+        return deps_tree_to_dict(result["target"], result["max_depth"], result["tree"])
 
     # Other commands: not yet implemented
     raise NotImplementedError(f"Query not implemented: {command}")

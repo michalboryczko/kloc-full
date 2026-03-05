@@ -257,5 +257,152 @@ def resolve(
     conn.close()
 
 
+@app.command()
+def usages(
+    query: str = typer.Argument(..., help="Symbol to find usages for"),
+    depth: int = typer.Option(1, "--depth", "-d", help="BFS depth for expansion"),
+    limit: int = typer.Option(100, "--limit", "-l", help="Maximum results"),
+    json_output: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
+) -> None:
+    """Find all usages of a symbol with depth expansion."""
+    import json as json_mod
+
+    from .db.query_runner import QueryRunner
+    from .db.queries.resolve import resolve_symbol
+    from .db.queries.usages import usages_tree
+    from .output.json_formatter import usages_tree_to_dict
+
+    try:
+        conn = _get_connection()
+        conn.verify_connectivity()
+    except Neo4jConnectionError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(code=1)
+
+    runner = QueryRunner(conn)
+    candidates = resolve_symbol(runner, query)
+
+    if not candidates:
+        if json_output:
+            print(json_mod.dumps({"error": "Symbol not found", "query": query}, indent=2, ensure_ascii=False))
+        else:
+            console.print(f"[red]Symbol not found: {query}[/red]")
+        conn.close()
+        raise typer.Exit(code=1)
+
+    if len(candidates) > 1:
+        if json_output:
+            print(json_mod.dumps([
+                {
+                    "id": n.id,
+                    "kind": n.kind,
+                    "fqn": n.fqn,
+                    "file": n.file,
+                    "line": n.start_line + 1 if n.start_line is not None else None,
+                }
+                for n in candidates
+            ], indent=2, ensure_ascii=False))
+        else:
+            console.print(f"[yellow]Found {len(candidates)} candidates:[/yellow]")
+            for i, node in enumerate(candidates, 1):
+                console.print(f"  [{i}] {node.kind}: {node.fqn}")
+                console.print(f"      {node.location_str}")
+        conn.close()
+        raise typer.Exit(code=1)
+
+    node = candidates[0]
+    result = usages_tree(runner, node.node_id, depth=depth, limit=limit)
+
+    if json_output:
+        output = usages_tree_to_dict(result["target"], result["max_depth"], result["tree"])
+        print(json_mod.dumps(output, indent=2, ensure_ascii=False))
+    else:
+        console.print(f"[bold]Usages of {node.fqn} (depth={depth}):[/bold]")
+        for entry in result["tree"]:
+            _print_tree_entry(entry)
+
+    conn.close()
+
+
+@app.command()
+def deps(
+    query: str = typer.Argument(..., help="Symbol to find dependencies for"),
+    depth: int = typer.Option(1, "--depth", "-d", help="BFS depth for expansion"),
+    limit: int = typer.Option(100, "--limit", "-l", help="Maximum results"),
+    json_output: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
+) -> None:
+    """Find all dependencies of a symbol with depth expansion."""
+    import json as json_mod
+
+    from .db.query_runner import QueryRunner
+    from .db.queries.resolve import resolve_symbol
+    from .db.queries.deps import deps_tree
+    from .output.json_formatter import deps_tree_to_dict
+
+    try:
+        conn = _get_connection()
+        conn.verify_connectivity()
+    except Neo4jConnectionError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(code=1)
+
+    runner = QueryRunner(conn)
+    candidates = resolve_symbol(runner, query)
+
+    if not candidates:
+        if json_output:
+            print(json_mod.dumps({"error": "Symbol not found", "query": query}, indent=2, ensure_ascii=False))
+        else:
+            console.print(f"[red]Symbol not found: {query}[/red]")
+        conn.close()
+        raise typer.Exit(code=1)
+
+    if len(candidates) > 1:
+        if json_output:
+            print(json_mod.dumps([
+                {
+                    "id": n.id,
+                    "kind": n.kind,
+                    "fqn": n.fqn,
+                    "file": n.file,
+                    "line": n.start_line + 1 if n.start_line is not None else None,
+                }
+                for n in candidates
+            ], indent=2, ensure_ascii=False))
+        else:
+            console.print(f"[yellow]Found {len(candidates)} candidates:[/yellow]")
+            for i, node in enumerate(candidates, 1):
+                console.print(f"  [{i}] {node.kind}: {node.fqn}")
+                console.print(f"      {node.location_str}")
+        conn.close()
+        raise typer.Exit(code=1)
+
+    node = candidates[0]
+    result = deps_tree(runner, node.node_id, depth=depth, limit=limit)
+
+    if json_output:
+        output = deps_tree_to_dict(result["target"], result["max_depth"], result["tree"])
+        print(json_mod.dumps(output, indent=2, ensure_ascii=False))
+    else:
+        console.print(f"[bold]Dependencies of {node.fqn} (depth={depth}):[/bold]")
+        for entry in result["tree"]:
+            _print_tree_entry(entry)
+
+    conn.close()
+
+
+def _print_tree_entry(entry: dict, indent: str = "  ") -> None:
+    """Print a tree entry to console with indentation."""
+    file_info = ""
+    if entry.get("file"):
+        file_info = f" ({entry['file']}"
+        if entry.get("line") is not None:
+            file_info += f":{entry['line'] + 1}"
+        file_info += ")"
+    console.print(f"{indent}[{entry['depth']}] {entry['fqn']}{file_info}")
+    for child in entry.get("children", []):
+        _print_tree_entry(child, indent + "  ")
+
+
 if __name__ == "__main__":
     app()
