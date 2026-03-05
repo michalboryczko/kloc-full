@@ -4,6 +4,7 @@
 
 use std::path::PathBuf;
 use std::process::Command;
+use scip_php_rust::discovery::discover_php_files;
 
 fn rust_binary() -> PathBuf {
     // Use the built binary from the current workspace
@@ -152,4 +153,29 @@ fn test_output_matches_expected_simple_class() {
     // Cleanup
     std::fs::remove_dir_all(&tmpdir).ok();
     std::fs::remove_dir_all(&output_dir).ok();
+}
+
+#[test]
+fn test_file_discovery_reference_project() {
+    let reference_project = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../kloc-reference-project-php");
+
+    if !reference_project.exists() {
+        eprintln!("Skipping: reference project not found at {:?}", reference_project);
+        return;
+    }
+
+    let files = discover_php_files(&reference_project);
+
+    // Verify we found a reasonable number of files
+    assert!(
+        files.project.len() > 5,
+        "Expected more than 5 project PHP files, got {}",
+        files.project.len()
+    );
+
+    // All project files should be .php
+    for f in &files.project {
+        assert_eq!(f.extension().unwrap(), "php");
+    }
 }
