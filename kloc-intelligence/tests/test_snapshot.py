@@ -219,11 +219,18 @@ def execute_query(connection, query):
             # Enum/Trait: generic build_tree (one entry per edge, no refType grouping)
             used_by = build_generic_used_by(runner, node.node_id, depth, limit, include_impl)
             uses = build_generic_uses(runner, node.node_id, depth, limit, include_impl)
-        elif node.kind in ("Property", "Value", "Constant"):
-            # Property/Value/Constant: generic build_tree
+        elif node.kind == "Property":
+            from src.orchestration.property_context import build_property_used_by, build_property_uses
+            used_by = build_property_used_by(runner, node.node_id, depth, limit, include_impl)
+            uses = build_property_uses(runner, node.node_id, depth, limit, include_impl)
+        elif node.kind in ("Value", "Constant"):
+            # Value/Constant: generic build_tree
             used_by = build_generic_used_by(runner, node.node_id, depth, limit, include_impl)
             uses = build_generic_uses(runner, node.node_id, depth, limit, include_impl)
-        # TODO: File context in T11
+        elif node.kind == "File":
+            from src.orchestration.file_context import build_file_used_by, build_file_uses
+            used_by = build_file_used_by(runner, node.node_id, depth, limit, include_impl)
+            uses = build_file_uses(runner, node.node_id, depth, limit, include_impl)
 
         result = ContextResult(
             target=node,
