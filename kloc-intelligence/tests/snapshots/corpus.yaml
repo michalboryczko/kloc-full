@@ -9,36 +9,43 @@ queries:
   - id: resolve-class-fqn
     command: resolve
     args: ["App\\Domain\\Model\\Estate\\Estate"]
+    options: {json: true}
     description: "Resolve class by exact FQN"
 
   - id: resolve-method-fqn
     command: resolve
     args: ["App\\Domain\\Model\\Estate\\Estate::getId()"]
+    options: {json: true}
     description: "Resolve method by FQN"
 
   - id: resolve-interface-fqn
     command: resolve
     args: ["App\\Domain\\Repository\\EstateRepository"]
+    options: {json: true}
     description: "Resolve interface by FQN"
 
   - id: resolve-property-fqn
     command: resolve
     args: ["App\\Domain\\Model\\Estate\\Estate::$id"]
+    options: {json: true}
     description: "Resolve property by FQN"
 
   - id: resolve-const-fqn
     command: resolve
     args: ["App\\Infrastructure\\Persistence\\DataFixtures\\PropertyFixtures::PROPERTY_4_ID"]
+    options: {json: true}
     description: "Resolve const by FQN"
 
   - id: resolve-enum-fqn
     command: resolve
     args: ["App\\Domain\\Model\\DepositPolicyCharge\\ChargeType"]
+    options: {json: true}
     description: "Resolve enum by FQN"
 
   - id: resolve-no-match
     command: resolve
     args: ["NonExistentClass"]
+    options: {json: true}
     description: "Resolve with no matches"
 
   # === usages ===

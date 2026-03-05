@@ -4,9 +4,18 @@
   "args": [
     "App\\Domain\\Model\\Estate\\Estate"
   ],
-  "options": {},
+  "options": {
+    "json": true
+  },
   "exit_code": 0,
-  "stdout": "Class: App\\Domain\\Model\\Estate\\Estate\n  File: src/Domain/Model/Estate/Estate.php:13\n  Doc: ```php\nclass Estate\n```...\n",
-  "stderr": "warning: `VIRTUAL_ENV=/Users/michal/dev/ai/kloc/kloc-intelligence/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\n",
-  "json_output": null
+  "stdout": "{\n  \"id\": \"node:1e92afe70ce047a9\",\n  \"kind\": \"Class\",\n  \"name\": \"Estate\",\n  \"fqn\": \"App\\\\Domain\\\\Model\\\\Estate\\\\Estate\",\n  \"file\": \"src/Domain/Model/Estate/Estate.php\",\n  \"line\": 13\n}\n",
+  "stderr": "",
+  "json_output": {
+    "id": "node:1e92afe70ce047a9",
+    "kind": "Class",
+    "name": "Estate",
+    "fqn": "App\\Domain\\Model\\Estate\\Estate",
+    "file": "src/Domain/Model/Estate/Estate.php",
+    "line": 13
+  }
 }

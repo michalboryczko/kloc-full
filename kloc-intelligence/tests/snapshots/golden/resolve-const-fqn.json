@@ -4,9 +4,18 @@
   "args": [
     "App\\Infrastructure\\Persistence\\DataFixtures\\PropertyFixtures::PROPERTY_4_ID"
   ],
-  "options": {},
+  "options": {
+    "json": true
+  },
   "exit_code": 0,
-  "stdout": "Const: \nApp\\Infrastructure\\Persistence\\DataFixtures\\PropertyFixtures::PROPERTY_4_ID\n  File: src/Infrastructure/Persistence/DataFixtures/PropertyFixtures.php:34\n  Doc: ```php\npublic PROPERTY_4_ID = 'eaab0c91-c263-3311-b7cd-cc487fddad30'\n```...\n",
-  "stderr": "warning: `VIRTUAL_ENV=/Users/michal/dev/ai/kloc/kloc-intelligence/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\n",
-  "json_output": null
+  "stdout": "{\n  \"id\": \"node:00c62a038fb5f878\",\n  \"kind\": \"Const\",\n  \"name\": \"PROPERTY_4_ID\",\n  \"fqn\": \"App\\\\Infrastructure\\\\Persistence\\\\DataFixtures\\\\PropertyFixtures::PROPERTY_4_ID\",\n  \"file\": \"src/Infrastructure/Persistence/DataFixtures/PropertyFixtures.php\",\n  \"line\": 34\n}\n",
+  "stderr": "",
+  "json_output": {
+    "id": "node:00c62a038fb5f878",
+    "kind": "Const",
+    "name": "PROPERTY_4_ID",
+    "fqn": "App\\Infrastructure\\Persistence\\DataFixtures\\PropertyFixtures::PROPERTY_4_ID",
+    "file": "src/Infrastructure/Persistence/DataFixtures/PropertyFixtures.php",
+    "line": 34
+  }
 }

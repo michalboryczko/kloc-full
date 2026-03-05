@@ -4,9 +4,18 @@
   "args": [
     "App\\Domain\\Model\\DepositPolicyCharge\\ChargeType"
   ],
-  "options": {},
+  "options": {
+    "json": true
+  },
   "exit_code": 0,
-  "stdout": "Enum: App\\Domain\\Model\\DepositPolicyCharge\\ChargeType\n  File: src/Domain/Model/DepositPolicyCharge/ChargeType.php:9\n  Doc: ```php\nenum ChargeType\n```...\n",
-  "stderr": "warning: `VIRTUAL_ENV=/Users/michal/dev/ai/kloc/kloc-intelligence/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\n",
-  "json_output": null
+  "stdout": "{\n  \"id\": \"node:02566d62dfd3833c\",\n  \"kind\": \"Enum\",\n  \"name\": \"ChargeType\",\n  \"fqn\": \"App\\\\Domain\\\\Model\\\\DepositPolicyCharge\\\\ChargeType\",\n  \"file\": \"src/Domain/Model/DepositPolicyCharge/ChargeType.php\",\n  \"line\": 9\n}\n",
+  "stderr": "",
+  "json_output": {
+    "id": "node:02566d62dfd3833c",
+    "kind": "Enum",
+    "name": "ChargeType",
+    "fqn": "App\\Domain\\Model\\DepositPolicyCharge\\ChargeType",
+    "file": "src/Domain/Model/DepositPolicyCharge/ChargeType.php",
+    "line": 9
+  }
 }

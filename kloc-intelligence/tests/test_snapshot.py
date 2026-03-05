@@ -14,14 +14,14 @@ from pathlib import Path
 import pytest
 import yaml
 
-from tests.snapshot_compare import compare_snapshot, format_diff_report  # noqa: F401
+from tests.snapshot_compare import compare_snapshot, format_diff_report
 
 CORPUS_PATH = Path(__file__).parent / "snapshots" / "corpus.yaml"
 GOLDEN_DIR = Path(__file__).parent / "snapshots" / "golden"
 
 # Commands that have been implemented.
 # Updated as T04-T12 are completed.
-IMPLEMENTED_COMMANDS: set[str] = set()
+IMPLEMENTED_COMMANDS: set[str] = {"resolve"}
 
 
 def load_corpus():
@@ -54,20 +54,55 @@ def execute_query(connection, query):
     kloc-intelligence query execution. It maps corpus query definitions
     to actual function calls.
 
-    Returns the JSON-serializable output dict.
+    Returns the JSON-serializable output dict, or a dict with "error" key
+    if the symbol is not found (matching kloc-cli behavior).
     """
+    from src.db.query_runner import QueryRunner
+    from src.db.queries.resolve import resolve_symbol
+
     command = query["command"]
-    # Dispatch to the appropriate query module
-    # (These will be implemented in T04-T12)
+    args = query.get("args", [])
+
+    if command == "resolve":
+        runner = QueryRunner(connection)
+        symbol = args[0]
+        candidates = resolve_symbol(runner, symbol)
+
+        if not candidates:
+            return {"error": "Symbol not found", "query": symbol}
+
+        if len(candidates) == 1:
+            node = candidates[0]
+            return {
+                "id": node.id,
+                "kind": node.kind,
+                "name": node.name,
+                "fqn": node.fqn,
+                "file": node.file,
+                "line": node.start_line + 1 if node.start_line is not None else None,
+            }
+        else:
+            return [
+                {
+                    "id": n.id,
+                    "kind": n.kind,
+                    "fqn": n.fqn,
+                    "file": n.file,
+                    "line": n.start_line + 1 if n.start_line is not None else None,
+                }
+                for n in candidates
+            ]
+
+    # Other commands: not yet implemented
     raise NotImplementedError(f"Query not implemented: {command}")
 
 
 @pytest.mark.snapshot
 @pytest.mark.parametrize("query", load_corpus(), ids=corpus_ids())
-def test_snapshot(query):
+def test_snapshot(query, loaded_database):
     """Run a corpus query and compare against golden output.
 
-    Initially all tests xfail because no queries are implemented yet.
+    Initially most tests xfail because no queries are implemented yet.
     As T04-T12 are completed, commands are added to IMPLEMENTED_COMMANDS.
     """
     query_id = query["id"]
@@ -82,9 +117,9 @@ def test_snapshot(query):
     if command not in IMPLEMENTED_COMMANDS:
         pytest.xfail(f"Command '{command}' not yet implemented")
 
-    # TODO: Execute query and compare
-    # actual_output = execute_query(connection, query)
-    # result = compare_snapshot(query_id, golden, actual_output)
-    # if not result.passed:
-    #     report = format_diff_report(result)
-    #     pytest.fail(f"Snapshot mismatch:\n{report}")
+    # Execute query and compare
+    actual_output = execute_query(loaded_database, query)
+    result = compare_snapshot(query_id, golden, actual_output)
+    if not result.passed:
+        report = format_diff_report(result)
+        pytest.fail(f"Snapshot mismatch:\n{report}")

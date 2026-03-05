@@ -183,5 +183,79 @@ def import_sot(
     conn.close()
 
 
+# =============================================================================
+# Query Commands
+# =============================================================================
+
+
+@app.command()
+def resolve(
+    query: str = typer.Argument(..., help="Symbol to resolve (FQN, partial, or short name)"),
+    json_output: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
+) -> None:
+    """Resolve a symbol to its definition location."""
+    import json as json_mod
+
+    from .db.query_runner import QueryRunner
+    from .db.queries.resolve import resolve_symbol
+
+    try:
+        conn = _get_connection()
+        conn.verify_connectivity()
+    except Neo4jConnectionError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(code=1)
+
+    runner = QueryRunner(conn)
+    candidates = resolve_symbol(runner, query)
+
+    if not candidates:
+        if json_output:
+            print(json_mod.dumps({"error": "Symbol not found", "query": query}, indent=2, ensure_ascii=False))
+        else:
+            console.print(f"[red]Symbol not found: {query}[/red]")
+        conn.close()
+        raise typer.Exit(code=1)
+
+    if len(candidates) == 1:
+        # Single match: print_node format
+        node = candidates[0]
+        if json_output:
+            print(json_mod.dumps({
+                "id": node.id,
+                "kind": node.kind,
+                "name": node.name,
+                "fqn": node.fqn,
+                "file": node.file,
+                "line": node.start_line + 1 if node.start_line is not None else None,
+            }, indent=2, ensure_ascii=False))
+        else:
+            console.print(f"[bold]{node.kind}[/bold]: {node.fqn}")
+            console.print(f"  File: {node.location_str}")
+            if node.documentation:
+                doc = node.documentation[0][:100]
+                console.print(f"  Doc: {doc}...")
+    else:
+        # Multiple matches: print_candidates format
+        if json_output:
+            print(json_mod.dumps([
+                {
+                    "id": n.id,
+                    "kind": n.kind,
+                    "fqn": n.fqn,
+                    "file": n.file,
+                    "line": n.start_line + 1 if n.start_line is not None else None,
+                }
+                for n in candidates
+            ], indent=2, ensure_ascii=False))
+        else:
+            console.print(f"[yellow]Found {len(candidates)} candidates:[/yellow]")
+            for i, node in enumerate(candidates, 1):
+                console.print(f"  [{i}] {node.kind}: {node.fqn}")
+                console.print(f"      {node.location_str}")
+
+    conn.close()
+
+
 if __name__ == "__main__":
     app()

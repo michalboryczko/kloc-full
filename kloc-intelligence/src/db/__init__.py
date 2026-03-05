@@ -1,1 +1,1 @@
-"""Database layer: Neo4j connection, schema, import, and query runner."""
+"""Database layer: Neo4j connection, schema, import, query runner, and result mapper."""

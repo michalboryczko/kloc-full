@@ -4,9 +4,14 @@
   "args": [
     "NonExistentClass"
   ],
-  "options": {},
+  "options": {
+    "json": true
+  },
   "exit_code": 1,
-  "stdout": "Symbol not found: NonExistentClass\n",
-  "stderr": "warning: `VIRTUAL_ENV=/Users/michal/dev/ai/kloc/kloc-intelligence/.venv` does not match the project environment path `.venv` and will be ignored; use `--active` to target the active environment instead\n",
-  "json_output": null
+  "stdout": "{\n  \"error\": \"Symbol not found\",\n  \"query\": \"NonExistentClass\"\n}\n",
+  "stderr": "",
+  "json_output": {
+    "error": "Symbol not found",
+    "query": "NonExistentClass"
+  }
 }
