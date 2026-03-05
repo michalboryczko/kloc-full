@@ -21,7 +21,7 @@ GOLDEN_DIR = Path(__file__).parent / "snapshots" / "golden"
 
 # Commands that have been implemented.
 # Updated as T04-T12 are completed.
-IMPLEMENTED_COMMANDS: set[str] = {"resolve", "usages", "deps"}
+IMPLEMENTED_COMMANDS: set[str] = {"resolve", "usages", "deps", "owners", "inherit", "overrides"}
 
 
 def load_corpus():
@@ -126,6 +126,57 @@ def execute_query(connection, query):
         node = candidates[0]
         result = deps_tree(runner, node.node_id, depth=depth, limit=limit)
         return deps_tree_to_dict(result["target"], result["max_depth"], result["tree"])
+
+    elif command == "owners":
+        from src.db.queries.owners import owners_chain
+        from src.output.json_formatter import owners_chain_to_dict
+
+        symbol = args[0]
+        candidates = resolve_symbol(runner, symbol)
+        if not candidates:
+            return {"error": "Symbol not found", "query": symbol}
+
+        node = candidates[0]
+        result = owners_chain(runner, node.node_id)
+        return owners_chain_to_dict(result["chain"])
+
+    elif command == "inherit":
+        from src.db.queries.inherit import inherit_tree
+        from src.output.json_formatter import inherit_tree_to_dict
+
+        symbol = args[0]
+        direction = options.get("direction", "up")
+        depth = options.get("depth", 1)
+        limit = options.get("limit", 100)
+
+        candidates = resolve_symbol(runner, symbol)
+        if not candidates:
+            return {"error": "Symbol not found", "query": symbol}
+
+        node = candidates[0]
+        result = inherit_tree(runner, node.node_id, direction=direction, depth=depth, limit=limit)
+        return inherit_tree_to_dict(
+            result["root"], result["direction"], result["max_depth"], result["tree"]
+        )
+
+    elif command == "overrides":
+        from src.db.queries.overrides import overrides_tree
+        from src.output.json_formatter import overrides_tree_to_dict
+
+        symbol = args[0]
+        direction = options.get("direction", "up")
+        depth = options.get("depth", 1)
+        limit = options.get("limit", 100)
+
+        candidates = resolve_symbol(runner, symbol)
+        if not candidates:
+            return {"error": "Symbol not found", "query": symbol}
+
+        node = candidates[0]
+        result = overrides_tree(runner, node.node_id, direction=direction, depth=depth, limit=limit)
+        return overrides_tree_to_dict(
+            result["root"], result["direction"], result["max_depth"], result["tree"]
+        )
 
     # Other commands: not yet implemented
     raise NotImplementedError(f"Query not implemented: {command}")

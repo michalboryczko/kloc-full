@@ -391,6 +391,230 @@ def deps(
     conn.close()
 
 
+@app.command()
+def owners(
+    query: str = typer.Argument(..., help="Symbol to find ownership chain for"),
+    json_output: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
+) -> None:
+    """Find the structural containment chain (Method -> Class -> File)."""
+    import json as json_mod
+
+    from .db.query_runner import QueryRunner
+    from .db.queries.resolve import resolve_symbol
+    from .db.queries.owners import owners_chain
+    from .output.json_formatter import owners_chain_to_dict
+
+    try:
+        conn = _get_connection()
+        conn.verify_connectivity()
+    except Neo4jConnectionError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(code=1)
+
+    runner = QueryRunner(conn)
+    candidates = resolve_symbol(runner, query)
+
+    if not candidates:
+        if json_output:
+            print(json_mod.dumps({"error": "Symbol not found", "query": query}, indent=2, ensure_ascii=False))
+        else:
+            console.print(f"[red]Symbol not found: {query}[/red]")
+        conn.close()
+        raise typer.Exit(code=1)
+
+    if len(candidates) > 1:
+        if json_output:
+            print(json_mod.dumps([
+                {
+                    "id": n.id,
+                    "kind": n.kind,
+                    "fqn": n.fqn,
+                    "file": n.file,
+                    "line": n.start_line + 1 if n.start_line is not None else None,
+                }
+                for n in candidates
+            ], indent=2, ensure_ascii=False))
+        else:
+            console.print(f"[yellow]Found {len(candidates)} candidates:[/yellow]")
+            for i, node in enumerate(candidates, 1):
+                console.print(f"  [{i}] {node.kind}: {node.fqn}")
+                console.print(f"      {node.location_str}")
+        conn.close()
+        raise typer.Exit(code=1)
+
+    node = candidates[0]
+    result = owners_chain(runner, node.node_id)
+
+    if json_output:
+        output = owners_chain_to_dict(result["chain"])
+        print(json_mod.dumps(output, indent=2, ensure_ascii=False))
+    else:
+        console.print(f"[bold]Ownership chain for {node.fqn}:[/bold]")
+        for n in result["chain"]:
+            line_str = f":{n.start_line + 1}" if n.start_line is not None else ""
+            console.print(f"  {n.kind}: {n.fqn} ({n.file}{line_str})")
+
+    conn.close()
+
+
+@app.command("inherit")
+def inherit_cmd(
+    query: str = typer.Argument(..., help="Symbol to find inheritance for"),
+    direction: str = typer.Option("up", "--direction", "-r", help="'up' for ancestors, 'down' for descendants"),
+    depth: int = typer.Option(1, "--depth", "-d", help="BFS depth for expansion"),
+    limit: int = typer.Option(100, "--limit", "-l", help="Maximum results"),
+    json_output: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
+) -> None:
+    """Find inheritance tree (ancestors or descendants)."""
+    import json as json_mod
+
+    from .db.query_runner import QueryRunner
+    from .db.queries.resolve import resolve_symbol
+    from .db.queries.inherit import inherit_tree
+    from .output.json_formatter import inherit_tree_to_dict
+
+    try:
+        conn = _get_connection()
+        conn.verify_connectivity()
+    except Neo4jConnectionError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(code=1)
+
+    runner = QueryRunner(conn)
+    candidates = resolve_symbol(runner, query)
+
+    if not candidates:
+        if json_output:
+            print(json_mod.dumps({"error": "Symbol not found", "query": query}, indent=2, ensure_ascii=False))
+        else:
+            console.print(f"[red]Symbol not found: {query}[/red]")
+        conn.close()
+        raise typer.Exit(code=1)
+
+    if len(candidates) > 1:
+        if json_output:
+            print(json_mod.dumps([
+                {
+                    "id": n.id,
+                    "kind": n.kind,
+                    "fqn": n.fqn,
+                    "file": n.file,
+                    "line": n.start_line + 1 if n.start_line is not None else None,
+                }
+                for n in candidates
+            ], indent=2, ensure_ascii=False))
+        else:
+            console.print(f"[yellow]Found {len(candidates)} candidates:[/yellow]")
+            for i, node in enumerate(candidates, 1):
+                console.print(f"  [{i}] {node.kind}: {node.fqn}")
+                console.print(f"      {node.location_str}")
+        conn.close()
+        raise typer.Exit(code=1)
+
+    node = candidates[0]
+
+    try:
+        result = inherit_tree(runner, node.node_id, direction=direction, depth=depth, limit=limit)
+    except ValueError as e:
+        if json_output:
+            print(json_mod.dumps({"error": str(e)}, indent=2, ensure_ascii=False))
+        else:
+            console.print(f"[red]Error:[/red] {e}")
+        conn.close()
+        raise typer.Exit(code=1)
+
+    if json_output:
+        output = inherit_tree_to_dict(
+            result["root"], result["direction"], result["max_depth"], result["tree"]
+        )
+        print(json_mod.dumps(output, indent=2, ensure_ascii=False))
+    else:
+        console.print(f"[bold]Inheritance ({direction}) for {node.fqn} (depth={depth}):[/bold]")
+        for entry in result["tree"]:
+            _print_inherit_entry(entry)
+
+    conn.close()
+
+
+@app.command("overrides")
+def overrides_cmd(
+    query: str = typer.Argument(..., help="Method to find overrides for"),
+    direction: str = typer.Option("up", "--direction", "-r", help="'up' for overridden, 'down' for overriding"),
+    depth: int = typer.Option(1, "--depth", "-d", help="BFS depth for expansion"),
+    limit: int = typer.Option(100, "--limit", "-l", help="Maximum results"),
+    json_output: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
+) -> None:
+    """Find override chain/tree for a method."""
+    import json as json_mod
+
+    from .db.query_runner import QueryRunner
+    from .db.queries.resolve import resolve_symbol
+    from .db.queries.overrides import overrides_tree
+    from .output.json_formatter import overrides_tree_to_dict
+
+    try:
+        conn = _get_connection()
+        conn.verify_connectivity()
+    except Neo4jConnectionError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(code=1)
+
+    runner = QueryRunner(conn)
+    candidates = resolve_symbol(runner, query)
+
+    if not candidates:
+        if json_output:
+            print(json_mod.dumps({"error": "Symbol not found", "query": query}, indent=2, ensure_ascii=False))
+        else:
+            console.print(f"[red]Symbol not found: {query}[/red]")
+        conn.close()
+        raise typer.Exit(code=1)
+
+    if len(candidates) > 1:
+        if json_output:
+            print(json_mod.dumps([
+                {
+                    "id": n.id,
+                    "kind": n.kind,
+                    "fqn": n.fqn,
+                    "file": n.file,
+                    "line": n.start_line + 1 if n.start_line is not None else None,
+                }
+                for n in candidates
+            ], indent=2, ensure_ascii=False))
+        else:
+            console.print(f"[yellow]Found {len(candidates)} candidates:[/yellow]")
+            for i, node in enumerate(candidates, 1):
+                console.print(f"  [{i}] {node.kind}: {node.fqn}")
+                console.print(f"      {node.location_str}")
+        conn.close()
+        raise typer.Exit(code=1)
+
+    node = candidates[0]
+
+    try:
+        result = overrides_tree(runner, node.node_id, direction=direction, depth=depth, limit=limit)
+    except ValueError as e:
+        if json_output:
+            print(json_mod.dumps({"error": str(e)}, indent=2, ensure_ascii=False))
+        else:
+            console.print(f"[red]Error:[/red] {e}")
+        conn.close()
+        raise typer.Exit(code=1)
+
+    if json_output:
+        output = overrides_tree_to_dict(
+            result["root"], result["direction"], result["max_depth"], result["tree"]
+        )
+        print(json_mod.dumps(output, indent=2, ensure_ascii=False))
+    else:
+        console.print(f"[bold]Overrides ({direction}) for {node.fqn} (depth={depth}):[/bold]")
+        for entry in result["tree"]:
+            _print_tree_entry(entry)
+
+    conn.close()
+
+
 def _print_tree_entry(entry: dict, indent: str = "  ") -> None:
     """Print a tree entry to console with indentation."""
     file_info = ""
@@ -402,6 +626,19 @@ def _print_tree_entry(entry: dict, indent: str = "  ") -> None:
     console.print(f"{indent}[{entry['depth']}] {entry['fqn']}{file_info}")
     for child in entry.get("children", []):
         _print_tree_entry(child, indent + "  ")
+
+
+def _print_inherit_entry(entry: dict, indent: str = "  ") -> None:
+    """Print an inherit tree entry (includes kind) to console."""
+    file_info = ""
+    if entry.get("file"):
+        file_info = f" ({entry['file']}"
+        if entry.get("line") is not None:
+            file_info += f":{entry['line'] + 1}"
+        file_info += ")"
+    console.print(f"{indent}[{entry['depth']}] {entry.get('kind', '')}: {entry['fqn']}{file_info}")
+    for child in entry.get("children", []):
+        _print_inherit_entry(child, indent + "  ")
 
 
 if __name__ == "__main__":
