@@ -13,6 +13,10 @@ from .handlers import (
     EntryBucket,
     USED_BY_HANDLERS,
 )
+from .definition import (
+    build_definition,
+    parse_property_doc,
+)
 
 __all__ = [
     "CHAINABLE_REFERENCE_TYPES",
@@ -24,4 +28,6 @@ __all__ = [
     "EdgeContext",
     "EntryBucket",
     "USED_BY_HANDLERS",
+    "build_definition",
+    "parse_property_doc",
 ]

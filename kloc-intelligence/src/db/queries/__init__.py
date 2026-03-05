@@ -6,6 +6,7 @@ from .deps import deps_flat, deps_tree
 from .owners import owners_chain
 from .inherit import inherit_tree
 from .overrides import overrides_tree
+from .definition import definition_for_node, fetch_definition_data
 
 __all__ = [
     "resolve_symbol",
@@ -14,4 +15,5 @@ __all__ = [
     "owners_chain",
     "inherit_tree",
     "overrides_tree",
+    "definition_for_node", "fetch_definition_data",
 ]
