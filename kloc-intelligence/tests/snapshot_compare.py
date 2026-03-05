@@ -117,7 +117,19 @@ def _sort_constructor_deps(data: Any) -> Any:
 
 
 def _entry_sort_key(entry: dict) -> tuple:
-    """Generate a sort key for usedBy/uses entries for order-insensitive comparison."""
+    """Generate a sort key for usedBy/uses entries for order-insensitive comparison.
+
+    For method context entries (identified by entry_type field), sort by line number
+    first to preserve execution flow order. For class/interface context, sort by
+    (fqn, refType, file, line).
+    """
+    if entry.get("entry_type") or entry.get("source_call"):
+        # Method context: sort by line to preserve execution flow order
+        return (
+            entry.get("file", ""),
+            entry.get("line") or 0,
+            entry.get("fqn", ""),
+        )
     return (
         entry.get("fqn", ""),
         entry.get("refType", ""),

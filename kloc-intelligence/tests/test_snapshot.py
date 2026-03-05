@@ -207,11 +207,23 @@ def execute_query(connection, query):
             # Class: grouped, sorted, deduped USED BY (build_class_used_by)
             used_by = build_class_used_by(runner, node.node_id, depth, limit, include_impl)
             uses = build_class_uses(runner, node.node_id, depth, limit, include_impl)
+        elif node.kind == "Interface":
+            from src.orchestration.interface_context import build_interface_used_by, build_interface_uses
+            used_by = build_interface_used_by(runner, node.node_id, depth, limit, include_impl)
+            uses = build_interface_uses(runner, node.node_id, depth, limit, include_impl)
+        elif node.kind == "Method":
+            from src.orchestration.method_context import build_method_used_by, build_method_uses
+            used_by = build_method_used_by(runner, node.node_id, depth, limit, include_impl)
+            uses = build_method_uses(runner, node.node_id, depth, limit, include_impl)
         elif node.kind in ("Enum", "Trait"):
             # Enum/Trait: generic build_tree (one entry per edge, no refType grouping)
             used_by = build_generic_used_by(runner, node.node_id, depth, limit, include_impl)
             uses = build_generic_uses(runner, node.node_id, depth, limit, include_impl)
-        # TODO: Interface, Method, Property, Value in T10/T11
+        elif node.kind in ("Property", "Value", "Constant"):
+            # Property/Value/Constant: generic build_tree
+            used_by = build_generic_used_by(runner, node.node_id, depth, limit, include_impl)
+            uses = build_generic_uses(runner, node.node_id, depth, limit, include_impl)
+        # TODO: File context in T11
 
         result = ContextResult(
             target=node,

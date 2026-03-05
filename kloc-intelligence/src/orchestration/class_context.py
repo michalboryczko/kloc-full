@@ -818,6 +818,26 @@ def _build_injection_point_children(
             prop_name = property_fqn.split("::$")[-1]
             on_expr = f"$this->{prop_name}"
 
+        # Fetch flat arguments for the call
+        from ..db.queries.context_class import fetch_call_arguments
+        from ..models.results import ArgumentInfo
+        arguments = []
+        if call.get("call_id"):
+            raw_args = fetch_call_arguments(runner, call["call_id"])
+            for arg in raw_args:
+                param_fqn = arg.get("param_fqn") or ""
+                value_expr = arg.get("arg_expression") or arg.get("value_expr") or ""
+                param_name = ""
+                if param_fqn and ".$" in param_fqn:
+                    param_name = "$" + param_fqn.split(".$")[-1]
+                if param_fqn and value_expr:
+                    arguments.append(ArgumentInfo(
+                        position=arg.get("position", 0),
+                        param_fqn=param_fqn,
+                        param_name=param_name,
+                        value_expr=value_expr,
+                    ))
+
         entry = ContextEntry(
             depth=depth,
             node_id=call["callee_id"],
@@ -831,6 +851,7 @@ def _build_injection_point_children(
             on_kind="property",
             children=[],
             crossed_from=crossed_from_fqn,
+            arguments=arguments,
         )
 
         # Store method name for potential sites merging
