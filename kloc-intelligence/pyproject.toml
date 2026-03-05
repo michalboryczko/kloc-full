@@ -31,6 +31,7 @@ packages = ["src"]
 [tool.pytest.ini_options]
 markers = [
     "snapshot: Snapshot comparison tests (require Neo4j + test data)",
+    "benchmark: Performance benchmark tests (require Neo4j + test data)",
 ]
 
 [tool.ruff]
