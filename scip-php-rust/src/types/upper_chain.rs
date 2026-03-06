@@ -6,6 +6,8 @@
 
 use std::collections::{HashSet, VecDeque};
 
+use dashmap::DashMap;
+
 use super::TypeDatabase;
 
 /// Build transitive upper chains for all types in the database.
@@ -16,9 +18,9 @@ use super::TypeDatabase;
 ///
 /// Cycle detection is built-in via the visited set — cycles are simply
 /// not followed, avoiding infinite loops.
-pub fn build_transitive_uppers(db: &mut TypeDatabase) {
+pub fn build_transitive_uppers(db: &TypeDatabase) {
     // Collect all FQNs that have direct uppers
-    let fqns: Vec<String> = db.uppers.keys().cloned().collect();
+    let fqns: Vec<String> = db.uppers.iter().map(|r| r.key().clone()).collect();
 
     for fqn in &fqns {
         let chain = compute_upper_chain(fqn, &db.uppers);
@@ -34,7 +36,7 @@ pub fn build_transitive_uppers(db: &mut TypeDatabase) {
 /// Cycle detection is built-in via the visited set.
 pub fn compute_upper_chain(
     start: &str,
-    direct_uppers: &std::collections::HashMap<String, Vec<String>>,
+    direct_uppers: &DashMap<String, Vec<String>>,
 ) -> Vec<String> {
     let mut result = Vec::new();
     let mut visited = HashSet::new();
@@ -45,7 +47,7 @@ pub fn compute_upper_chain(
 
     // Seed the queue with direct uppers
     if let Some(directs) = direct_uppers.get(start) {
-        for upper in directs {
+        for upper in directs.value() {
             if visited.insert(upper.clone()) {
                 queue.push_back(upper.clone());
             }
@@ -57,7 +59,7 @@ pub fn compute_upper_chain(
         result.push(current.clone());
 
         if let Some(parents_of_current) = direct_uppers.get(&current) {
-            for upper in parents_of_current {
+            for upper in parents_of_current.value() {
                 if visited.insert(upper.clone()) {
                     queue.push_back(upper.clone());
                 }
@@ -94,7 +96,7 @@ mod tests {
     #[test]
     fn test_linear_chain() {
         // A -> B -> C
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
         db.insert_def("A", make_def());
         db.insert_def("B", make_def());
         db.insert_def("C", make_def());
@@ -102,7 +104,7 @@ mod tests {
         db.add_uppers("A", vec!["B".to_string()]);
         db.add_uppers("B", vec!["C".to_string()]);
 
-        build_transitive_uppers(&mut db);
+        build_transitive_uppers(&db);
 
         let a_uppers = db.get_all_uppers("A");
         assert_eq!(a_uppers, &["B", "C"]);
@@ -121,7 +123,7 @@ mod tests {
         //   B   C
         //    \ /
         //     A
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
         db.insert_def("A", make_def());
         db.insert_def("B", make_def());
         db.insert_def("C", make_def());
@@ -131,7 +133,7 @@ mod tests {
         db.add_uppers("B", vec!["D".to_string()]);
         db.add_uppers("C", vec!["D".to_string()]);
 
-        build_transitive_uppers(&mut db);
+        build_transitive_uppers(&db);
 
         let a_uppers = db.get_all_uppers("A");
         // BFS order: B, C first (direct), then D (from B), D is already visited so not duplicated
@@ -144,7 +146,7 @@ mod tests {
     #[test]
     fn test_cycle_detection() {
         // A -> B -> C -> A (cycle!)
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
         db.insert_def("A", make_def());
         db.insert_def("B", make_def());
         db.insert_def("C", make_def());
@@ -154,7 +156,7 @@ mod tests {
         db.add_uppers("C", vec!["A".to_string()]);
 
         // Should not panic or loop
-        build_transitive_uppers(&mut db);
+        build_transitive_uppers(&db);
 
         let a_uppers = db.get_all_uppers("A");
         // B and C are visited, A is the start so it's not in the result
@@ -165,10 +167,10 @@ mod tests {
 
     #[test]
     fn test_no_uppers() {
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
         db.insert_def("Standalone", make_def());
 
-        build_transitive_uppers(&mut db);
+        build_transitive_uppers(&db);
 
         assert!(db.get_all_uppers("Standalone").is_empty());
     }
@@ -176,7 +178,7 @@ mod tests {
     #[test]
     fn test_multiple_interfaces() {
         // Class implements A, B, C (all independent)
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
         db.insert_def("MyClass", make_def());
         db.insert_def("A", make_def());
         db.insert_def("B", make_def());
@@ -187,7 +189,7 @@ mod tests {
             vec!["A".to_string(), "B".to_string(), "C".to_string()],
         );
 
-        build_transitive_uppers(&mut db);
+        build_transitive_uppers(&db);
 
         let uppers = db.get_all_uppers("MyClass");
         assert_eq!(uppers, &["A", "B", "C"]);
@@ -195,8 +197,7 @@ mod tests {
 
     #[test]
     fn test_compute_upper_chain_standalone() {
-        use std::collections::HashMap;
-        let mut direct = HashMap::new();
+        let direct = DashMap::new();
         direct.insert("A".to_string(), vec!["B".to_string(), "C".to_string()]);
         direct.insert("B".to_string(), vec!["D".to_string()]);
 

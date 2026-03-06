@@ -195,7 +195,7 @@ pub fn resolve_expr_type(
             let obj_type_clean = strip_nullable(&obj_type);
 
             let return_type = type_db.resolve_method_return_type(obj_type_clean, method_name)?;
-            resolve_type_string_to_fqn(return_type, obj_type_clean, scope, type_db, resolver)
+            resolve_type_string_to_fqn(&return_type, obj_type_clean, scope, type_db, resolver)
         }
 
         // Case 5: Foo::method()
@@ -207,7 +207,7 @@ pub fn resolve_expr_type(
 
             let class_fqn = resolve_scope_to_fqn(scope_text, scope, type_db, resolver)?;
             let return_type = type_db.resolve_method_return_type(&class_fqn, method_name)?;
-            resolve_type_string_to_fqn(return_type, &class_fqn, scope, type_db, resolver)
+            resolve_type_string_to_fqn(&return_type, &class_fqn, scope, type_db, resolver)
         }
 
         // Case 6 & 7: $obj->prop and $obj?->prop
@@ -223,7 +223,7 @@ pub fn resolve_expr_type(
             let obj_type_clean = strip_nullable(&obj_type);
 
             let prop_type = type_db.resolve_property_type(obj_type_clean, prop_name)?;
-            resolve_type_string_to_fqn(prop_type, obj_type_clean, scope, type_db, resolver)
+            resolve_type_string_to_fqn(&prop_type, obj_type_clean, scope, type_db, resolver)
         }
 
         // Case 8: Foo::$prop
@@ -238,7 +238,7 @@ pub fn resolve_expr_type(
 
             let class_fqn = resolve_scope_to_fqn(scope_text, scope, type_db, resolver)?;
             let prop_type = type_db.resolve_property_type(&class_fqn, prop_name)?;
-            resolve_type_string_to_fqn(prop_type, &class_fqn, scope, type_db, resolver)
+            resolve_type_string_to_fqn(&prop_type, &class_fqn, scope, type_db, resolver)
         }
 
         // Case 9: $arr[$key] — mostly unknown
@@ -482,7 +482,7 @@ mod tests {
             "App\\Child".to_string(),
             crate::symbol::scope::ClassKind::Class,
         );
-        let mut type_db = TypeDatabase::new();
+        let type_db = TypeDatabase::new();
         type_db.add_uppers("App\\Child", vec!["App\\Base".to_string()]);
         let resolver = NameResolver::new();
         assert_eq!(
@@ -575,7 +575,7 @@ mod tests {
             "App\\Child".to_string(),
             crate::symbol::scope::ClassKind::Class,
         );
-        let mut type_db = TypeDatabase::new();
+        let type_db = TypeDatabase::new();
         type_db.add_uppers("App\\Child", vec!["App\\Base".to_string()]);
         let resolver = NameResolver::new();
 

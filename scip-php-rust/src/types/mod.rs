@@ -9,7 +9,7 @@ pub mod phpdoc;
 pub mod resolver;
 pub mod upper_chain;
 
-use std::collections::HashMap;
+use dashmap::DashMap;
 use std::path::PathBuf;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -80,47 +80,50 @@ pub struct ParamInfo {
 ///
 /// Keys are fully qualified names (FQNs) without a leading backslash.
 /// Method/property keys use the format `"ClassName::methodName"` or `"ClassName::$propName"`.
+///
+/// Uses `DashMap` for concurrent access during parallel type collection (Phase 1).
+/// After Phase 1 completes, the database is used read-only during Phase 2.
 pub struct TypeDatabase {
     /// Type definitions keyed by FQN.
-    pub defs: HashMap<String, TypeDef>,
+    pub defs: DashMap<String, TypeDef>,
     /// Direct parent/interface/trait FQNs for each class-like type.
-    pub uppers: HashMap<String, Vec<String>>,
+    pub uppers: DashMap<String, Vec<String>>,
     /// Method parameters keyed by `"Class::method"`.
-    pub method_params: HashMap<String, Vec<ParamInfo>>,
+    pub method_params: DashMap<String, Vec<ParamInfo>>,
     /// Property types keyed by `"Class::$prop"`.
-    pub property_types: HashMap<String, Option<String>>,
+    pub property_types: DashMap<String, Option<String>>,
     /// Method return types keyed by `"Class::method"`.
-    pub method_return_types: HashMap<String, Option<String>>,
+    pub method_return_types: DashMap<String, Option<String>>,
     /// Standalone function return types keyed by FQN.
-    pub function_return_types: HashMap<String, Option<String>>,
+    pub function_return_types: DashMap<String, Option<String>>,
     /// Transitive upper chain (all ancestors) keyed by FQN. Built by `upper_chain::build_transitive_uppers`.
-    pub transitive_uppers: HashMap<String, Vec<String>>,
+    pub transitive_uppers: DashMap<String, Vec<String>>,
 }
 
 impl TypeDatabase {
     /// Create an empty TypeDatabase.
     pub fn new() -> Self {
         TypeDatabase {
-            defs: HashMap::new(),
-            uppers: HashMap::new(),
-            method_params: HashMap::new(),
-            property_types: HashMap::new(),
-            method_return_types: HashMap::new(),
-            function_return_types: HashMap::new(),
-            transitive_uppers: HashMap::new(),
+            defs: DashMap::new(),
+            uppers: DashMap::new(),
+            method_params: DashMap::new(),
+            property_types: DashMap::new(),
+            method_return_types: DashMap::new(),
+            function_return_types: DashMap::new(),
+            transitive_uppers: DashMap::new(),
         }
     }
 
     /// Create a TypeDatabase with pre-allocated capacity.
     pub fn with_capacity(classes: usize, methods: usize) -> Self {
         TypeDatabase {
-            defs: HashMap::with_capacity(classes),
-            uppers: HashMap::with_capacity(classes),
-            method_params: HashMap::with_capacity(methods),
-            property_types: HashMap::with_capacity(methods),
-            method_return_types: HashMap::with_capacity(methods),
-            function_return_types: HashMap::with_capacity(classes / 4),
-            transitive_uppers: HashMap::with_capacity(classes),
+            defs: DashMap::with_capacity(classes),
+            uppers: DashMap::with_capacity(classes),
+            method_params: DashMap::with_capacity(methods),
+            property_types: DashMap::with_capacity(methods),
+            method_return_types: DashMap::with_capacity(methods),
+            function_return_types: DashMap::with_capacity(classes / 4),
+            transitive_uppers: DashMap::with_capacity(classes),
         }
     }
 
@@ -131,18 +134,24 @@ impl TypeDatabase {
 
     /// Insert a type definition. Returns `false` if a definition with this FQN already exists
     /// (first-write-wins semantics).
-    pub fn insert_def(&mut self, fqn: &str, def: TypeDef) -> bool {
+    pub fn insert_def(&self, fqn: &str, def: TypeDef) -> bool {
         let key = Self::normalize_fqn(fqn).to_string();
-        if self.defs.contains_key(&key) {
-            return false;
+        // Use entry API for first-write-wins semantics (safe under concurrency)
+        use dashmap::mapref::entry::Entry;
+        match self.defs.entry(key) {
+            Entry::Occupied(_) => false,
+            Entry::Vacant(e) => {
+                e.insert(def);
+                true
+            }
         }
-        self.defs.insert(key, def);
-        true
     }
 
-    /// Look up a type definition by FQN.
-    pub fn get_def(&self, fqn: &str) -> Option<&TypeDef> {
-        self.defs.get(Self::normalize_fqn(fqn))
+    /// Look up a type definition by FQN. Returns a clone of the TypeDef.
+    pub fn get_def(&self, fqn: &str) -> Option<TypeDef> {
+        self.defs
+            .get(Self::normalize_fqn(fqn))
+            .map(|r| r.value().clone())
     }
 
     /// Check if a class-like type exists in the database.
@@ -150,48 +159,48 @@ impl TypeDatabase {
         self.defs.contains_key(Self::normalize_fqn(fqn))
     }
 
-    /// Get the direct parents/interfaces/traits for a type.
-    pub fn get_direct_uppers(&self, fqn: &str) -> &[String] {
+    /// Get the direct parents/interfaces/traits for a type (cloned).
+    pub fn get_direct_uppers(&self, fqn: &str) -> Vec<String> {
         self.uppers
             .get(Self::normalize_fqn(fqn))
-            .map(|v| v.as_slice())
-            .unwrap_or(&[])
+            .map(|r| r.value().clone())
+            .unwrap_or_default()
     }
 
-    /// Get the transitive upper chain (all ancestors). Must call
+    /// Get the transitive upper chain (all ancestors, cloned). Must call
     /// `upper_chain::build_transitive_uppers` first.
-    pub fn get_all_uppers(&self, fqn: &str) -> &[String] {
+    pub fn get_all_uppers(&self, fqn: &str) -> Vec<String> {
         self.transitive_uppers
             .get(Self::normalize_fqn(fqn))
-            .map(|v| v.as_slice())
-            .unwrap_or(&[])
+            .map(|r| r.value().clone())
+            .unwrap_or_default()
     }
 
-    /// Get method parameters by class FQN and method name.
-    pub fn get_method_params(&self, class_fqn: &str, method_name: &str) -> Option<&[ParamInfo]> {
+    /// Get method parameters by class FQN and method name (cloned).
+    pub fn get_method_params(&self, class_fqn: &str, method_name: &str) -> Option<Vec<ParamInfo>> {
         let key = format!("{}::{}", Self::normalize_fqn(class_fqn), method_name);
-        self.method_params.get(&key).map(|v| v.as_slice())
+        self.method_params.get(&key).map(|r| r.value().clone())
     }
 
-    /// Get method return type by class FQN and method name.
-    pub fn get_method_return_type(&self, class_fqn: &str, method_name: &str) -> Option<&str> {
+    /// Get method return type by class FQN and method name (cloned).
+    pub fn get_method_return_type(&self, class_fqn: &str, method_name: &str) -> Option<String> {
         let key = format!("{}::{}", Self::normalize_fqn(class_fqn), method_name);
         self.method_return_types
             .get(&key)
-            .and_then(|opt| opt.as_deref())
+            .and_then(|r| r.value().clone())
     }
 
-    /// Get property type by class FQN and property name (without `$`).
-    pub fn get_property_type(&self, class_fqn: &str, prop_name: &str) -> Option<&str> {
+    /// Get property type by class FQN and property name (without `$`, cloned).
+    pub fn get_property_type(&self, class_fqn: &str, prop_name: &str) -> Option<String> {
         let key = format!("{}::${}", Self::normalize_fqn(class_fqn), prop_name);
         self.property_types
             .get(&key)
-            .and_then(|opt| opt.as_deref())
+            .and_then(|r| r.value().clone())
     }
 
     /// Add a method to a class.
     pub fn add_method(
-        &mut self,
+        &self,
         class_fqn: &str,
         method_name: &str,
         return_type: Option<String>,
@@ -204,7 +213,7 @@ impl TypeDatabase {
 
     /// Add a property to a class. `prop_name` should NOT include the `$` prefix.
     pub fn add_property(
-        &mut self,
+        &self,
         class_fqn: &str,
         prop_name: &str,
         type_hint: Option<String>,
@@ -214,7 +223,7 @@ impl TypeDatabase {
     }
 
     /// Set the direct parent/interface/trait FQNs for a type.
-    pub fn add_uppers(&mut self, fqn: &str, parents: Vec<String>) {
+    pub fn add_uppers(&self, fqn: &str, parents: Vec<String>) {
         let key = Self::normalize_fqn(fqn).to_string();
         self.uppers.insert(key, parents);
     }
@@ -231,7 +240,8 @@ impl TypeDatabase {
         }
 
         // Walk transitive uppers
-        for upper in self.get_all_uppers(fqn) {
+        let all_uppers = self.get_all_uppers(fqn);
+        for upper in &all_uppers {
             let upper_key = format!("{}::{}", upper, method_name);
             if self.method_params.contains_key(&upper_key) {
                 return Some(upper.clone());
@@ -253,7 +263,8 @@ impl TypeDatabase {
         }
 
         // Walk transitive uppers
-        for upper in self.get_all_uppers(fqn) {
+        let all_uppers = self.get_all_uppers(fqn);
+        for upper in &all_uppers {
             let upper_key = format!("{}::${}", upper, prop_name);
             if self.property_types.contains_key(&upper_key) {
                 return Some(upper.clone());
@@ -265,7 +276,7 @@ impl TypeDatabase {
 
     /// Resolve property type by walking the transitive upper chain.
     /// Returns the property type from the first class that defines the property.
-    pub fn resolve_property_type(&self, class_fqn: &str, prop_name: &str) -> Option<&str> {
+    pub fn resolve_property_type(&self, class_fqn: &str, prop_name: &str) -> Option<String> {
         let fqn = Self::normalize_fqn(class_fqn);
 
         // Check the class itself first
@@ -274,7 +285,8 @@ impl TypeDatabase {
         }
 
         // Walk transitive uppers
-        for upper in self.get_all_uppers(fqn) {
+        let all_uppers = self.get_all_uppers(fqn);
+        for upper in &all_uppers {
             if let Some(pt) = self.get_property_type(upper, prop_name) {
                 return Some(pt);
             }
@@ -285,7 +297,7 @@ impl TypeDatabase {
 
     /// Resolve method return type by walking the transitive upper chain.
     /// Returns the return type from the first class that defines the method.
-    pub fn resolve_method_return_type(&self, class_fqn: &str, method_name: &str) -> Option<&str> {
+    pub fn resolve_method_return_type(&self, class_fqn: &str, method_name: &str) -> Option<String> {
         let fqn = Self::normalize_fqn(class_fqn);
 
         // Check the class itself first
@@ -294,7 +306,8 @@ impl TypeDatabase {
         }
 
         // Walk transitive uppers
-        for upper in self.get_all_uppers(fqn) {
+        let all_uppers = self.get_all_uppers(fqn);
+        for upper in &all_uppers {
             if let Some(rt) = self.get_method_return_type(upper, method_name) {
                 return Some(rt);
             }
@@ -332,7 +345,7 @@ mod tests {
 
     #[test]
     fn test_insert_and_lookup() {
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
         let def = make_class_def(SymbolKind::Class);
         assert!(db.insert_def("App\\Models\\User", def));
         assert!(db.has_class("App\\Models\\User"));
@@ -344,7 +357,7 @@ mod tests {
 
     #[test]
     fn test_strip_leading_backslash() {
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
         let def = make_class_def(SymbolKind::Interface);
         db.insert_def("\\Serializable", def);
 
@@ -357,7 +370,7 @@ mod tests {
 
     #[test]
     fn test_duplicate_detection() {
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
         let def1 = TypeDef {
             kind: SymbolKind::Class,
             file_path: PathBuf::from("first.php"),
@@ -387,7 +400,7 @@ mod tests {
 
     #[test]
     fn test_method_add_and_lookup() {
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
         db.insert_def("App\\User", make_class_def(SymbolKind::Class));
 
         let params = vec![
@@ -422,14 +435,14 @@ mod tests {
 
     #[test]
     fn test_property_add_and_lookup() {
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
         db.insert_def("App\\User", make_class_def(SymbolKind::Class));
 
         db.add_property("App\\User", "name", Some("string".to_string()));
         db.add_property("App\\User", "meta", None);
 
         assert_eq!(
-            db.get_property_type("App\\User", "name"),
+            db.get_property_type("App\\User", "name").as_deref(),
             Some("string")
         );
         assert_eq!(db.get_property_type("App\\User", "meta"), None);
@@ -437,7 +450,7 @@ mod tests {
 
     #[test]
     fn test_uppers() {
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
         db.insert_def("App\\User", make_class_def(SymbolKind::Class));
         db.add_uppers(
             "App\\User",
@@ -455,7 +468,7 @@ mod tests {
 
     #[test]
     fn test_method_resolution_through_upper_chain() {
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
 
         // Set up: Child extends Parent extends GrandParent
         db.insert_def("GrandParent", make_class_def(SymbolKind::Class));
@@ -473,7 +486,7 @@ mod tests {
         db.add_method("Child", "childMethod", Some("int".to_string()), vec![]);
 
         // Build transitive uppers
-        upper_chain::build_transitive_uppers(&mut db);
+        upper_chain::build_transitive_uppers(&db);
 
         // Child can resolve all three
         assert_eq!(
@@ -495,7 +508,7 @@ mod tests {
 
     #[test]
     fn test_property_resolution_through_upper_chain() {
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
 
         db.insert_def("Base", make_class_def(SymbolKind::Class));
         db.insert_def("Child", make_class_def(SymbolKind::Class));
@@ -504,7 +517,7 @@ mod tests {
         db.add_property("Base", "baseProp", Some("string".to_string()));
         db.add_property("Child", "childProp", Some("int".to_string()));
 
-        upper_chain::build_transitive_uppers(&mut db);
+        upper_chain::build_transitive_uppers(&db);
 
         assert_eq!(
             db.resolve_property("Child", "childProp"),
@@ -519,7 +532,7 @@ mod tests {
 
     #[test]
     fn test_resolve_method_return_type_through_chain() {
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
 
         db.insert_def("Base", make_class_def(SymbolKind::Class));
         db.insert_def("Child", make_class_def(SymbolKind::Class));
@@ -527,11 +540,11 @@ mod tests {
 
         db.add_method("Base", "getName", Some("string".to_string()), vec![]);
 
-        upper_chain::build_transitive_uppers(&mut db);
+        upper_chain::build_transitive_uppers(&db);
 
         // Child doesn't define getName, but Base does
         assert_eq!(
-            db.resolve_method_return_type("Child", "getName"),
+            db.resolve_method_return_type("Child", "getName").as_deref(),
             Some("string")
         );
     }
@@ -545,7 +558,7 @@ mod tests {
 
     #[test]
     fn test_method_found_via_trait() {
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
 
         db.insert_def("App\\Models\\User", make_class_def(SymbolKind::Class));
         db.insert_def("App\\Models\\BaseModel", make_class_def(SymbolKind::Class));
@@ -561,7 +574,7 @@ mod tests {
 
         db.add_method("App\\Traits\\Timestamps", "touch", Some("void".to_string()), vec![]);
 
-        upper_chain::build_transitive_uppers(&mut db);
+        upper_chain::build_transitive_uppers(&db);
 
         assert_eq!(
             db.resolve_method("App\\Models\\User", "touch"),
@@ -571,7 +584,7 @@ mod tests {
 
     #[test]
     fn test_circular_trait_guard() {
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
 
         db.insert_def("TraitA", make_class_def(SymbolKind::Trait));
         db.insert_def("TraitB", make_class_def(SymbolKind::Trait));
@@ -579,7 +592,7 @@ mod tests {
         db.add_uppers("TraitA", vec!["TraitB".to_string()]);
         db.add_uppers("TraitB", vec!["TraitA".to_string()]);
 
-        upper_chain::build_transitive_uppers(&mut db);
+        upper_chain::build_transitive_uppers(&db);
 
         // Should return None without panic or infinite loop
         assert_eq!(db.resolve_method("TraitA", "nonexistent"), None);
@@ -587,7 +600,7 @@ mod tests {
 
     #[test]
     fn test_resolve_property_type_through_inheritance() {
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
 
         db.insert_def("ChildClass", make_class_def(SymbolKind::Class));
         db.insert_def("ParentClass", make_class_def(SymbolKind::Class));
@@ -595,22 +608,56 @@ mod tests {
 
         db.add_property("ParentClass", "name", Some("string".to_string()));
 
-        upper_chain::build_transitive_uppers(&mut db);
+        upper_chain::build_transitive_uppers(&db);
 
-        assert_eq!(db.resolve_property_type("ChildClass", "name"), Some("string"));
+        assert_eq!(db.resolve_property_type("ChildClass", "name").as_deref(), Some("string"));
     }
 
     #[test]
     fn test_method_return_type_self_keyword() {
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
 
         db.insert_def("Builder", make_class_def(SymbolKind::Class));
         db.add_method("Builder", "where", Some("self".to_string()), vec![]);
 
-        upper_chain::build_transitive_uppers(&mut db);
+        upper_chain::build_transitive_uppers(&db);
 
         let return_type = db.resolve_method_return_type("Builder", "where");
-        assert_eq!(return_type, Some("self"));
+        assert_eq!(return_type.as_deref(), Some("self"));
         // The caller (resolve_expr_type) handles "self" -> current class FQN conversion
+    }
+
+    #[test]
+    fn test_dashmap_concurrent_insert() {
+        use std::sync::Arc;
+
+        let db = Arc::new(TypeDatabase::new());
+        let mut handles = vec![];
+
+        for i in 0..10 {
+            let db = Arc::clone(&db);
+            handles.push(std::thread::spawn(move || {
+                let fqn = format!("App\\Class{}", i);
+                db.insert_def(&fqn, TypeDef {
+                    kind: SymbolKind::Class,
+                    file_path: PathBuf::from(format!("file{}.php", i)),
+                    is_abstract: false,
+                    is_final: false,
+                    is_readonly: false,
+                    enum_backing_type: None,
+                    docblock: None,
+                });
+                db.add_method(&fqn, "method", Some("void".to_string()), vec![]);
+            }));
+        }
+
+        for h in handles {
+            h.join().unwrap();
+        }
+
+        assert_eq!(db.defs.len(), 10);
+        for i in 0..10 {
+            assert!(db.has_class(&format!("App\\Class{}", i)));
+        }
     }
 }

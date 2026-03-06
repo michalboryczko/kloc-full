@@ -1,25 +1,27 @@
-//! Single-file indexing pipeline.
+//! Indexing pipeline: serial and parallel modes.
 //!
-//! Orchestrates parsing, name resolution initialization, and CST traversal
-//! for a single PHP file.
+//! Orchestrates parsing, type collection, name resolution, and CST traversal
+//! for PHP files. Supports both serial (single-thread) and parallel (rayon) modes.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use anyhow::{Context, Result};
+use rayon::prelude::*;
 
 use crate::composer::Composer;
 use crate::indexing::{self, FileResult, IndexingContext};
 use crate::parser::PhpParser;
 use crate::symbol::namer::SymbolNamer;
 use crate::types::TypeDatabase;
+use crate::types::collector::collect_defs_from_file;
+use crate::types::upper_chain;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Single-file indexing (used by tests and serial mode)
+// ═══════════════════════════════════════════════════════════════════════════════
 
 /// Parse and index a single PHP file, returning the collected SCIP output.
-///
-/// This is the main entry point for per-file indexing. It:
-/// 1. Reads and parses the file
-/// 2. Creates a fresh `IndexingContext`
-/// 3. Runs the CST traversal (which initializes the name resolver internally)
-/// 4. Returns the `FileResult`
 pub fn index_single_file(
     file_path: &Path,
     type_db: &TypeDatabase,
@@ -51,6 +53,205 @@ pub fn index_single_file(
     Ok(ctx.into_result())
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// Phase 1: Parallel type collection
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Collect type definitions from all files in parallel using rayon.
+///
+/// Each rayon task creates its own `PhpParser` instance (Parser is not Send).
+/// The `TypeDatabase` uses DashMap internally, so concurrent inserts are safe.
+pub fn collect_types_parallel(
+    files: &[PathBuf],
+    type_db: &TypeDatabase,
+) {
+    files.par_iter().for_each(|file| {
+        let source = match std::fs::read_to_string(file) {
+            Ok(s) => s,
+            Err(_) => return,
+        };
+
+        let mut parser = PhpParser::new();
+        let parsed = match parser.parse(&source, file.as_path()) {
+            Ok(p) => p,
+            Err(_) => return,
+        };
+
+        collect_defs_from_file(&parsed.path, &parsed.source, &parsed.tree, type_db);
+    });
+
+    // Build transitive upper chains after all types are collected
+    upper_chain::build_transitive_uppers(type_db);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Phase 2: Parallel indexing
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Index all files in parallel using rayon, returning unsorted results.
+///
+/// Each rayon task creates its own `PhpParser` and `IndexingContext`.
+/// The `TypeDatabase` and `Composer` are shared read-only via `Arc`.
+pub fn index_files_parallel(
+    files: &[PathBuf],
+    type_db: &Arc<TypeDatabase>,
+    composer: &Arc<Composer>,
+    namer: &Arc<SymbolNamer>,
+    project_root: &Path,
+) -> Vec<FileResult> {
+    files.par_iter().filter_map(|file| {
+        let source = match std::fs::read(file) {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("Warning: cannot read {}: {}", file.display(), e);
+                return None;
+            }
+        };
+
+        let source_str = match std::str::from_utf8(&source) {
+            Ok(s) => s,
+            Err(_) => {
+                eprintln!("Warning: non-UTF-8 content in {}", file.display());
+                return None;
+            }
+        };
+
+        let mut parser = PhpParser::new();
+        let parsed = match parser.parse(source_str, file.as_path()) {
+            Ok(p) => p,
+            Err(e) => {
+                eprintln!("Warning: parse error in {}: {}", file.display(), e);
+                return None;
+            }
+        };
+
+        let mut ctx = IndexingContext::new(
+            file,
+            &parsed.source,
+            type_db,
+            composer,
+            namer,
+            project_root,
+        );
+
+        indexing::index_file(&parsed, &mut ctx);
+
+        Some(ctx.into_result())
+    }).collect()
+}
+
+/// Index all files serially (for testing/comparison).
+pub fn index_files_serial(
+    files: &[PathBuf],
+    type_db: &TypeDatabase,
+    composer: &Composer,
+    namer: &SymbolNamer,
+    project_root: &Path,
+) -> Vec<FileResult> {
+    files.iter().filter_map(|file| {
+        index_single_file(file, type_db, composer, namer, project_root).ok()
+    }).collect()
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Phase 3: Deterministic output sorting
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Sort file results for deterministic output.
+///
+/// - Sort documents by relative_path
+/// - Sort occurrences within each document by (start_line, start_col, symbol)
+/// - Sort symbols within each document by symbol string
+pub fn sort_results_deterministic(results: &mut Vec<FileResult>) {
+    results.sort_by(|a, b| a.relative_path.cmp(&b.relative_path));
+
+    for result in results.iter_mut() {
+        result.occurrences.sort_by(|a, b| {
+            a.range.first().cmp(&b.range.first())
+                .then(a.range.get(1).cmp(&b.range.get(1)))
+                .then(a.symbol.cmp(&b.symbol))
+        });
+        result.symbols.sort_by(|a, b| a.symbol.cmp(&b.symbol));
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Full pipeline
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Run the full indexing pipeline: discover -> collect types -> index -> sort.
+///
+/// Returns sorted `Vec<FileResult>` ready for serialization.
+pub fn run_pipeline(
+    project_root: &Path,
+    verbose: bool,
+) -> Result<(Vec<FileResult>, Arc<Composer>, Arc<SymbolNamer>)> {
+    use std::time::Instant;
+
+    // Phase 0: Load Composer config
+    let composer = Arc::new(
+        Composer::load(project_root)
+            .with_context(|| format!("failed to load composer config from {:?}", project_root))?,
+    );
+    let namer = Arc::new(SymbolNamer::new(
+        &composer.config.name,
+        &composer.config.version,
+    ));
+
+    // Phase 0: Discover PHP files
+    let start = Instant::now();
+    let discovered = crate::discovery::discover_php_files(project_root);
+    let all_files: Vec<PathBuf> = discovered.project.iter()
+        .chain(discovered.vendor.iter())
+        .cloned()
+        .collect();
+    if verbose {
+        eprintln!("Discovery: {} project + {} vendor files in {:.2}s",
+            discovered.project.len(), discovered.vendor.len(), start.elapsed().as_secs_f64());
+    }
+
+    if all_files.is_empty() {
+        return Ok((Vec::new(), composer, namer));
+    }
+
+    // Phase 1: Parallel type collection (all files including vendor)
+    let start = Instant::now();
+    let type_db = Arc::new(TypeDatabase::new());
+    collect_types_parallel(&all_files, &type_db);
+    if verbose {
+        eprintln!("Type collection: {:.2}s ({} types)", start.elapsed().as_secs_f64(), type_db.defs.len());
+    }
+
+    // Phase 2: Parallel indexing (all files)
+    let start = Instant::now();
+    let mut results = index_files_parallel(&all_files, &type_db, &composer, &namer, project_root);
+    if verbose {
+        eprintln!("Indexing: {:.2}s ({} files)", start.elapsed().as_secs_f64(), results.len());
+    }
+
+    // Phase 3: Deterministic sorting
+    sort_results_deterministic(&mut results);
+
+    Ok((results, composer, namer))
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Compile-time Send assertions
+// ═══════════════════════════════════════════════════════════════════════════════
+
+#[allow(dead_code)]
+fn _assert_send() {
+    fn is_send<T: Send>() {}
+    is_send::<FileResult>();
+    is_send::<TypeDatabase>();
+    is_send::<Composer>();
+    is_send::<SymbolNamer>();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Tests
+// ═══════════════════════════════════════════════════════════════════════════════
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -72,6 +273,42 @@ mod tests {
         fs::write(&file_path, php_source).unwrap();
 
         (dir, file_path)
+    }
+
+    fn setup_multi_file_project() -> TempDir {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+
+        fs::write(
+            root.join("composer.json"),
+            r#"{"name": "test/project", "version": "1.0.0"}"#,
+        )
+        .unwrap();
+
+        fs::create_dir_all(root.join("src")).unwrap();
+
+        fs::write(root.join("src/Foo.php"), r#"<?php
+namespace App;
+class Foo {
+    public function hello(): string { return "hi"; }
+}
+"#).unwrap();
+
+        fs::write(root.join("src/Bar.php"), r#"<?php
+namespace App;
+class Bar extends Foo {
+    public function world(): void {}
+}
+"#).unwrap();
+
+        fs::write(root.join("src/Baz.php"), r#"<?php
+namespace App;
+class Baz {
+    public int $x;
+}
+"#).unwrap();
+
+        dir
     }
 
     #[test]
@@ -104,14 +341,12 @@ class Example {
         .unwrap();
 
         assert_eq!(result.relative_path, "src/Example.php");
-        // Definitions are now emitted by the pipeline
         assert!(!result.occurrences.is_empty());
         assert!(!result.symbols.is_empty());
     }
 
     #[test]
     fn test_single_file_pipeline_with_syntax_error() {
-        // Files with syntax errors should still index without panic
         let source = r#"<?php
 class Broken {
     public function ( {
@@ -180,5 +415,127 @@ class Broken {
 
         assert_eq!(result.relative_path, "src/Example.php");
         assert!(result.occurrences.is_empty());
+    }
+
+    #[test]
+    fn test_parallel_type_collection() {
+        let dir = setup_multi_file_project();
+        let files: Vec<PathBuf> = vec![
+            dir.path().join("src/Foo.php"),
+            dir.path().join("src/Bar.php"),
+            dir.path().join("src/Baz.php"),
+        ];
+
+        let type_db = TypeDatabase::new();
+        collect_types_parallel(&files, &type_db);
+
+        assert!(type_db.has_class("App\\Foo"));
+        assert!(type_db.has_class("App\\Bar"));
+        assert!(type_db.has_class("App\\Baz"));
+        assert!(type_db.get_method_params("App\\Foo", "hello").is_some());
+        assert_eq!(type_db.get_property_type("App\\Baz", "x").as_deref(), Some("int"));
+    }
+
+    #[test]
+    fn test_parallel_indexing() {
+        let dir = setup_multi_file_project();
+        let project_root = dir.path();
+        let files: Vec<PathBuf> = vec![
+            project_root.join("src/Foo.php"),
+            project_root.join("src/Bar.php"),
+            project_root.join("src/Baz.php"),
+        ];
+
+        let type_db = Arc::new(TypeDatabase::new());
+        collect_types_parallel(&files, &type_db);
+
+        let composer = Arc::new(Composer::load(project_root).unwrap());
+        let namer = Arc::new(SymbolNamer::new("test/project", "1.0.0"));
+
+        let results = index_files_parallel(&files, &type_db, &composer, &namer, project_root);
+
+        assert_eq!(results.len(), 3);
+        for r in &results {
+            assert!(!r.occurrences.is_empty(), "File {} has no occurrences", r.relative_path);
+        }
+    }
+
+    #[test]
+    fn test_parallel_matches_serial() {
+        let dir = setup_multi_file_project();
+        let project_root = dir.path();
+        let files: Vec<PathBuf> = vec![
+            project_root.join("src/Foo.php"),
+            project_root.join("src/Bar.php"),
+            project_root.join("src/Baz.php"),
+        ];
+
+        let type_db = Arc::new(TypeDatabase::new());
+        collect_types_parallel(&files, &type_db);
+
+        let composer = Arc::new(Composer::load(project_root).unwrap());
+        let namer = Arc::new(SymbolNamer::new("test/project", "1.0.0"));
+
+        // Serial
+        let mut serial = index_files_serial(&files, &type_db, &composer, &namer, project_root);
+        sort_results_deterministic(&mut serial);
+
+        // Parallel
+        let mut parallel = index_files_parallel(&files, &type_db, &composer, &namer, project_root);
+        sort_results_deterministic(&mut parallel);
+
+        assert_eq!(serial.len(), parallel.len());
+        for (s, p) in serial.iter().zip(parallel.iter()) {
+            assert_eq!(s.relative_path, p.relative_path);
+            assert_eq!(s.occurrences.len(), p.occurrences.len(),
+                "Occurrence count mismatch in {}", s.relative_path);
+            assert_eq!(s.symbols.len(), p.symbols.len(),
+                "Symbol count mismatch in {}", s.relative_path);
+        }
+    }
+
+    #[test]
+    fn test_deterministic_sorting() {
+        let mut results = vec![
+            FileResult {
+                relative_path: "src/Z.php".to_string(),
+                occurrences: vec![],
+                symbols: vec![],
+                calls: vec![],
+                values: vec![],
+            },
+            FileResult {
+                relative_path: "src/A.php".to_string(),
+                occurrences: vec![],
+                symbols: vec![],
+                calls: vec![],
+                values: vec![],
+            },
+            FileResult {
+                relative_path: "src/M.php".to_string(),
+                occurrences: vec![],
+                symbols: vec![],
+                calls: vec![],
+                values: vec![],
+            },
+        ];
+
+        sort_results_deterministic(&mut results);
+
+        assert_eq!(results[0].relative_path, "src/A.php");
+        assert_eq!(results[1].relative_path, "src/M.php");
+        assert_eq!(results[2].relative_path, "src/Z.php");
+    }
+
+    #[test]
+    fn test_full_pipeline() {
+        let dir = setup_multi_file_project();
+        let (results, _, _) = run_pipeline(dir.path(), false).unwrap();
+
+        assert_eq!(results.len(), 3);
+        // Results should be sorted by path
+        assert_eq!(results[0].relative_path, "src/Bar.php");
+        assert_eq!(results[1].relative_path, "src/Baz.php");
+        assert_eq!(results[2].relative_path, "src/Foo.php");
     }
 }

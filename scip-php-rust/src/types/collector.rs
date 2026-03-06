@@ -25,7 +25,7 @@ pub fn collect_defs_from_file(
     file_path: &Path,
     source: &[u8],
     tree: &Tree,
-    db: &mut TypeDatabase,
+    db: &TypeDatabase,
 ) {
     let root = tree.root_node();
     let mut resolver = NameResolver::new();
@@ -42,7 +42,7 @@ fn collect_from_node(
     node: Node,
     source: &[u8],
     resolver: &mut NameResolver,
-    db: &mut TypeDatabase,
+    db: &TypeDatabase,
     file_path: &Path,
 ) {
     match node.kind() {
@@ -114,7 +114,7 @@ fn collect_class_def(
     node: Node,
     source: &[u8],
     resolver: &mut NameResolver,
-    db: &mut TypeDatabase,
+    db: &TypeDatabase,
     file_path: &Path,
     base_kind: SymbolKind,
 ) {
@@ -195,7 +195,7 @@ fn collect_enum_def(
     node: Node,
     source: &[u8],
     resolver: &mut NameResolver,
-    db: &mut TypeDatabase,
+    db: &TypeDatabase,
     file_path: &Path,
 ) {
     let name = match node.child_by_field_name("name") {
@@ -307,7 +307,7 @@ fn collect_class_body(
     body: Node,
     source: &[u8],
     resolver: &mut NameResolver,
-    db: &mut TypeDatabase,
+    db: &TypeDatabase,
     class_fqn: &str,
 ) {
     for i in 0..body.named_child_count() {
@@ -341,7 +341,7 @@ fn collect_trait_use(
     node: Node,
     source: &[u8],
     resolver: &NameResolver,
-    db: &mut TypeDatabase,
+    db: &TypeDatabase,
     class_fqn: &str,
 ) {
     let mut trait_names = Vec::new();
@@ -359,9 +359,11 @@ fn collect_trait_use(
     }
 
     if !trait_names.is_empty() {
-        // Merge with existing uppers
-        let existing = db.uppers.entry(class_fqn.to_string()).or_default();
-        existing.extend(trait_names);
+        // Merge with existing uppers (DashMap entry API)
+        db.uppers
+            .entry(class_fqn.to_string())
+            .or_default()
+            .extend(trait_names);
     }
 }
 
@@ -374,7 +376,7 @@ fn collect_method(
     node: Node,
     source: &[u8],
     _resolver: &mut NameResolver,
-    db: &mut TypeDatabase,
+    db: &TypeDatabase,
     class_fqn: &str,
 ) {
     let name = match node.child_by_field_name("name") {
@@ -546,7 +548,7 @@ fn has_default_value(node: Node, source: &[u8]) -> bool {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// Collect properties from a `property_declaration` node.
-fn collect_property(node: Node, source: &[u8], db: &mut TypeDatabase, class_fqn: &str) {
+fn collect_property(node: Node, source: &[u8], db: &TypeDatabase, class_fqn: &str) {
     // Extract type hint (appears before property_element nodes)
     let type_hint = extract_property_type(node, source);
 
@@ -590,7 +592,7 @@ fn collect_function_def(
     node: Node,
     source: &[u8],
     resolver: &mut NameResolver,
-    db: &mut TypeDatabase,
+    db: &TypeDatabase,
     file_path: &Path,
 ) {
     let name = match node.child_by_field_name("name") {
@@ -625,7 +627,7 @@ fn collect_function_def(
     };
     db.insert_def(&fqn, def);
 
-    // Store function return type
+    // Store function return type (DashMap insert takes &self)
     db.function_return_types.insert(fqn.clone(), return_type);
 
     // Store function params using FQN as the "class" part
@@ -754,8 +756,8 @@ mod tests {
     fn collect_from_source(source: &str) -> TypeDatabase {
         let mut parser = PhpParser::new();
         let parsed = parser.parse(source, "test.php").unwrap();
-        let mut db = TypeDatabase::new();
-        collect_defs_from_file(&parsed.path, &parsed.source, &parsed.tree, &mut db);
+        let db = TypeDatabase::new();
+        collect_defs_from_file(&parsed.path, &parsed.source, &parsed.tree, &db);
         db
     }
 
@@ -782,13 +784,13 @@ class User {
         // Method
         assert!(db.get_method_params("User", "getName").is_some());
         assert_eq!(
-            db.get_method_return_type("User", "getName"),
+            db.get_method_return_type("User", "getName").as_deref(),
             Some("string")
         );
 
         // Property
         assert_eq!(
-            db.get_property_type("User", "name"),
+            db.get_property_type("User", "name").as_deref(),
             Some("string")
         );
     }
@@ -819,7 +821,7 @@ class User extends BaseModel {
 
         // Method
         assert_eq!(
-            db.get_method_return_type("App\\Models\\User", "getRole"),
+            db.get_method_return_type("App\\Models\\User", "getRole").as_deref(),
             Some("?string")
         );
     }
@@ -891,7 +893,7 @@ trait Loggable {
 
         assert!(db.get_method_params("Loggable", "log").is_some());
         assert_eq!(
-            db.get_property_type("Loggable", "logLevel"),
+            db.get_property_type("Loggable", "logLevel").as_deref(),
             Some("string")
         );
     }
@@ -952,8 +954,10 @@ function formatName(string $first, string $last): string {
         assert_eq!(def.kind, SymbolKind::Function);
 
         assert_eq!(
-            db.function_return_types.get("App\\Helpers\\formatName"),
-            Some(&Some("string".to_string()))
+            db.function_return_types
+                .get("App\\Helpers\\formatName")
+                .map(|r| r.value().clone()),
+            Some(Some("string".to_string()))
         );
     }
 
@@ -1014,11 +1018,11 @@ class User {
 
         // Promoted params should also create properties
         assert_eq!(
-            db.get_property_type("User", "email"),
+            db.get_property_type("User", "email").as_deref(),
             Some("string")
         );
         assert_eq!(
-            db.get_property_type("User", "age"),
+            db.get_property_type("User", "age").as_deref(),
             Some("int")
         );
     }
@@ -1106,11 +1110,14 @@ class Foo {
 "#,
         );
 
-        assert_eq!(db.get_property_type("Foo", "a"), Some("string"));
-        assert_eq!(db.get_property_type("Foo", "b"), Some("?int"));
+        assert_eq!(db.get_property_type("Foo", "a").as_deref(), Some("string"));
+        assert_eq!(db.get_property_type("Foo", "b").as_deref(), Some("?int"));
         // $c has no type hint
         assert!(db.property_types.contains_key("Foo::$c"));
-        assert_eq!(db.property_types.get("Foo::$c"), Some(&None));
+        assert_eq!(
+            db.property_types.get("Foo::$c").map(|r| r.value().clone()),
+            Some(None)
+        );
     }
 
     #[test]
@@ -1124,7 +1131,7 @@ class Foo {
         );
 
         assert_eq!(
-            db.get_property_type("Foo", "value"),
+            db.get_property_type("Foo", "value").as_deref(),
             Some("int|string")
         );
     }
@@ -1140,7 +1147,7 @@ class Foo {
         );
 
         assert_eq!(
-            db.get_method_return_type("Foo", "bar"),
+            db.get_method_return_type("Foo", "bar").as_deref(),
             Some("?string")
         );
     }

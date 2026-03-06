@@ -12,11 +12,11 @@ use super::{SymbolKind, TypeDatabase};
 /// Output is sorted by FQN for deterministic output. Each type definition
 /// is printed with its kind, file, uppers, methods, and properties.
 pub fn dump_type_database<W: Write>(db: &TypeDatabase, writer: &mut W) -> io::Result<()> {
-    let mut fqns: Vec<&String> = db.defs.keys().collect();
+    let mut fqns: Vec<String> = db.defs.iter().map(|r| r.key().clone()).collect();
     fqns.sort();
 
-    for fqn in fqns {
-        let def = &db.defs[fqn];
+    for fqn in &fqns {
+        let def = db.defs.get(fqn).unwrap();
         let kind_str = match &def.kind {
             SymbolKind::Class => "class",
             SymbolKind::AbstractClass => "abstract class",
@@ -44,20 +44,21 @@ pub fn dump_type_database<W: Write>(db: &TypeDatabase, writer: &mut W) -> io::Re
 
         // Collect and sort methods for this class
         let method_prefix = format!("{}::", fqn);
-        let mut methods: Vec<&String> = db
+        let mut methods: Vec<String> = db
             .method_return_types
-            .keys()
-            .filter(|k| k.starts_with(&method_prefix))
+            .iter()
+            .filter(|r| r.key().starts_with(&method_prefix))
+            .map(|r| r.key().clone())
             .collect();
         methods.sort();
 
-        for method_key in methods {
+        for method_key in &methods {
             let method_name = &method_key[method_prefix.len()..];
             let return_type = db
                 .method_return_types
                 .get(method_key)
-                .and_then(|opt| opt.as_deref())
-                .unwrap_or("mixed");
+                .and_then(|r| r.value().clone())
+                .unwrap_or_else(|| "mixed".to_string());
 
             let params_str = if let Some(params) = db.method_params.get(method_key) {
                 params
@@ -93,34 +94,39 @@ pub fn dump_type_database<W: Write>(db: &TypeDatabase, writer: &mut W) -> io::Re
 
         // Collect and sort properties for this class
         let prop_prefix = format!("{}::$", fqn);
-        let mut props: Vec<&String> = db
+        let mut props: Vec<String> = db
             .property_types
-            .keys()
-            .filter(|k| k.starts_with(&prop_prefix))
+            .iter()
+            .filter(|r| r.key().starts_with(&prop_prefix))
+            .map(|r| r.key().clone())
             .collect();
         props.sort();
 
-        for prop_key in props {
+        for prop_key in &props {
             let prop_name = &prop_key[prop_prefix.len()..];
             let type_str = db
                 .property_types
                 .get(prop_key)
-                .and_then(|opt| opt.as_deref())
-                .unwrap_or("mixed");
+                .and_then(|r| r.value().clone())
+                .unwrap_or_else(|| "mixed".to_string());
             writeln!(writer, "  property ${}: {}", prop_name, type_str)?;
         }
     }
 
     // Standalone functions
-    let mut func_fqns: Vec<&String> = db.function_return_types.keys().collect();
+    let mut func_fqns: Vec<String> = db
+        .function_return_types
+        .iter()
+        .map(|r| r.key().clone())
+        .collect();
     func_fqns.sort();
 
-    for fqn in func_fqns {
+    for fqn in &func_fqns {
         let return_type = db
             .function_return_types
             .get(fqn)
-            .and_then(|opt| opt.as_deref())
-            .unwrap_or("mixed");
+            .and_then(|r| r.value().clone())
+            .unwrap_or_else(|| "mixed".to_string());
         writeln!(writer, "function {}: {}", fqn, return_type)?;
     }
 
@@ -140,7 +146,7 @@ mod tests {
 
     #[test]
     fn test_dump_basic() {
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
 
         db.insert_def(
             "App\\User",
@@ -196,7 +202,7 @@ mod tests {
 
     #[test]
     fn test_dump_sorted_output() {
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
 
         // Insert in reverse alphabetical order
         db.insert_def(
@@ -235,7 +241,7 @@ mod tests {
 
     #[test]
     fn test_dump_enum_with_backing() {
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
         db.insert_def(
             "App\\Status",
             TypeDef {
@@ -259,7 +265,7 @@ mod tests {
 
     #[test]
     fn test_dump_function() {
-        let mut db = TypeDatabase::new();
+        let db = TypeDatabase::new();
         db.function_return_types
             .insert("App\\helper".to_string(), Some("string".to_string()));
 
