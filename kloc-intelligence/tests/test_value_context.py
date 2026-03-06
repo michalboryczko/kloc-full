@@ -1049,7 +1049,7 @@ class TestValueSourceChain:
         entries = build_value_source_chain(runner, "val:x", 1, 3, 100)
         assert len(entries) == 1
         assert entries[0].member_ref.on_kind == "property"
-        assert entries[0].member_ref.access_chain == "Svc::$repo"
+        assert entries[0].member_ref.access_chain == "$this->repo"
 
 
 # =============================================================================

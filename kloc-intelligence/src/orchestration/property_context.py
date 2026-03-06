@@ -305,9 +305,32 @@ def build_property_used_by(
                 rkind = "local" if recv_value_kind == "local" else "param"
                 if recv_name and (recv_name, rkind) not in receiver_names:
                     receiver_names.append((recv_name, rkind))
-            elif recv_value_kind == "result" and recv_prop_fqn:
-                if (recv_prop_fqn, "property") not in receiver_names:
-                    receiver_names.append((recv_prop_fqn, "property"))
+            elif recv_value_kind == "result":
+                # Chain access: build display like "$customer->address"
+                recv_prop_name = rec.get("recv_prop_name")
+                chain_recv_name = rec.get("chain_recv_name")
+                chain_recv_kind = rec.get("chain_recv_kind")
+                if recv_prop_name:
+                    prop_display = recv_prop_name.lstrip("$")
+                    if chain_recv_kind == "self" or (chain_recv_kind is None and chain_recv_name is None):
+                        # Self access: $this->address
+                        chain_display = f"$this->{prop_display}"
+                    elif chain_recv_name:
+                        chain_display = f"{chain_recv_name}->{prop_display}"
+                    else:
+                        chain_display = recv_prop_fqn or prop_display
+                    if (chain_display, "property") not in receiver_names:
+                        receiver_names.append((chain_display, "property"))
+                elif recv_prop_fqn:
+                    if (recv_prop_fqn, "property") not in receiver_names:
+                        receiver_names.append((recv_prop_fqn, "property"))
+            elif recv_value_kind is None:
+                # No receiver edge: check call_kind for implicit $this
+                call_kind = rec.get("call_kind")
+                if call_kind in ("access", "method", "method_static"):
+                    key = ("$this", "self")
+                    if key not in receiver_names:
+                        receiver_names.append(key)
 
         # Build sites for (xN) dedup
         access_count = len(scope_calls)

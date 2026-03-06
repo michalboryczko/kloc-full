@@ -31,6 +31,104 @@ from ..db.queries.context_value import (
 )
 from ..models.results import ContextEntry, MemberRef, ArgumentInfo
 
+# Query to get Call node call_kind for implicit $this detection
+_Q_CALL_KIND = """
+MATCH (c:Node {node_id: $call_id})
+RETURN c.call_kind AS call_kind
+"""
+
+# Trace source chain for a result Value node
+_Q_SOURCE_CHAIN = """
+MATCH (val:Value {node_id: $value_id})<-[:PRODUCES]-(call:Call)-[:CALLS]->(target)
+OPTIONAL MATCH (call)-[:RECEIVER]->(recv:Value)
+RETURN target.fqn AS target_fqn,
+       target.kind AS target_kind,
+       call.call_kind AS call_kind,
+       recv.fqn AS recv_fqn,
+       recv.value_kind AS recv_value_kind,
+       recv.file AS recv_file,
+       recv.start_line AS recv_start_line
+LIMIT 1
+"""
+
+
+def _trace_source_chain(runner: QueryRunner, value_node_id: str) -> list | None:
+    """Trace the source chain for a result Value node."""
+    rec = runner.execute_single(_Q_SOURCE_CHAIN, value_id=value_node_id)
+    if not rec:
+        return None
+
+    target_fqn = rec.get("target_fqn")
+    target_kind = rec.get("target_kind")
+    call_kind = rec.get("call_kind")
+    recv_fqn = rec.get("recv_fqn")
+    recv_value_kind = rec.get("recv_value_kind")
+    recv_file = rec.get("recv_file")
+    recv_start_line = rec.get("recv_start_line")
+
+    if not target_fqn:
+        return None
+
+    step: dict = {
+        "fqn": target_fqn,
+        "kind": target_kind,
+        "reference_type": call_kind,
+    }
+
+    if recv_fqn:
+        step["on"] = recv_fqn
+        if recv_value_kind == "local":
+            step["on_kind"] = "local"
+        elif recv_value_kind == "parameter":
+            step["on_kind"] = "param"
+        if recv_file:
+            step["on_file"] = recv_file
+        if recv_start_line is not None:
+            step["on_line"] = recv_start_line
+
+    return [step]
+
+
+# =============================================================================
+# Promoted parameter resolution
+# =============================================================================
+
+# Query to resolve a promoted constructor parameter to its Property FQN.
+# For PHP constructor promotion: Property -[ASSIGNED_FROM]-> Value(parameter).
+_Q_RESOLVE_PROMOTED_PARAM = """
+MATCH (prop:Node {kind: 'Property'})-[:ASSIGNED_FROM]->(param:Value {value_kind: 'parameter'})
+WHERE param.fqn = $param_fqn
+RETURN prop.fqn AS property_fqn
+LIMIT 1
+"""
+
+# Module-level cache for promoted param resolution to avoid N+1 queries
+_promoted_param_cache: dict[str, str | None] = {}
+
+
+def resolve_promoted_property_fqn(runner: QueryRunner, param_fqn: str) -> str | None:
+    """Resolve a promoted constructor parameter FQN to its Property FQN.
+
+    For PHP constructor promotion, the parameter Value node has an
+    ASSIGNED_FROM edge from a Property node. Returns the Property FQN.
+
+    Uses a module-level cache to avoid repeated queries for the same param_fqn.
+
+    Args:
+        runner: Active QueryRunner.
+        param_fqn: The parameter FQN (e.g., 'Order::__construct().$id').
+
+    Returns:
+        Property FQN if promoted (e.g., 'Order::$id'), None otherwise.
+    """
+    if param_fqn in _promoted_param_cache:
+        return _promoted_param_cache[param_fqn]
+
+    rec = runner.execute_single(_Q_RESOLVE_PROMOTED_PARAM, param_fqn=param_fqn)
+    result = rec.get("property_fqn") if rec else None
+    _promoted_param_cache[param_fqn] = result
+    return result
+
 
 # =============================================================================
 # Internal helpers
@@ -59,13 +157,46 @@ def _build_arguments_from_records(
         position = rec.get("position")
         if position is None:
             continue
+
+        raw_param_fqn = rec.get("parameter")
+        # Resolve promoted constructor params to Property FQNs
+        param_fqn = raw_param_fqn
+        if raw_param_fqn:
+            resolved = resolve_promoted_property_fqn(runner, raw_param_fqn)
+            if resolved:
+                param_fqn = resolved
+
+        # Derive param_name from param FQN: "Class::method().$name" -> "$name"
+        param_name = None
+        if param_fqn:
+            if ".$" in param_fqn:
+                param_name = param_fqn.rsplit(".", 1)[-1]
+            elif "$" in param_fqn:
+                param_name = "$" + param_fqn.rsplit("$", 1)[-1]
+
+        # value_ref_symbol: the value's FQN if it's a proper symbol reference
+        value_fqn = rec.get("value_fqn")
+        value_ref_symbol = None
+        if value_fqn and "::" in value_fqn:
+            value_ref_symbol = value_fqn
+
+        # Trace source chain for result values
+        source_chain = None
+        value_kind = rec.get("value_kind")
+        if value_kind == "result":
+            value_node_id = rec.get("value_id")
+            if value_node_id:
+                source_chain = _trace_source_chain(runner, value_node_id)
+
         infos.append(ArgumentInfo(
             position=int(position),
+            param_name=param_name,
+            param_fqn=param_fqn,
             value_expr=rec.get("expression"),
-            value_source=rec.get("value_kind"),
+            value_source=value_kind,
             value_type=rec.get("value_type"),
-            param_fqn=rec.get("parameter"),
-            value_ref_symbol=rec.get("value_fqn"),
+            value_ref_symbol=value_ref_symbol,
+            source_chain=source_chain,
         ))
     infos.sort(key=lambda a: a.position)
     return infos
@@ -95,6 +226,53 @@ def _resolve_on_kind(recv_value_kind: str | None) -> str | None:
     if recv_value_kind == "result":
         return "property"
     return recv_value_kind
+
+
+def _resolve_call_on(runner: QueryRunner, call_id: str) -> tuple[str | None, str | None]:
+    """Resolve on/on_kind for a Call node.
+
+    Uses Q3_RECEIVER_IDENTITY to find explicit receiver. Falls back to
+    implicit $this detection when no receiver edge exists (matching kloc-cli
+    graph_utils.py logic for access/method/method_static calls).
+
+    Returns:
+        (on, on_kind) tuple.
+    """
+    from ..db.queries.context_value import Q3_RECEIVER_IDENTITY
+
+    recv_rec = runner.execute_single(Q3_RECEIVER_IDENTITY, call_id=call_id)
+    if recv_rec:
+        recv_kind = recv_rec.get("recv_kind") if isinstance(recv_rec, dict) else recv_rec["recv_kind"]
+        recv_name = recv_rec.get("recv_name") if isinstance(recv_rec, dict) else recv_rec["recv_name"]
+        prop_fqn = recv_rec.get("prop_fqn") if isinstance(recv_rec, dict) else recv_rec["prop_fqn"]
+        prop_name = recv_rec.get("prop_name") if isinstance(recv_rec, dict) else recv_rec["prop_name"]
+        src_recv_kind = recv_rec.get("src_recv_kind") if isinstance(recv_rec, dict) else recv_rec["src_recv_kind"]
+        src_recv_name = recv_rec.get("src_recv_name") if isinstance(recv_rec, dict) else recv_rec["src_recv_name"]
+        if recv_kind == "result" and prop_fqn and prop_name:
+            member = prop_name.lstrip("$")
+            if src_recv_kind == "self" or src_recv_kind is None:
+                on = f"$this->{member}"
+            elif src_recv_kind == "parameter":
+                on = f"{src_recv_name}->{member}"
+            elif src_recv_kind == "local":
+                on = f"{src_recv_name}->{member}"
+            else:
+                on = f"$this->{member}"
+            return on, "property"
+        elif recv_kind == "self":
+            return "$this", "self"
+        elif recv_kind:
+            return recv_name, _resolve_on_kind(recv_kind)
+
+    # Fallback: no receiver edge. Check call_kind for implicit $this.
+    # Matches kloc-cli graph_utils.py: if call_kind in (access, method, method_static) => $this/self
+    ck_rec = runner.execute_single(_Q_CALL_KIND, call_id=call_id)
+    if ck_rec:
+        ck = ck_rec.get("call_kind") if isinstance(ck_rec, dict) else ck_rec["call_kind"]
+        if ck in ("access", "method", "method_static"):
+            return "$this", "self"
+
+    return None, None
 
 
 # =============================================================================
@@ -151,6 +329,11 @@ def build_value_consumer_chain(
     data = fetch_value_consumer_data(runner, value_id)
     receiver_records: list[dict] = data["receiver_chain"]
     direct_arg_records: list[dict] = data["direct_arguments"]
+    value_name: str | None = data.get("value_name")
+    value_kind_raw: str | None = data.get("value_kind")
+    # Resolve on/on_kind from the Value node being queried
+    value_on = value_name
+    value_on_kind = _resolve_on_kind(value_kind_raw)
 
     entries: list[ContextEntry] = []
     count = 0
@@ -227,6 +410,9 @@ def build_value_consumer_chain(
         ref_type = _infer_ref_type_from_call_kind(call_kind, consumer_target_kind)
         callee = _build_callee_display(consumer_target_name, consumer_target_kind)
 
+        # Resolve on/on_kind for the consumer call (Q3 + implicit $this fallback)
+        consumer_on, consumer_on_kind = _resolve_call_on(runner, consumer_call_id)
+
         entry = ContextEntry(
             depth=depth,
             node_id=consumer_target_id or consumer_call_id,
@@ -239,6 +425,8 @@ def build_value_consumer_chain(
             arguments=arguments,
             ref_type=ref_type,
             callee=callee,
+            on=consumer_on,
+            on_kind=consumer_on_kind,
         )
 
         # Depth expansion: cross into callee
@@ -274,6 +462,16 @@ def build_value_consumer_chain(
         ref_type = _infer_ref_type_from_call_kind(call_kind, target_kind)
         callee = _build_callee_display(target_name, target_kind)
 
+        # Build arguments for standalone access call
+        arguments = _build_arguments_from_records(runner, access_call_id)
+
+        # Resolve on/on_kind for standalone access (Q3 + implicit $this fallback)
+        standalone_on, standalone_on_kind = _resolve_call_on(runner, access_call_id)
+        # Fall back to value-level on/on_kind if Q3 doesn't resolve
+        if standalone_on is None:
+            standalone_on = value_on
+            standalone_on_kind = value_on_kind
+
         entry = ContextEntry(
             depth=depth,
             node_id=target_id or access_call_id,
@@ -282,8 +480,11 @@ def build_value_consumer_chain(
             file=call_file,
             line=call_line,
             children=[],
+            arguments=arguments,
             ref_type=ref_type,
             callee=callee,
+            on=standalone_on,
+            on_kind=standalone_on_kind,
         )
         count += 1
         entries.append(entry)
@@ -314,6 +515,9 @@ def build_value_consumer_chain(
         ref_type = _infer_ref_type_from_call_kind(call_kind, consumer_target_kind)
         callee = _build_callee_display(consumer_target_name, consumer_target_kind)
 
+        # Resolve on/on_kind for direct argument consumer calls (Q3 + implicit $this fallback)
+        direct_on, direct_on_kind = _resolve_call_on(runner, consumer_call_id)
+
         entry = ContextEntry(
             depth=depth,
             node_id=consumer_target_id or consumer_call_id,
@@ -326,6 +530,8 @@ def build_value_consumer_chain(
             arguments=arguments,
             ref_type=ref_type,
             callee=callee,
+            on=direct_on,
+            on_kind=direct_on_kind,
         )
 
         # Cross into callee for direct arguments too
@@ -639,11 +845,21 @@ def build_value_source_chain(
     recv_value_kind = source_data.get("recv_value_kind")
     recv_name = source_data.get("recv_name")
     recv_prop_fqn = source_data.get("recv_prop_fqn")
+    recv_prop_name = source_data.get("recv_prop_name")
 
-    on = recv_name
+    access_chain = recv_name
+    access_chain_symbol = None
     on_kind = _resolve_on_kind(recv_value_kind)
     if recv_prop_fqn:
-        on = recv_prop_fqn
+        # Build expression like "$this->propName" instead of FQN
+        if recv_prop_name:
+            member = recv_prop_name.lstrip("$")
+        elif "::" in recv_prop_fqn:
+            member = recv_prop_fqn.rsplit("::", 1)[-1].lstrip("$")
+        else:
+            member = recv_prop_fqn
+        access_chain = f"$this->{member}"
+        access_chain_symbol = recv_prop_fqn
         on_kind = "property"
 
     # Build member ref
@@ -654,7 +870,8 @@ def build_value_source_chain(
         file=call_file,
         line=call_line,
         reference_type=ref_type,
-        access_chain=on,
+        access_chain=access_chain,
+        access_chain_symbol=access_chain_symbol,
         on_kind=on_kind,
     )
 
@@ -680,7 +897,14 @@ def build_value_source_chain(
         for arg in arguments:
             if arg.value_ref_symbol:
                 # Find Value node by FQN and trace its source
+                # Try parameter first, then any Value
                 param_rec = runner.execute_single(Q5_RESOLVE_PARAM, param_fqn=arg.value_ref_symbol)
+                if not param_rec:
+                    # Fallback: resolve any Value by FQN (handles locals)
+                    param_rec = runner.execute_single(
+                        "MATCH (v:Value {fqn: $param_fqn}) RETURN v.node_id AS value_id LIMIT 1",
+                        param_fqn=arg.value_ref_symbol,
+                    )
                 if param_rec:
                     arg_val_id = param_rec.get("value_id") if isinstance(param_rec, dict) else param_rec["value_id"]
                     if arg_val_id and arg_val_id not in visited:

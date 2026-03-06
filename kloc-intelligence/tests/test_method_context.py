@@ -115,31 +115,37 @@ def make_execution_data_runner(
 
 
 class TestResolveReceiverIdentity:
-    """Tests for receiver identity resolution."""
+    """Tests for receiver identity resolution.
+
+    _resolve_receiver_identity returns a 5-tuple:
+    (access_chain, access_chain_symbol, on_kind, on_file, on_line)
+    """
 
     def test_none_recv_kind_returns_none(self):
-        on, on_kind = _resolve_receiver_identity(None, None, None)
-        assert on is None
-        assert on_kind is None
+        ac, acs, ok, of, ol = _resolve_receiver_identity(None, None, None)
+        assert ac is None
+        assert ok is None
+        assert of is None
+        assert ol is None
 
     def test_parameter_recv(self):
-        on, on_kind = _resolve_receiver_identity("parameter", "$service", None)
-        assert on == "$service"
-        assert on_kind == "param"
+        ac, acs, ok, of, ol = _resolve_receiver_identity("parameter", "$service", None)
+        assert ac == "$service"
+        assert ok == "param"
 
     def test_local_recv(self):
-        on, on_kind = _resolve_receiver_identity("local", "$repo", None)
-        assert on == "$repo"
-        assert on_kind == "local"
+        ac, acs, ok, of, ol = _resolve_receiver_identity("local", "$repo", None)
+        assert ac == "$repo"
+        assert ok == "local"
 
     def test_self_recv(self):
-        on, on_kind = _resolve_receiver_identity("self", None, None)
-        assert on is None
-        assert on_kind == "self"
+        ac, acs, ok, of, ol = _resolve_receiver_identity("self", None, None)
+        assert ac == "$this"
+        assert ok == "self"
 
     def test_result_recv_without_runner_returns_result_kind(self):
-        on, on_kind = _resolve_receiver_identity("result", "result_val", "call:1")
-        assert on_kind == "result"
+        ac, acs, ok, of, ol = _resolve_receiver_identity("result", "result_val", "call:1")
+        assert ok == "result"
 
     def test_result_recv_with_runner_resolves_property(self):
         runner = MagicMock()
@@ -148,9 +154,9 @@ class TestResolveReceiverIdentity:
              "recv_name": None, "src_call_kind": "property_access",
              "src_recv_kind": "parameter", "src_recv_name": "$this"}
         ]
-        on, on_kind = _resolve_receiver_identity("result", None, "call:1", runner)
-        assert on == "App\\Svc::$repo"
-        assert on_kind == "property"
+        ac, acs, ok, of, ol = _resolve_receiver_identity("result", None, "call:1", runner)
+        assert ac == "$this->repo"
+        assert ok == "property"
 
     def test_result_recv_with_runner_no_prop(self):
         runner = MagicMock()
@@ -159,14 +165,24 @@ class TestResolveReceiverIdentity:
              "recv_name": "rv", "src_call_kind": None,
              "src_recv_kind": None, "src_recv_name": None}
         ]
-        on, on_kind = _resolve_receiver_identity("result", "rv", "call:1", runner)
+        ac, acs, ok, of, ol = _resolve_receiver_identity("result", "rv", "call:1", runner)
         # No prop_fqn found; falls through to result
-        assert on_kind == "result"
+        assert ok == "result"
 
     def test_unknown_recv_kind_passthrough(self):
-        on, on_kind = _resolve_receiver_identity("static", "$this", None)
-        assert on == "$this"
-        assert on_kind == "static"
+        ac, acs, ok, of, ol = _resolve_receiver_identity("static", "$this", None)
+        assert ac == "$this"
+        assert ok == "static"
+
+    def test_parameter_recv_with_file_line(self):
+        ac, acs, ok, of, ol = _resolve_receiver_identity(
+            "parameter", "$service", None, None,
+            "src/Service.php", 10
+        )
+        assert ac == "$service"
+        assert ok == "param"
+        assert of == "src/Service.php"
+        assert ol == 10
 
 
 # =============================================================================
@@ -175,7 +191,12 @@ class TestResolveReceiverIdentity:
 
 
 class TestBuildMemberRef:
-    """Tests for MemberRef construction."""
+    """Tests for MemberRef construction.
+
+    _build_member_ref(callee_fqn, callee_name, callee_kind,
+        access_chain, access_chain_symbol, on_kind,
+        call_kind, call_file, call_line, on_file, on_line)
+    """
 
     def test_returns_none_when_no_callee_data(self):
         ref = _build_member_ref(None, None, None, None, None, None)
@@ -185,10 +206,13 @@ class TestBuildMemberRef:
         ref = _build_member_ref("App\\Repo::save", "save", "Method", None, None, None)
         assert ref is not None
         assert ref.target_name == "save()"
-        assert ref.reference_type == "method_call"
 
     def test_property_callee_no_parens(self):
-        ref = _build_member_ref("App\\Entity::$name", "name", "Property", "$this", "self", "$this")
+        ref = _build_member_ref(
+            "App\\Entity::$name", "name", "Property",
+            "$this", None, "self",
+            call_kind="access",
+        )
         assert ref is not None
         assert ref.target_name == "name"
         assert ref.reference_type == "property_access"
@@ -196,12 +220,26 @@ class TestBuildMemberRef:
         assert ref.on_kind == "self"
 
     def test_access_chain_from_on(self):
-        ref = _build_member_ref("App\\Repo::save", "save", "Method", "App\\Svc::$repo", "property", None)
+        ref = _build_member_ref(
+            "App\\Repo::save", "save", "Method",
+            "App\\Svc::$repo", None, "property",
+        )
         assert ref.access_chain == "App\\Svc::$repo"
 
     def test_access_chain_fallback_to_recv_name(self):
-        ref = _build_member_ref("App\\Repo::save", "save", "Method", None, None, "$this->repo")
+        ref = _build_member_ref(
+            "App\\Repo::save", "save", "Method",
+            "$this->repo", None, "property",
+        )
         assert ref.access_chain == "$this->repo"
+
+    def test_call_kind_maps_to_reference_type(self):
+        ref = _build_member_ref(
+            "App\\Entity", "__construct", "Method",
+            None, None, None,
+            call_kind="constructor",
+        )
+        assert ref.reference_type == "instantiation"
 
 
 # =============================================================================
@@ -289,22 +327,33 @@ class TestFilterOrphanPropertyAccesses:
         assert len(result) == 1
 
     def test_property_access_orphan_filtered(self):
-        """Property access entry whose access_chain appears in an argument -> filtered."""
-        prop_entry = self._make_call_entry("property_access", "App\\Entity::$status")
+        """Property access entry whose expression appears in an argument -> filtered."""
+        prop_entry = ContextEntry(
+            depth=1,
+            node_id="m:1",
+            fqn="App\\Entity\\Order::$status",
+            entry_type="call",
+            member_ref=MemberRef(
+                target_name="$status",
+                target_fqn="App\\Entity\\Order::$status",
+                reference_type="property_access",
+                access_chain="$order",
+            ),
+        )
 
         method_entry = ContextEntry(
             depth=1,
             node_id="m:2",
-            fqn="App\\Svc::save",
+            fqn="App\\Svc::save()",
             entry_type="call",
             arguments=[
-                ArgumentInfo(position=0, value_expr="App\\Entity::$status")
+                ArgumentInfo(position=0, value_expr="$order->status")
             ],
         )
         result = filter_orphan_property_accesses([prop_entry, method_entry])
-        # prop_entry filtered, method_entry kept
+        # prop_entry filtered because "$order->status" is in argument value_exprs
         assert len(result) == 1
-        assert result[0].fqn == "App\\Svc::save"
+        assert result[0].fqn == "App\\Svc::save()"
 
     def test_non_call_entry_never_filtered(self):
         """local_variable entries are never filtered."""
@@ -337,16 +386,35 @@ class TestFilterOrphanPropertyAccesses:
 
 
 class TestGetTypeReferences:
-    """Tests for Q4 type reference extraction."""
+    """Tests for Q4 type reference extraction.
+
+    get_type_references now:
+    - Skips parameter_type and return_type (only keeps property_type/type_hint)
+    - Skips targets covered by constructor calls
+    - Creates member_ref instead of setting ref_type directly
+    """
+
+    def _make_type_ref_runner(self, q4_records, ctor_records=None):
+        """Build a runner that handles both Q4 and constructor target queries."""
+        runner = MagicMock()
+
+        def side_effect(query, **kwargs):
+            q = query.strip()
+            if "constructor" in q:
+                return ctor_records or []
+            return q4_records
+
+        runner.execute.side_effect = side_effect
+        return runner
 
     def test_empty_returns_empty(self):
-        runner = make_runner()
+        runner = self._make_type_ref_runner([])
         result = get_type_references(runner, "m:doWork")
         assert result == []
 
-    def test_return_type(self):
-        runner = make_runner()
-        runner.execute.return_value = [{
+    def test_return_type_is_skipped(self):
+        """return_type entries are excluded (shown in DEFINITION section)."""
+        runner = self._make_type_ref_runner([{
             "target_id": "cls:Result",
             "target_fqn": "App\\Result",
             "target_kind": "Class",
@@ -357,15 +425,14 @@ class TestGetTypeReferences:
             "line": 30,
             "has_arg_th": False,
             "has_ret_th": True,
-        }]
+        }])
         result = get_type_references(runner, "m:doWork")
-        assert len(result) == 1
-        assert result[0].ref_type == "return_type"
-        assert result[0].fqn == "App\\Result"
+        # return_type is excluded
+        assert len(result) == 0
 
     def test_parameter_type_wins_over_return_type(self):
-        runner = make_runner()
-        runner.execute.return_value = [{
+        """parameter_type is excluded (shown in DEFINITION section)."""
+        runner = self._make_type_ref_runner([{
             "target_id": "cls:Entity",
             "target_fqn": "App\\Entity",
             "target_kind": "Class",
@@ -376,13 +443,14 @@ class TestGetTypeReferences:
             "line": None,
             "has_arg_th": True,
             "has_ret_th": True,
-        }]
+        }])
         result = get_type_references(runner, "m:doWork")
-        assert result[0].ref_type == "parameter_type"
+        # parameter_type is excluded
+        assert len(result) == 0
 
     def test_type_hint_fallback(self):
-        runner = make_runner()
-        runner.execute.return_value = [{
+        """type_hint entries are included with a member_ref."""
+        runner = self._make_type_ref_runner([{
             "target_id": "cls:Dep",
             "target_fqn": "App\\Dep",
             "target_kind": "Interface",
@@ -393,32 +461,34 @@ class TestGetTypeReferences:
             "line": None,
             "has_arg_th": False,
             "has_ret_th": False,
-        }]
+        }])
         result = get_type_references(runner, "m:doWork")
-        assert result[0].ref_type == "type_hint"
+        assert len(result) == 1
+        assert result[0].ref_type is None  # No top-level ref_type
+        assert result[0].member_ref is not None
+        assert result[0].member_ref.reference_type == "type_hint"
+        assert result[0].member_ref.target_fqn == "App\\Dep"
 
     def test_deduplication_by_target_id(self):
-        runner = make_runner()
-        runner.execute.return_value = [
+        runner = self._make_type_ref_runner([
             {"target_id": "cls:X", "target_fqn": "App\\X", "target_kind": "Class",
              "target_signature": None, "target_file": None, "target_start_line": None,
-             "file": None, "line": None, "has_arg_th": True, "has_ret_th": False},
+             "file": None, "line": None, "has_arg_th": False, "has_ret_th": False},
             {"target_id": "cls:X", "target_fqn": "App\\X", "target_kind": "Class",
              "target_signature": None, "target_file": None, "target_start_line": None,
-             "file": None, "line": None, "has_arg_th": False, "has_ret_th": True},
-        ]
+             "file": None, "line": None, "has_arg_th": False, "has_ret_th": False},
+        ])
         result = get_type_references(runner, "m:doWork")
-        # Only one entry for cls:X
+        # Only one entry for cls:X (dedup)
         assert len(result) == 1
 
     def test_limit_via_count(self):
-        runner = make_runner()
-        runner.execute.return_value = [
+        runner = self._make_type_ref_runner([
             {"target_id": f"cls:{i}", "target_fqn": f"App\\X{i}", "target_kind": "Class",
              "target_signature": None, "target_file": None, "target_start_line": None,
              "file": None, "line": None, "has_arg_th": False, "has_ret_th": False}
             for i in range(10)
-        ]
+        ])
         count = [0]
         result = get_type_references(runner, "m:doWork", count=count, limit=3)
         assert len(result) == 3
@@ -678,7 +748,7 @@ class TestBuildExecutionFlow:
         assert result[0].children == []
 
     def test_receiver_identity_param_on_kind(self):
-        """Method called on a parameter has on_kind='param'."""
+        """Method called on a parameter has member_ref.on_kind='param'."""
         runner = make_execution_data_runner(
             calls=[{
                 "call_id": "call:1",
@@ -696,6 +766,8 @@ class TestBuildExecutionFlow:
                 "recv_id": "v:repo",
                 "recv_value_kind": "parameter",
                 "recv_name": "$repo",
+                "recv_file": "src/Service.php",
+                "recv_start_line": 25,
                 "recv_source_call_id": None,
                 "result_id": None,
                 "local_id": None,
@@ -707,8 +779,11 @@ class TestBuildExecutionFlow:
         )
         result = build_execution_flow(runner, "m:doWork")
         assert len(result) == 1
-        assert result[0].on == "$repo"
-        assert result[0].on_kind == "param"
+        assert result[0].member_ref is not None
+        assert result[0].member_ref.access_chain == "$repo"
+        assert result[0].member_ref.on_kind == "param"
+        assert result[0].member_ref.on_file == "src/Service.php"
+        assert result[0].member_ref.on_line == 25
 
     def test_arguments_populated_on_call_entry(self):
         runner = make_execution_data_runner(
@@ -908,14 +983,20 @@ class TestGetImplementationsForNode:
         runner = MagicMock()
 
         def execute_side_effect(query, **kwargs):
-            from src.logic.polymorphic import _Q_DIRECT_OVERRIDES, _Q_CONCRETE_IMPLEMENTORS
+            from src.logic.polymorphic import (
+                _Q_DIRECT_OVERRIDES,
+                _Q_CONCRETE_IMPLEMENTORS_DIRECT,
+                _Q_CONCRETE_IMPLEMENTORS_TRANSITIVE,
+            )
             q = query.strip()
             if _Q_DIRECT_OVERRIDES.strip() in q or q in _Q_DIRECT_OVERRIDES.strip():
                 return [
                     {"id": "m:override", "fqn": "App\\Child::doWork", "kind": "Method",
                      "file": "src/Child.php", "start_line": 10, "signature": None}
                 ]
-            if _Q_CONCRETE_IMPLEMENTORS.strip() in q or q in _Q_CONCRETE_IMPLEMENTORS.strip():
+            if _Q_CONCRETE_IMPLEMENTORS_DIRECT.strip() in q or q in _Q_CONCRETE_IMPLEMENTORS_DIRECT.strip():
+                return []
+            if _Q_CONCRETE_IMPLEMENTORS_TRANSITIVE.strip() in q or q in _Q_CONCRETE_IMPLEMENTORS_TRANSITIVE.strip():
                 return []
             return []
 

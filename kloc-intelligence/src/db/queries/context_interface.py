@@ -40,7 +40,38 @@ MATCH (prop)<-[:CONTAINS*]-(cls)
 WHERE cls.kind IN ['Class', 'Interface', 'Trait', 'Enum']
 RETURN DISTINCT prop.node_id AS prop_id, prop.fqn AS prop_fqn,
        prop.file AS prop_file, prop.start_line AS prop_start_line,
-       cls.node_id AS class_id, cls.fqn AS class_fqn
+       cls.node_id AS class_id, cls.fqn AS class_fqn,
+       iface.fqn AS via_fqn
+
+UNION
+
+MATCH (iface:Node {node_id: $id})<-[:IMPLEMENTS]-(impl)<-[:TYPE_HINT]-(prop:Property)
+MATCH (prop)<-[:CONTAINS*]-(cls)
+WHERE cls.kind IN ['Class', 'Interface', 'Trait', 'Enum']
+RETURN DISTINCT prop.node_id AS prop_id, prop.fqn AS prop_fqn,
+       prop.file AS prop_file, prop.start_line AS prop_start_line,
+       cls.node_id AS class_id, cls.fqn AS class_fqn,
+       impl.fqn AS via_fqn
+
+UNION
+
+MATCH (iface:Node {node_id: $id})<-[:EXTENDS*]-(child_iface:Interface)<-[:TYPE_HINT]-(prop:Property)
+MATCH (prop)<-[:CONTAINS*]-(cls)
+WHERE cls.kind IN ['Class', 'Interface', 'Trait', 'Enum']
+RETURN DISTINCT prop.node_id AS prop_id, prop.fqn AS prop_fqn,
+       prop.file AS prop_file, prop.start_line AS prop_start_line,
+       cls.node_id AS class_id, cls.fqn AS class_fqn,
+       child_iface.fqn AS via_fqn
+
+UNION
+
+MATCH (iface:Node {node_id: $id})<-[:EXTENDS*]-(child_iface:Interface)<-[:IMPLEMENTS]-(impl)<-[:TYPE_HINT]-(prop:Property)
+MATCH (prop)<-[:CONTAINS*]-(cls)
+WHERE cls.kind IN ['Class', 'Interface', 'Trait', 'Enum']
+RETURN DISTINCT prop.node_id AS prop_id, prop.fqn AS prop_fqn,
+       prop.file AS prop_file, prop.start_line AS prop_start_line,
+       cls.node_id AS class_id, cls.fqn AS class_fqn,
+       impl.fqn AS via_fqn
 """
 
 # =============================================================================
@@ -59,7 +90,7 @@ RETURN method.name AS method_name
 Q5_CONTRACT_RELEVANCE = """
 MATCH (prop:Node {node_id: $prop_id})<-[:CONTAINS*]-(cls)
 WHERE cls.kind IN ['Class', 'Interface', 'Trait', 'Enum']
-MATCH (cls)-[:CONTAINS]->(method:Method)-[:CONTAINS]->(call:Call)
+MATCH (cls)-[:CONTAINS*]->(call:Call)
 MATCH (call)-[:RECEIVER]->(recv:Value)<-[:PRODUCES]-(recv_call:Call)-[:CALLS]->(recv_target)
 WHERE recv_target.fqn = $prop_fqn
 MATCH (call)-[:CALLS]->(callee)
@@ -74,18 +105,21 @@ RETURN count(*) > 0 AS calls_contract
 Q6_INJECTION_POINT_CALLS = """
 MATCH (prop:Node {node_id: $property_id})<-[:CONTAINS*]-(cls)
 WHERE cls.kind IN ['Class', 'Interface', 'Trait', 'Enum']
-MATCH (cls)-[:CONTAINS]->(method:Method)-[:CONTAINS]->(call:Call)
+MATCH (cls)-[:CONTAINS*]->(call:Call)
 MATCH (call)-[:RECEIVER]->(recv:Value)<-[:PRODUCES]-(recv_call:Call)-[:CALLS]->(recv_target)
 WHERE recv_target.fqn = $property_fqn
 MATCH (call)-[:CALLS]->(callee)
-RETURN method.node_id AS method_id, method.fqn AS method_fqn,
-       method.name AS method_name,
+OPTIONAL MATCH (call)<-[:CONTAINS]-(method:Method)
+RETURN COALESCE(method.node_id, cls.node_id) AS method_id,
+       COALESCE(method.fqn, cls.fqn) AS method_fqn,
+       COALESCE(method.name, cls.name) AS method_name,
+       COALESCE(method.file, cls.file) AS method_file,
        call.node_id AS call_id, call.call_kind AS call_kind,
        call.start_line AS call_line,
        callee.node_id AS callee_id, callee.fqn AS callee_fqn,
        callee.name AS callee_name, callee.kind AS callee_kind,
        cls.node_id AS class_id, cls.fqn AS class_fqn
-ORDER BY method.fqn, call.start_line
+ORDER BY COALESCE(method.node_id, cls.node_id), call.start_line
 """
 
 # =============================================================================

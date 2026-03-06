@@ -17,6 +17,7 @@ OPTIONAL MATCH (call)<-[:CONTAINS]-(scope)
 WHERE scope.kind IN ['Method', 'Function']
 OPTIONAL MATCH (call)-[:RECEIVER]->(recv:Value)
 OPTIONAL MATCH (recv)<-[:PRODUCES]-(recv_call:Call)-[:CALLS]->(recv_prop)
+OPTIONAL MATCH (recv_call)-[:RECEIVER]->(chain_recv:Value)
 OPTIONAL MATCH (call)-[:PRODUCES]->(result:Value)
 RETURN call.node_id AS call_id,
        call.file AS call_file,
@@ -30,8 +31,11 @@ RETURN call.node_id AS call_id,
        recv.value_kind AS recv_value_kind,
        recv.name AS recv_name,
        recv_prop.fqn AS recv_prop_fqn,
+       recv_prop.name AS recv_prop_name,
+       chain_recv.name AS chain_recv_name,
+       chain_recv.value_kind AS chain_recv_kind,
        result.node_id AS result_id
-ORDER BY call.file, call.start_line
+ORDER BY call.node_id
 """
 
 # =============================================================================

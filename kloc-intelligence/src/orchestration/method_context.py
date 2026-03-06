@@ -30,6 +30,58 @@ from ..db.queries.context_class import fetch_class_used_by_data
 from ..logic.graph_helpers import format_method_fqn
 from ..models.node import NodeData
 from ..models.results import ContextEntry, MemberRef, ArgumentInfo
+from .value_context import resolve_promoted_property_fqn
+
+# Trace source chain for a result Value node
+_Q_SOURCE_CHAIN = """
+MATCH (val:Value {node_id: $value_id})<-[:PRODUCES]-(call:Call)-[:CALLS]->(target)
+OPTIONAL MATCH (call)-[:RECEIVER]->(recv:Value)
+RETURN target.fqn AS target_fqn,
+       target.kind AS target_kind,
+       call.call_kind AS call_kind,
+       recv.fqn AS recv_fqn,
+       recv.value_kind AS recv_value_kind,
+       recv.file AS recv_file,
+       recv.start_line AS recv_start_line
+LIMIT 1
+"""
+
+
+def _trace_source_chain(runner: QueryRunner, value_node_id: str) -> list | None:
+    """Trace the source chain for a result Value node."""
+    rec = runner.execute_single(_Q_SOURCE_CHAIN, value_id=value_node_id)
+    if not rec:
+        return None
+
+    target_fqn = rec.get("target_fqn")
+    target_kind = rec.get("target_kind")
+    call_kind = rec.get("call_kind")
+    recv_fqn = rec.get("recv_fqn")
+    recv_value_kind = rec.get("recv_value_kind")
+    recv_file = rec.get("recv_file")
+    recv_start_line = rec.get("recv_start_line")
+
+    if not target_fqn:
+        return None
+
+    step: dict = {
+        "fqn": target_fqn,
+        "kind": target_kind,
+        "reference_type": call_kind,
+    }
+
+    if recv_fqn:
+        step["on"] = recv_fqn
+        if recv_value_kind == "local":
+            step["on_kind"] = "local"
+        elif recv_value_kind == "parameter":
+            step["on_kind"] = "param"
+        if recv_file:
+            step["on_file"] = recv_file
+        if recv_start_line is not None:
+            step["on_line"] = recv_start_line
+
+    return [step]
 
 
 # =============================================================================
@@ -42,60 +94,102 @@ def _resolve_receiver_identity(
     recv_name: str | None,
     call_id: str | None,
     runner: QueryRunner | None = None,
-) -> tuple[str | None, str | None]:
-    """Resolve the receiver expression and on_kind for a call.
+    recv_file: str | None = None,
+    recv_start_line: int | None = None,
+) -> tuple[str | None, str | None, str | None, str | None, int | None]:
+    """Resolve access_chain, access_chain_symbol, on_kind, on_file, on_line for a call.
+
+    Follows the reference implementation's resolve_receiver_identity pattern:
+    - Builds the access_chain expression (e.g., "$this->orderService")
+    - Resolves the access_chain_symbol FQN (e.g., "App\\...::$orderService")
+    - Determines on_kind from the receiver Value node type
+    - Returns on_file/on_line from the receiver Value node (for local/param receivers)
 
     Rules:
-    - recv_value_kind == "parameter" -> on_kind="param", on=recv_name
-    - recv_value_kind == "local"     -> on_kind="local", on=recv_name
-    - recv_value_kind == "self"      -> on_kind="self", on=None
-    - recv_value_kind == "result"    -> on_kind="property" if prop access found
+    - recv_value_kind == "parameter" -> on_kind="param", ac=recv_name
+    - recv_value_kind == "local"     -> on_kind="local", ac=recv_name
+    - recv_value_kind == "self"      -> on_kind="self", ac=None
+    - recv_value_kind == "result"    -> on_kind="property", ac="$this->propName"
     - No receiver                    -> on_kind=None
-
-    For "result" recv_kind we rely on Q5 data from the runner if available.
 
     Args:
         recv_value_kind: The value_kind of the receiver Value node.
         recv_name: The name of the receiver Value node.
         call_id: Node ID of the call (used to run Q5 if needed).
         runner: QueryRunner for Q5 lookup.
+        recv_file: File of the receiver Value node.
+        recv_start_line: Start line of the receiver Value node.
 
     Returns:
-        Tuple of (on, on_kind).
+        Tuple of (access_chain, access_chain_symbol, on_kind, on_file, on_line).
     """
     if recv_value_kind is None:
-        return None, None
+        # No explicit receiver — check if this is an implicit $this call
+        if runner and call_id:
+            from ..db.queries.context_method import Q5_RECEIVER_CHAIN
+            # If there's no receiver but it's a method call, it could be self
+            rec = runner.execute_single("""
+                MATCH (call:Node {node_id: $call_id})
+                RETURN call.call_kind AS call_kind
+            """, call_id=call_id)
+            if rec and rec.get("call_kind") in ("access", "method", "method_static"):
+                return "$this", None, "self", None, None
+        return None, None, None, None, None
 
     if recv_value_kind == "parameter":
-        return recv_name, "param"
+        return recv_name, None, "param", recv_file, recv_start_line
 
     if recv_value_kind == "local":
-        return recv_name, "local"
+        return recv_name, None, "local", recv_file, recv_start_line
 
     if recv_value_kind == "self":
-        return None, "self"
+        return "$this", None, "self", None, None
 
     if recv_value_kind == "result":
-        # Try to resolve via Q5 if we have a runner and call_id
+        # Try to resolve via Q5 to get the property chain
         if runner and call_id:
             from ..db.queries.context_method import Q5_RECEIVER_CHAIN
             records = runner.execute(Q5_RECEIVER_CHAIN, call_id=call_id)
             for r in records:
                 prop_fqn = r.get("prop_fqn")
-                if prop_fqn:
-                    return prop_fqn, "property"
-        return recv_name, "result"
+                prop_name = r.get("prop_name")
+                src_call_kind = r.get("src_call_kind")
+                src_recv_kind = r.get("src_recv_kind")
+                src_recv_name = r.get("src_recv_name")
 
-    return recv_name, recv_value_kind
+                if prop_name:
+                    member = prop_name.lstrip("$")
+                    # Build expression from source receiver
+                    if src_recv_kind == "self" or src_recv_kind is None:
+                        chain = f"$this->{member}"
+                    elif src_recv_kind == "parameter":
+                        chain = f"{src_recv_name}->{member}"
+                    elif src_recv_kind == "local":
+                        chain = f"{src_recv_name}->{member}"
+                    else:
+                        chain = f"$this->{member}"
+
+                    if src_call_kind in ("method", "method_static"):
+                        chain += "()"
+
+                    return chain, prop_fqn, "property", None, None
+        return recv_name, None, "result", None, None
+
+    return recv_name, None, recv_value_kind, None, None
 
 
 def _build_member_ref(
     callee_fqn: str | None,
     callee_name: str | None,
     callee_kind: str | None,
-    on: str | None,
+    access_chain: str | None,
+    access_chain_symbol: str | None,
     on_kind: str | None,
-    recv_name: str | None,
+    call_kind: str | None = None,
+    call_file: str | None = None,
+    call_line: int | None = None,
+    on_file: str | None = None,
+    on_line: int | None = None,
 ) -> MemberRef | None:
     """Build a MemberRef for a call entry.
 
@@ -103,9 +197,14 @@ def _build_member_ref(
         callee_fqn: FQN of the callee.
         callee_name: Name of the callee.
         callee_kind: Kind of the callee.
-        on: Receiver expression (e.g., property FQN or param name).
+        access_chain: Receiver expression (e.g., "$this->orderService").
+        access_chain_symbol: FQN of the access chain property.
         on_kind: Receiver kind (e.g., "property", "param", "self").
-        recv_name: Raw receiver name (for access_chain fallback).
+        call_kind: Call kind from Call node (e.g., "method", "constructor").
+        call_file: File where the call occurs.
+        call_line: Line where the call occurs (0-based).
+        on_file: File of the receiver Value node.
+        on_line: Start line of the receiver Value node (0-based).
 
     Returns:
         MemberRef if callee data is available, else None.
@@ -119,25 +218,57 @@ def _build_member_ref(
     else:
         display_name = target_name
 
+    # Resolve reference_type from call_kind if available
+    _CALL_KIND_MAP = {
+        "method": "method_call",
+        "method_static": "static_call",
+        "constructor": "instantiation",
+        "access": "property_access",
+        "access_static": "static_property",
+        "function": "function_call",
+    }
+    if call_kind and call_kind in _CALL_KIND_MAP:
+        reference_type = _CALL_KIND_MAP[call_kind]
+    elif callee_kind == "Method":
+        reference_type = "method_call"
+    elif callee_kind == "Property":
+        reference_type = "property_access"
+    elif callee_kind == "Function":
+        reference_type = "function_call"
+    else:
+        reference_type = "method_call"
+
+    # For external calls, infer target_kind from call_kind
+    target_kind = callee_kind
+    if target_kind is None and call_kind:
+        target_kind = call_kind  # e.g., "method", "function"
+
     return MemberRef(
         target_name=display_name,
         target_fqn=callee_fqn or "",
-        target_kind=callee_kind,
-        reference_type="method_call" if callee_kind == "Method" else "property_access",
-        access_chain=on or recv_name,
+        target_kind=target_kind,
+        file=call_file,
+        line=call_line,
+        reference_type=reference_type,
+        access_chain=access_chain,
+        access_chain_symbol=access_chain_symbol,
         on_kind=on_kind,
+        on_file=on_file,
+        on_line=on_line,
     )
 
 
 def _build_argument_infos(
     call_id: str,
     args_by_call: dict[str, list[dict]],
+    runner: QueryRunner | None = None,
 ) -> list[ArgumentInfo]:
     """Build ArgumentInfo list for a call from pre-fetched argument data.
 
     Args:
         call_id: Node ID of the call.
         args_by_call: Index of argument records keyed by call_id.
+        runner: Optional QueryRunner for source_chain tracing.
 
     Returns:
         List of ArgumentInfo objects ordered by position.
@@ -148,12 +279,44 @@ def _build_argument_infos(
         position = rec.get("position")
         if position is None:
             continue
+        raw_param_fqn = rec.get("parameter")
+        # Resolve promoted constructor params to Property FQNs
+        param_fqn = raw_param_fqn
+        if raw_param_fqn and runner is not None:
+            resolved = resolve_promoted_property_fqn(runner, raw_param_fqn)
+            if resolved:
+                param_fqn = resolved
+        # Derive param_name from the param FQN: "Class::method().$name" -> "$name"
+        param_name = None
+        if param_fqn:
+            if ".$" in param_fqn:
+                param_name = param_fqn.rsplit(".", 1)[-1]
+            elif "$" in param_fqn:
+                param_name = "$" + param_fqn.rsplit("$", 1)[-1]
+
+        # value_ref_symbol: the value's FQN (if it's a proper symbol)
+        value_fqn = rec.get("value_fqn")
+        value_ref_symbol = None
+        if value_fqn and "::" in value_fqn:
+            value_ref_symbol = value_fqn
+
+        # Trace source chain for result values
+        source_chain = None
+        value_kind = rec.get("value_kind")
+        if value_kind == "result" and runner is not None:
+            value_node_id = rec.get("value_id")
+            if value_node_id:
+                source_chain = _trace_source_chain(runner, value_node_id)
+
         infos.append(ArgumentInfo(
             position=int(position),
+            param_name=param_name,
+            param_fqn=param_fqn,
             value_expr=rec.get("expression"),
-            value_source=rec.get("value_kind"),
+            value_source=value_kind,
             value_type=rec.get("value_type"),
-            value_ref_symbol=rec.get("value_fqn"),
+            value_ref_symbol=value_ref_symbol,
+            source_chain=source_chain,
         ))
     infos.sort(key=lambda a: a.position)
     return infos
@@ -188,6 +351,25 @@ def get_type_references(
     Returns:
         List of ContextEntry objects for type references.
     """
+    # Only include property_type and type_hint — parameter_type and return_type
+    # are already shown in the DEFINITION section (matching reference impl).
+    TYPE_KINDS = {"property_type", "type_hint"}
+
+    # Pre-fetch set of class IDs that have a corresponding constructor Call node
+    # in this method. Those will be covered by execution flow, so skip them here.
+    # Only matches constructor calls (call_kind = 'constructor'), not regular method calls.
+    _Q_CONSTRUCTOR_TARGETS = """
+    MATCH (method:Node {node_id: $method_id})-[:CONTAINS]->(call:Call {call_kind: 'constructor'})-[:CALLS]->(callee)
+    MATCH (callee)<-[:CONTAINS]-(parent_cls)
+    RETURN DISTINCT parent_cls.node_id AS class_id
+    """
+    ctor_records = runner.execute(_Q_CONSTRUCTOR_TARGETS, method_id=method_id)
+    call_covered_ids: set[str] = set()
+    for cr in ctor_records:
+        cid = cr.get("class_id")
+        if cid:
+            call_covered_ids.add(cid)
+
     records = runner.execute(Q4_TYPE_REFERENCES, method_id=method_id)
     entries: list[ContextEntry] = []
     seen: set[str] = set()
@@ -197,6 +379,11 @@ def get_type_references(
         if not target_id or target_id in seen:
             continue
         seen.add(target_id)
+
+        # Skip if there's a Call node in this method targeting this class
+        # (constructor calls are handled by execution flow)
+        if target_id in call_covered_ids:
+            continue
 
         has_arg_th = bool(r.get("has_arg_th", False))
         has_ret_th = bool(r.get("has_ret_th", False))
@@ -208,15 +395,34 @@ def get_type_references(
         else:
             ref_type = "type_hint"
 
+        # Skip parameter_type and return_type — only keep property_type/type_hint
+        if ref_type not in TYPE_KINDS:
+            continue
+
+        target_fqn = r.get("target_fqn", "")
+        target_kind = r.get("target_kind")
+        target_name = target_fqn.rsplit("\\", 1)[-1] if "\\" in target_fqn else target_fqn
+        entry_file = r.get("file")
+        entry_line = r.get("line")
+
+        member_ref = MemberRef(
+            target_name=target_name,
+            target_fqn=target_fqn,
+            target_kind=target_kind,
+            file=entry_file,
+            line=entry_line,
+            reference_type=ref_type,
+        )
+
         entry = ContextEntry(
             depth=depth,
             node_id=target_id,
-            fqn=r.get("target_fqn", ""),
-            kind=r.get("target_kind"),
-            file=r.get("file"),
-            line=r.get("line"),
+            fqn=target_fqn,
+            kind=target_kind,
+            file=entry_file,
+            line=entry_line,
             signature=r.get("target_signature"),
-            ref_type=ref_type,
+            member_ref=member_ref,
         )
         entries.append(entry)
         if count is not None:
@@ -251,23 +457,41 @@ def filter_orphan_property_accesses(entries: list[ContextEntry]) -> list[Context
         Filtered list with orphan property access entries removed.
     """
     # Collect all value_expr strings from arguments across all entries
-    all_arg_exprs: set[str] = set()
+    all_value_exprs: list[str] = []
     for entry in entries:
         for arg in entry.arguments:
             if arg.value_expr:
-                all_arg_exprs.add(arg.value_expr)
+                all_value_exprs.append(arg.value_expr)
+        if entry.source_call:
+            for arg in entry.source_call.arguments:
+                if arg.value_expr:
+                    all_value_exprs.append(arg.value_expr)
+
+    if not all_value_exprs:
+        return entries
 
     result: list[ContextEntry] = []
     for entry in entries:
+        # Only consider Kind 2 property_access entries as orphan candidates
         if (
             entry.entry_type == "call"
             and entry.member_ref is not None
             and entry.member_ref.reference_type == "property_access"
+            and entry.member_ref.access_chain
         ):
-            # Check if the access_chain appears in any argument's value_expr
-            access = entry.member_ref.access_chain
-            if access and access in all_arg_exprs:
-                continue  # Orphan: skip
+            # Build the expression: "$receiver->propertyName"
+            # FQN is like "App\Entity\Order::$id", extract "id"
+            prop_fqn = entry.fqn
+            prop_name = prop_fqn.split("::$")[-1] if "::$" in prop_fqn else None
+            if prop_name:
+                access_expr = f"{entry.member_ref.access_chain}->{prop_name}"
+                # Check if this expression appears in any value_expr
+                is_expression_consumed = any(
+                    access_expr in expr for expr in all_value_exprs
+                )
+                if is_expression_consumed:
+                    # Orphan: skip this entry
+                    continue
         result.append(entry)
     return result
 
@@ -371,14 +595,19 @@ def build_execution_flow(
         # Resolve receiver identity
         recv_value_kind = call_rec.get("recv_value_kind")
         recv_name = call_rec.get("recv_name")
-        on, on_kind = _resolve_receiver_identity(
-            recv_value_kind, recv_name, call_id, runner
+        recv_file = call_rec.get("recv_file")
+        recv_start_line = call_rec.get("recv_start_line")
+        access_chain, access_chain_symbol, on_kind, on_file, on_line = _resolve_receiver_identity(
+            recv_value_kind, recv_name, call_id, runner, recv_file, recv_start_line
         )
 
         # Build arguments
-        arg_infos = _build_argument_infos(call_id, args_by_call)
+        arg_infos = _build_argument_infos(call_id, args_by_call, runner)
 
         local_id = call_rec.get("local_id")
+        call_file = call_rec.get("call_file")
+        call_line = call_rec.get("call_line")
+        call_kind = call_rec.get("call_kind")
 
         if local_id:
             # -------------------------------------------------------
@@ -386,21 +615,22 @@ def build_execution_flow(
             # -------------------------------------------------------
             # Build inner source_call entry
             member_ref = _build_member_ref(
-                callee_fqn, callee_name, callee_kind, on, on_kind, recv_name
+                callee_fqn, callee_name, callee_kind,
+                access_chain, access_chain_symbol, on_kind,
+                call_kind, call_file, call_line,
+                on_file, on_line,
             )
             source_call_entry = ContextEntry(
                 depth=depth,
                 node_id=call_id,
                 fqn=format_method_fqn(callee_fqn or call_rec.get("call_name") or "", callee_kind or ""),
                 kind=callee_kind,
-                file=call_rec.get("call_file"),
-                line=call_rec.get("call_line"),
+                file=call_file,
+                line=call_line,
                 signature=callee_signature,
                 entry_type="call",
                 member_ref=member_ref,
                 arguments=arg_infos,
-                on=on,
-                on_kind=on_kind,
             )
 
             # Outer local_variable entry — count before recursing so sub-calls
@@ -409,7 +639,8 @@ def build_execution_flow(
                 depth=depth,
                 node_id=local_id,
                 fqn=call_rec.get("local_fqn") or local_id,
-                kind="Variable",
+                kind="Value",
+                file=call_file,
                 line=call_rec.get("local_line"),
                 entry_type="local_variable",
                 variable_name=call_rec.get("local_name"),
@@ -420,11 +651,12 @@ def build_execution_flow(
             entries.append(local_entry)
             count[0] += 1
 
-            # Recurse into callee execution flow for source_call
+            # Recurse into callee execution flow — children go on the
+            # local_variable entry (local_entry), not on source_call_entry.
             if callee_id and depth < max_depth:
                 new_cycle_guard = set(cycle_guard)
                 new_cycle_guard.add(callee_id)
-                source_call_entry.children = build_execution_flow(
+                local_entry.children = build_execution_flow(
                     runner,
                     callee_id,
                     depth=depth + 1,
@@ -448,24 +680,27 @@ def build_execution_flow(
                 callee_fqn or call_rec.get("call_name"),
                 callee_name or call_rec.get("call_name"),
                 callee_kind,
-                on,
-                on_kind,
-                recv_name,
+                access_chain, access_chain_symbol, on_kind,
+                call_kind, call_file, call_line,
+                on_file, on_line,
             )
+
+            # For external calls, infer kind from call_kind
+            entry_kind = callee_kind
+            if entry_kind is None and call_kind:
+                entry_kind = call_kind  # e.g., "method", "function"
 
             call_entry = ContextEntry(
                 depth=depth,
                 node_id=callee_id or call_id,
                 fqn=format_method_fqn(call_fqn, callee_kind or ""),
-                kind=callee_kind,
-                file=call_rec.get("call_file"),
-                line=call_rec.get("call_line"),
+                kind=entry_kind,
+                file=call_file,
+                line=call_line,
                 signature=callee_signature,
                 entry_type="call",
                 member_ref=member_ref,
                 arguments=arg_infos,
-                on=on,
-                on_kind=on_kind,
             )
 
             # Append and count before recursing so sub-calls see the correct
@@ -491,7 +726,7 @@ def build_execution_flow(
     entries = filter_orphan_property_accesses(entries)
 
     # Sort by call line number
-    entries.sort(key=lambda e: (e.line or 0, e.fqn or ""))
+    entries.sort(key=lambda e: (e.file or "", e.line if e.line is not None else 0))
 
     return entries
 

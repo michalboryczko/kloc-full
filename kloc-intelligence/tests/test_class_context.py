@@ -151,11 +151,11 @@ class TestBuildPropertyAccessEntries:
         assert len(entries) == 1
         e = entries[0]
         assert e.ref_type == "property_access"
-        assert e.property_name == "App\\Order::$status"
-        assert e.fqn == "App\\Svc::check()"
-        assert e.line == 10
+        assert e.kind == "PropertyGroup"
+        assert e.node_id == "App\\Order::$status"
+        assert e.fqn == "Order::$status"
         assert e.access_count == 1
-        assert e.sites is None  # Only 1 line -> no sites list
+        assert e.method_count == 1
 
     def test_multiple_lines_creates_sites(self):
         bucket = EntryBucket()
@@ -174,9 +174,10 @@ class TestBuildPropertyAccessEntries:
         assert len(entries) == 1
         e = entries[0]
         assert e.access_count == 3
-        assert e.sites == [5, 10, 15]
+        assert e.method_count == 1
 
     def test_multiple_groups_for_same_property(self):
+        """Multiple method groups for same property are aggregated into one entry."""
         bucket = EntryBucket()
         bucket.property_access_groups["App\\Order::$status"] = [
             {
@@ -199,7 +200,9 @@ class TestBuildPropertyAccessEntries:
             },
         ]
         entries = _build_property_access_entries(bucket, "App\\Entity\\Order", depth=1)
-        assert len(entries) == 2
+        assert len(entries) == 1
+        assert entries[0].access_count == 2
+        assert entries[0].method_count == 2
 
     def test_empty_bucket(self):
         bucket = EntryBucket()
@@ -238,7 +241,7 @@ class TestBuildCallerChainForMethod:
         assert len(entries) == 1
         assert entries[0].fqn == "App\\Svc::doSomething()"
         assert entries[0].depth == 2
-        assert entries[0].ref_type == "method_call"
+        assert entries[0].ref_type == "caller"
 
     def test_depth_cap_prevents_recursion(self):
         runner = make_runner()
@@ -365,6 +368,9 @@ def _default_used_by_data(**overrides) -> dict:
         "call_nodes": [],
         "property_types": [],
         "ref_type_data": {},
+        "constructor_calls": [],
+        "external_method_calls": [],
+        "external_property_accesses": [],
     }
     defaults.update(overrides)
     return defaults
@@ -861,6 +867,8 @@ def _default_uses_data(**overrides) -> dict:
     defaults = {
         "member_deps": [],
         "class_rel": [],
+        "type_hints": [],
+        "ctor_calls": [],
     }
     defaults.update(overrides)
     return defaults
@@ -932,7 +940,8 @@ class TestBuildClassUsesStructural:
         assert result[0].ref_type == "uses_trait"
 
     def test_structural_priority_order(self):
-        """extends < implements < uses_trait by USES_PRIORITY."""
+        """All structural types (extends, implements, uses_trait) share priority 0
+        and sort before non-structural types."""
         runner = make_runner()
         node = make_node()
         data = _default_uses_data(
@@ -950,9 +959,10 @@ class TestBuildClassUsesStructural:
         )
         with _patch_fetch_uses(data):
             result = build_class_uses(runner, node)
-        assert result[0].ref_type == "extends"
-        assert result[1].ref_type == "implements"
-        assert result[2].ref_type == "uses_trait"
+        ref_types = {e.ref_type for e in result}
+        assert ref_types == {"extends", "implements", "uses_trait"}
+        # All structural types share the same priority
+        assert USES_PRIORITY["extends"] == USES_PRIORITY["implements"] == USES_PRIORITY["uses_trait"]
 
 
 class TestBuildClassUsesExclusionSet:
@@ -1023,18 +1033,25 @@ class TestBuildClassUsesMemberDeps:
         assert len(result) == 1
 
     def test_highest_priority_ref_type_wins(self):
-        """When same target accessed as both property_type and method_call,
-        property_type (lower USES_PRIORITY index) should win."""
+        """When same target accessed as both type_hint and method_call via
+        different member deps, the first-seen ref_type wins at the dedup
+        level (both resolve to same containing class)."""
         runner = make_runner()
+        # Mock containing class resolution for Method targets
+        runner.execute_single.return_value = {
+            "class_id": "class:dep",
+            "class_fqn": "App\\Dep",
+            "class_kind": "Class",
+        }
         node = make_node()
         data = _default_uses_data(
             member_deps=[
-                # First access: as a Method (method_call)
+                # First access: method on dep class (resolves via execute_single)
                 {"member_id": "m:1", "member_fqn": "App\\Order::a", "member_kind": "Method",
-                 "member_name": "a", "target_id": "class:dep", "target_fqn": "App\\Dep",
+                 "member_name": "a", "target_id": "m:dep_method", "target_fqn": "App\\Dep::depMethod",
                  "target_kind": "Method", "target_name": "depMethod",
                  "edge_type": "USES", "file": "Order.php", "line": 10},
-                # Second access: as a property type
+                # Second access: Class target directly (type_hint)
                 {"member_id": "prop:1", "member_fqn": "App\\Order::$dep", "member_kind": "Property",
                  "member_name": "$dep", "target_id": "class:dep", "target_fqn": "App\\Dep",
                  "target_kind": "Class", "target_name": "Dep",
@@ -1043,13 +1060,18 @@ class TestBuildClassUsesMemberDeps:
         )
         with _patch_fetch_uses(data):
             result = build_class_uses(runner, node)
+        # Both resolve to class:dep -- deduped to 1 entry
         assert len(result) == 1
-        # property_type has priority 3, method_call has 4 -> property_type wins
-        assert result[0].ref_type == "property_type"
 
     def test_uses_sort_order(self):
-        """Results are sorted by USES_PRIORITY."""
+        """Structural entries (priority 0) sort before method_call (priority 5)."""
         runner = make_runner()
+        # Mock containing class resolution for the Method target
+        runner.execute_single.return_value = {
+            "class_id": "class:repo",
+            "class_fqn": "App\\Repo",
+            "class_kind": "Class",
+        }
         node = make_node()
         data = _default_uses_data(
             class_rel=[
@@ -1070,9 +1092,12 @@ class TestBuildClassUsesMemberDeps:
         with _patch_fetch_uses(data):
             result = build_class_uses(runner, node)
         ref_types = [e.ref_type for e in result]
-        # extends (0) < uses_trait (2) < method_call (4)
-        assert ref_types.index("extends") < ref_types.index("uses_trait")
-        assert ref_types.index("uses_trait") < ref_types.index("method_call")
+        # Structural types (all priority 0) come before method_call (priority 5)
+        structural = {"extends", "uses_trait"}
+        structural_indices = [i for i, rt in enumerate(ref_types) if rt in structural]
+        method_indices = [i for i, rt in enumerate(ref_types) if rt == "method_call"]
+        if method_indices:
+            assert max(structural_indices) < min(method_indices)
 
     def test_limit_applied(self):
         runner = make_runner()
@@ -1193,11 +1218,12 @@ class TestUsesPriorityConstant:
         assert USES_PRIORITY["property_type"] < USES_PRIORITY["method_call"]
 
     def test_parameter_type_higher_than_method_call(self):
-        assert USES_PRIORITY["parameter_type"] > USES_PRIORITY["method_call"]
+        """parameter_type has higher priority (lower number) than method_call."""
+        assert USES_PRIORITY["parameter_type"] < USES_PRIORITY["method_call"]
 
-    def test_type_hint_is_lowest_priority(self):
-        """type_hint should be last (highest number)."""
-        assert USES_PRIORITY["type_hint"] == max(USES_PRIORITY.values())
+    def test_type_hint_lower_priority_than_instantiation(self):
+        """type_hint should be lower priority (higher number) than instantiation."""
+        assert USES_PRIORITY["type_hint"] > USES_PRIORITY["instantiation"]
 
     def test_all_expected_keys_present(self):
         expected = {

@@ -27,8 +27,31 @@ from .results import (
 from .node import NodeData
 
 
+def _normalize_param_fqn(param_fqn: Optional[str]) -> Optional[str]:
+    """Normalize param FQN by stripping __construct() from promoted parameters.
+
+    'App\\Entity\\Order::__construct().$id' -> 'App\\Entity\\Order::$id'
+
+    Regular method params are untouched:
+    'App\\Service\\OrderService::createOrder().$input' stays the same.
+    """
+    if not param_fqn or "::" not in param_fqn:
+        return param_fqn
+    ns_class, member = param_fqn.rsplit("::", 1)
+    if member.startswith("__construct()."):
+        member = member[len("__construct()."):]
+        return f"{ns_class}::{member}"
+    return param_fqn
+
+
 def _shorten_param_key(param_fqn: Optional[str], param_name: Optional[str], position: int) -> str:
-    """Shorten param key for flat args format: 'Namespace\\Class::$param' -> 'Class::$param'."""
+    """Shorten param key for flat args format: 'Namespace\\Class::method().$param' -> 'Class::method().$param'.
+
+    Strips the namespace prefix but keeps the rest intact.
+    Promoted constructor params should already be resolved to Property FQNs
+    at the argument-building level (e.g., 'Order::$id' not 'Order::__construct().$id').
+    Property USES context passes raw param_fqn (with __construct()) which is correct.
+    """
     key = param_fqn or param_name or f"arg[{position}]"
     if param_fqn and "::" in param_fqn:
         ns_class, member = param_fqn.rsplit("::", 1)
@@ -59,7 +82,7 @@ class OutputArgumentInfo:
             value_expr=info.value_expr,
             value_source=info.value_source,
             value_type=info.value_type,
-            param_fqn=info.param_fqn,
+            param_fqn=_normalize_param_fqn(info.param_fqn),
             value_ref_symbol=info.value_ref_symbol,
             source_chain=info.source_chain,
         )
@@ -362,6 +385,8 @@ class OutputEntry:
             d["onKind"] = self.on_kind
 
         # Sites (when present, remove line)
+        # Note: site lines are kept as-is (0-based) matching kloc-cli convention.
+        # Only the entry-level 'line' field is 1-based.
         if self.sites:
             d["sites"] = self.sites
             d.pop("line", None)

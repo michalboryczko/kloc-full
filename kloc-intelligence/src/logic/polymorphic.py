@@ -54,13 +54,24 @@ WHERE iface_method.name = m.name
 RETURN iface_method.node_id AS id
 """
 
-_Q_CONCRETE_IMPLEMENTORS = """
+_Q_CONCRETE_IMPLEMENTORS_DIRECT = """
 MATCH (m:Node {node_id: $method_id})<-[:CONTAINS]-(iface)
 WHERE iface.kind = 'Interface'
 MATCH (iface)<-[:IMPLEMENTS]-(impl_cls)
 MATCH (impl_cls)-[:CONTAINS]->(impl_method:Method)
 WHERE impl_method.name = m.name
 RETURN impl_method.node_id AS id
+ORDER BY impl_cls.node_id
+"""
+
+_Q_CONCRETE_IMPLEMENTORS_TRANSITIVE = """
+MATCH (m:Node {node_id: $method_id})<-[:CONTAINS]-(iface)
+WHERE iface.kind = 'Interface'
+MATCH (iface)<-[:EXTENDS*]-(child_iface:Interface)<-[:IMPLEMENTS]-(impl_cls)
+MATCH (impl_cls)-[:CONTAINS]->(impl_method:Method)
+WHERE impl_method.name = m.name
+RETURN impl_method.node_id AS id
+ORDER BY impl_cls.node_id
 """
 
 
@@ -162,7 +173,11 @@ def get_implementations_for_node(
         # Interface method implementations: find classes implementing an
         # interface that declares a method with the same name, then look up
         # that method in implementing classes.
-        iface_impl_records = runner.execute(_Q_CONCRETE_IMPLEMENTORS, method_id=node_id)
+        iface_impl_records = list(runner.execute(
+            _Q_CONCRETE_IMPLEMENTORS_DIRECT, method_id=node_id
+        )) + list(runner.execute(
+            _Q_CONCRETE_IMPLEMENTORS_TRANSITIVE, method_id=node_id
+        ))
         for r in iface_impl_records:
             if count[0] >= limit:
                 break
@@ -214,5 +229,16 @@ def get_concrete_implementors(runner: QueryRunner, method_id: str) -> list[str]:
     Returns:
         List of concrete method node_ids (may be empty).
     """
-    records = runner.execute(_Q_CONCRETE_IMPLEMENTORS, method_id=method_id)
-    return [r["id"] for r in records if r["id"]]
+    # Direct implementors first, then transitive (via extends chain).
+    # This matches kloc-cli's ordering: direct implementors in sot.json order,
+    # followed by transitive implementors.
+    direct = runner.execute(_Q_CONCRETE_IMPLEMENTORS_DIRECT, method_id=method_id)
+    transitive = runner.execute(_Q_CONCRETE_IMPLEMENTORS_TRANSITIVE, method_id=method_id)
+    seen: set[str] = set()
+    result: list[str] = []
+    for r in list(direct) + list(transitive):
+        mid = r["id"]
+        if mid and mid not in seen:
+            seen.add(mid)
+            result.append(mid)
+    return result

@@ -31,7 +31,7 @@ from ..db.queries.context_interface import (
 from ..logic.graph_helpers import format_method_fqn
 from ..models.node import NodeData
 from ..models.results import ContextEntry
-from .class_context import build_caller_chain_for_method
+from .class_context import build_caller_chain_for_method, _build_call_arguments, build_class_uses_recursive
 
 # Priority order for USES entries
 USES_PRIORITY: dict[str, int] = {
@@ -107,6 +107,15 @@ def _check_contract_relevance(
     return bool(records[0]["calls_contract"])
 
 
+_Q_EXTENDS_FROM_INTERFACE = """
+MATCH (iface:Node {node_id: $iface_id})<-[:EXTENDS]-(child)
+WHERE child.kind = 'Interface'
+RETURN child.node_id AS id, child.fqn AS fqn, child.kind AS kind,
+       child.file AS file, child.start_line AS start_line
+ORDER BY child.fqn
+"""
+
+
 def _build_interface_extends_depth2(
     runner: QueryRunner,
     child_node_id: str,
@@ -115,7 +124,8 @@ def _build_interface_extends_depth2(
 ) -> list[ContextEntry]:
     """Build depth-2 entries for an interface extends child.
 
-    Returns own methods of the child interface (filtered to contract methods).
+    Returns own methods of the child interface (filtered to contract methods),
+    plus interfaces that extend this child interface.
 
     Args:
         runner: Active QueryRunner.
@@ -124,17 +134,17 @@ def _build_interface_extends_depth2(
         max_depth: Maximum depth; depth-2 expansion only if max_depth >= 2.
 
     Returns:
-        List of ContextEntry objects for the child interface's own methods.
+        List of ContextEntry objects for the child interface's own methods
+        and deeper extends children.
     """
     if max_depth < 2:
         return []
 
-    records = runner.execute(Q7_INTERFACE_METHODS, id=child_node_id)
     entries: list[ContextEntry] = []
+
+    # Own methods — show all methods of the child interface (no contract filter)
+    records = runner.execute(Q7_INTERFACE_METHODS, id=child_node_id)
     for r in records:
-        method_name = r.get("name", "")
-        if contract_method_names and method_name not in contract_method_names:
-            continue
         fqn = r.get("fqn", "")
         entry = ContextEntry(
             depth=2,
@@ -144,9 +154,24 @@ def _build_interface_extends_depth2(
             file=r.get("file"),
             line=r.get("start_line"),
             signature=r.get("signature"),
-            ref_type="method_call",
+            ref_type="own_method",
         )
         entries.append(entry)
+
+    # Interfaces that extend this child interface
+    ext_records = runner.execute(_Q_EXTENDS_FROM_INTERFACE, iface_id=child_node_id)
+    for r in ext_records:
+        entry = ContextEntry(
+            depth=2,
+            node_id=r["id"],
+            fqn=r["fqn"],
+            kind=r.get("kind"),
+            file=r.get("file"),
+            line=r.get("start_line"),
+            ref_type="extends",
+        )
+        entries.append(entry)
+
     return entries
 
 
@@ -231,16 +256,40 @@ def build_interface_used_by(
     # ------------------------------------------------------------------
     # 3-4. Property type injection points (with contract relevance check)
     # ------------------------------------------------------------------
-    property_type_entries: list[ContextEntry] = []
+    # Split into direct (via_fqn matches target) and transitive (via child interface).
+    # kloc-cli only includes transitive injection points if there are no direct ones.
+    direct_pts: list[dict] = []
+    transitive_pts: list[dict] = []
     for pt in injection_points:
+        via_fqn = pt.get("via_fqn")
+        if via_fqn == node.fqn or via_fqn is None:
+            direct_pts.append(pt)
+        else:
+            transitive_pts.append(pt)
+
+    # Use direct injection points; fall back to transitive only if none found
+    active_pts = direct_pts if direct_pts else transitive_pts
+
+    property_type_entries: list[ContextEntry] = []
+    seen_props: set[str] = set()
+    for pt in active_pts:
         prop_id = pt["prop_id"]
         prop_fqn = pt["prop_fqn"]
+
+        # Deduplicate injection points by prop_id
+        if prop_id in seen_props:
+            continue
+        seen_props.add(prop_id)
 
         # Skip if injection doesn't call any contract method
         if not _check_contract_relevance(
             runner, prop_id, prop_fqn, contract_method_names
         ):
             continue
+
+        via_fqn = pt.get("via_fqn")
+        # Only set via if it differs from the target interface
+        via_value = via_fqn if via_fqn and via_fqn != node.fqn else None
 
         entry = ContextEntry(
             depth=1,
@@ -250,6 +299,7 @@ def build_interface_used_by(
             file=pt.get("prop_file"),
             line=pt.get("prop_start_line"),
             ref_type="property_type",
+            via=via_value,
         )
         property_type_entries.append(entry)
 
@@ -258,13 +308,22 @@ def build_interface_used_by(
     # ------------------------------------------------------------------
     if max_depth >= 2:
         # 5. Under [implements]: override methods (filtered to contract methods)
+        #    Also: classes that extend the implementor
+        _Q_EXTENDS_FROM_IMPL = """
+        MATCH (impl:Node {node_id: $impl_id})<-[:EXTENDS*]-(child)
+        RETURN child.node_id AS id, child.fqn AS fqn, child.kind AS kind,
+               child.file AS file, child.start_line AS start_line
+        ORDER BY child.fqn
+        """
         for impl_entry in implements_entries:
             if not impl_entry.node_id:
                 continue
+            # Override methods — kloc-cli includes ALL overrides regardless of
+            # which parent interface they come from (no contract method filter).
             records = runner.execute(Q8_IMPLEMENTS_DEPTH2, impl_id=impl_entry.node_id)
             for r in records:
-                method_name = r.get("method_name", "")
-                if contract_method_names and method_name not in contract_method_names:
+                # Only include methods that have an override parent
+                if not r.get("overrides_id"):
                     continue
                 child = ContextEntry(
                     depth=2,
@@ -274,7 +333,21 @@ def build_interface_used_by(
                     file=r.get("method_file"),
                     line=r.get("method_start_line"),
                     signature=r.get("method_signature"),
-                    ref_type="method_call",
+                    ref_type="override",
+                )
+                impl_entry.children.append(child)
+
+            # Classes that extend this implementor
+            ext_records = runner.execute(_Q_EXTENDS_FROM_IMPL, impl_id=impl_entry.node_id)
+            for r in ext_records:
+                child = ContextEntry(
+                    depth=2,
+                    node_id=r["id"],
+                    fqn=r["fqn"],
+                    kind=r.get("kind"),
+                    file=r.get("file"),
+                    line=r.get("start_line"),
+                    ref_type="extends",
                 )
                 impl_entry.children.append(child)
 
@@ -297,10 +370,21 @@ def build_interface_used_by(
                 callee_id = r.get("callee_id")
                 method_id = r.get("method_id")
                 call_line = r.get("call_line")
+                method_name = r.get("method_name", "")
                 class_fqn = r.get("class_fqn", "")
+                callee_name_raw = r.get("callee_name", "")
 
                 if not callee_id:
                     continue
+
+                # Filter: only include calls to contract methods
+                if contract_method_names and callee_name_raw not in contract_method_names:
+                    continue
+
+                # Build site dict with method name and 0-based line
+                site_entry = None
+                if call_line is not None:
+                    site_entry = {"method": method_name, "line": call_line}
 
                 if callee_id not in callee_map:
                     callee_name = r.get("callee_name")
@@ -310,36 +394,79 @@ def build_interface_used_by(
                     else:
                         callee_display = callee_name
 
+                    # Don't create sites yet — kloc-cli stores first call as the
+                    # entry's line, and only creates sites lazily on duplicate.
                     callee_map[callee_id] = {
                         "node_id": method_id,
                         "method_fqn": r.get("method_fqn", ""),
+                        "method_file": r.get("method_file"),
                         "callee_display": callee_display,
                         "callee_fqn": r.get("callee_fqn", ""),
                         "crossed_from": class_fqn,
-                        "sites": [call_line] if call_line is not None else [],
+                        "sites": [],
                         "method_ids": {method_id},
                         "first_line": call_line,
+                        "call_id": r.get("call_id"),
                     }
                 else:
-                    # Additional site: accumulate
+                    # Duplicate callee — accumulate sites.
+                    # kloc-cli behavior: when first duplicate is found, create
+                    # retroactive first site with the CURRENT method's name (not
+                    # the original method), then append the new site.
                     info = callee_map[callee_id]
-                    if call_line is not None:
-                        info["sites"].append(call_line)
+                    if site_entry:
+                        if not info["sites"]:
+                            # Retroactive: create initial site from first_line
+                            # with CURRENT method name (matches kloc-cli)
+                            info["sites"].append({"method": method_name, "line": info["first_line"]})
+                        info["sites"].append(site_entry)
                     if method_id not in info["method_ids"]:
                         info["method_ids"].add(method_id)
 
+            # Build 'on' expression from property FQN
+            prop_on = None
+            if pt_entry.fqn and "::" in pt_entry.fqn:
+                prop_short = pt_entry.fqn.rsplit("::", 1)[-1]
+                if prop_short.startswith("$"):
+                    prop_on = f"$this->{prop_short[1:]}"
+                else:
+                    prop_on = f"$this->{prop_short}"
+
             for callee_id, info in callee_map.items():
                 sites = info["sites"]
+                # FQN is the callee's FQN (the method being called), not the caller
+                callee_fqn = info.get("callee_fqn", "")
+                # Fetch arguments for the call
+                call_arguments = []
+                call_id = info.get("call_id")
+                if call_id:
+                    call_arguments = _build_call_arguments(runner, call_id)
+
+                # Multi-site: when sites > 1, line is None (moved into sites array).
+                # Single-site: line comes from the first/only site.
+                is_multi_site = len(sites) > 1
+                if is_multi_site:
+                    entry_line = None
+                elif sites:
+                    first_site = sites[0]
+                    entry_line = first_site.get("line") if isinstance(first_site, dict) else first_site
+                else:
+                    entry_line = info.get("first_line")
+
                 child = ContextEntry(
                     depth=2,
                     node_id=info["node_id"],
-                    fqn=format_method_fqn(info["method_fqn"], "Method"),
+                    fqn=format_method_fqn(callee_fqn, "Method"),
                     kind="Method",
-                    line=sites[0] if sites else info.get("first_line"),
+                    file=info.get("method_file"),
+                    line=entry_line,
                     ref_type="method_call",
                     callee=info["callee_display"],
+                    on=prop_on,
+                    on_kind="property" if prop_on else None,
                     crossed_from=info["crossed_from"],
-                    sites=sites if len(sites) > 1 else None,
+                    sites=sites if is_multi_site else None,
+                    arguments=call_arguments,
                 )
                 pt_entry.children.append(child)
 
@@ -373,6 +500,19 @@ def build_interface_used_by(
             ext_entry.children = _build_interface_extends_depth2(
                 runner, ext_entry.node_id, contract_method_names, max_depth
             )
+
+    # ------------------------------------------------------------------
+    # Sort within each bucket by (file, line) for stable ordering
+    # ------------------------------------------------------------------
+    implements_entries.sort(
+        key=lambda e: (e.file or "", e.line if e.line is not None else 0)
+    )
+    extends_entries.sort(
+        key=lambda e: (e.file or "", e.line if e.line is not None else 0)
+    )
+    property_type_entries.sort(
+        key=lambda e: (e.file or "", e.line if e.line is not None else 0)
+    )
 
     # ------------------------------------------------------------------
     # 9. Combine in priority order: implements, extends, property_type
@@ -431,8 +571,10 @@ def build_interface_uses(
             node_id=parent["id"],
             fqn=parent["fqn"],
             kind=parent.get("kind"),
-            file=parent.get("file"),
-            line=parent.get("start_line"),
+            # For extends in USES, file/line is the source interface (where the
+            # extends keyword is written), not the target parent.
+            file=node.file,
+            line=node.start_line,
             ref_type="extends",
         )
         extends_entries.append(entry)
@@ -481,6 +623,8 @@ def build_interface_uses(
                 # parameter_type always beats return_type for the same target
                 if existing["ref_type"] == "return_type":
                     existing["ref_type"] = "parameter_type"
+                    existing["file"] = row.get("method_file")
+                    existing["line"] = row.get("method_line")
 
     type_entries: list[ContextEntry] = []
     for td in target_best.values():
@@ -510,6 +654,18 @@ def build_interface_uses(
                 line=r.get("start_line"),
                 ref_type="implements",
             ))
+
+    # ------------------------------------------------------------------
+    # Depth-2+: recursive class USES expansion for each type dep
+    # ------------------------------------------------------------------
+    if max_depth >= 2:
+        parent_visited: set[str] = {node.node_id}
+        for entry in extends_entries + impl_entries + type_entries:
+            if entry.node_id and entry.kind in ("Class", "Interface", "Trait", "Enum"):
+                entry.children = build_class_uses_recursive(
+                    runner, entry.node_id, 2, max_depth, limit,
+                    visited=set(parent_visited),
+                )
 
     # ------------------------------------------------------------------
     # 4. Combine and sort by USES priority

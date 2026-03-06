@@ -179,7 +179,8 @@ RETURN v.value_kind AS value_kind,
        callee.signature AS callee_signature,
        recv.value_kind AS recv_value_kind,
        recv.name AS recv_name,
-       recv_prop.fqn AS recv_prop_fqn
+       recv_prop.fqn AS recv_prop_fqn,
+       recv_prop.name AS recv_prop_name
 """
 
 # =============================================================================
@@ -242,6 +243,12 @@ RETURN ancestor.node_id AS method_id,
 """
 
 
+_Q_VALUE_IDENTITY = """
+MATCH (v:Node {node_id: $value_id})
+RETURN v.name AS name, v.value_kind AS value_kind
+"""
+
+
 def fetch_value_consumer_data(runner: QueryRunner, value_id: str) -> dict:
     """Batch-fetch all data needed to build the consumer chain for a Value.
 
@@ -256,13 +263,22 @@ def fetch_value_consumer_data(runner: QueryRunner, value_id: str) -> dict:
         Dict with keys:
             "receiver_chain": list of Q1 records (dicts)
             "direct_arguments": list of Q2 records (dicts)
+            "value_name": name of the Value node
+            "value_kind": value_kind of the Value node
     """
     q1_records = runner.execute(Q1_RECEIVER_CHAIN, value_id=value_id)
     q2_records = runner.execute(Q2_DIRECT_ARGUMENTS, value_id=value_id)
 
+    # Fetch value identity for on/on_kind resolution
+    identity = runner.execute_single(_Q_VALUE_IDENTITY, value_id=value_id)
+    value_name = identity["name"] if identity else None
+    value_kind = identity["value_kind"] if identity else None
+
     return {
         "receiver_chain": [dict(r) for r in q1_records],
         "direct_arguments": [dict(r) for r in q2_records],
+        "value_name": value_name,
+        "value_kind": value_kind,
     }
 
 

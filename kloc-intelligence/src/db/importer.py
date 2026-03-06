@@ -201,10 +201,27 @@ def edge_to_props(edge: EdgeSpec) -> dict:
 
 
 def parse_sot(sot_path: str | Path) -> tuple[list[dict], list[dict]]:
-    """Parse a sot.json file and return (node_props_list, edge_props_list)."""
+    """Parse a sot.json file and return (node_props_list, edge_props_list).
+
+    Adds an ``ordinal`` property to CONTAINS edges to preserve the sot.json
+    insertion order (Neo4j does not guarantee relationship order).
+    """
     data = load_sot(sot_path)
     nodes = [node_to_props(n) for n in data.nodes]
-    edges = [edge_to_props(e) for e in data.edges]
+
+    # Track per-source ordinal for CONTAINS edges so definition queries
+    # can reproduce the original sot.json child order.
+    contains_ordinal: dict[str, int] = {}
+    edges: list[dict] = []
+    for e in data.edges:
+        props = edge_to_props(e)
+        if e.type == "contains":
+            src = e.source
+            ordinal = contains_ordinal.get(src, 0)
+            props["ordinal"] = ordinal
+            contains_ordinal[src] = ordinal + 1
+        edges.append(props)
+
     return nodes, edges
 
 
@@ -247,7 +264,8 @@ def import_edges(connection: Neo4jConnection, edges: list[dict],
             r.loc_line = props.loc_line,
             r.position = props.position,
             r.expression = props.expression,
-            r.parameter = props.parameter
+            r.parameter = props.parameter,
+            r.ordinal = props.ordinal
         """
         for i in range(0, len(type_edges), batch_size):
             batch = type_edges[i:i + batch_size]

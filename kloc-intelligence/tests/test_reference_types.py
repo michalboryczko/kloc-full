@@ -23,7 +23,7 @@ class TestConstants:
         assert isinstance(CHAINABLE_REFERENCE_TYPES, set)
 
     def test_chainable_contains_expected_types(self):
-        expected = {"method_call", "property_access", "instantiation", "static_call"}
+        expected = {"method_call", "property_access", "instantiation", "static_call", "caller"}
         assert CHAINABLE_REFERENCE_TYPES == expected
 
     def test_type_hint_not_chainable(self):

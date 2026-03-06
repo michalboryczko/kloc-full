@@ -33,6 +33,8 @@ RETURN call.node_id AS call_id,
        recv.node_id AS recv_id,
        recv.value_kind AS recv_value_kind,
        recv.name AS recv_name,
+       recv.file AS recv_file,
+       recv.start_line AS recv_start_line,
        recv_src.node_id AS recv_source_call_id,
        result.node_id AS result_id,
        local.node_id AS local_id,
@@ -40,7 +42,7 @@ RETURN call.node_id AS call_id,
        local.name AS local_name,
        local.start_line AS local_line,
        local_type.name AS local_type_name
-ORDER BY call.start_line
+ORDER BY call.node_id
 """
 
 # =============================================================================
@@ -54,6 +56,7 @@ OPTIONAL MATCH (val)-[:TYPE_OF]->(vtype)
 RETURN call.node_id AS call_id,
        a.position AS position,
        a.expression AS expression,
+       a.parameter AS parameter,
        val.node_id AS value_id,
        val.value_kind AS value_kind,
        val.name AS value_name,
@@ -89,8 +92,8 @@ MATCH (method:Node {node_id: $method_id})-[e:USES]->(target:Node)
 WHERE target.kind IN ['Class', 'Interface', 'Trait', 'Enum']
 OPTIONAL MATCH (method)-[:CONTAINS]->(arg:Argument)-[:TYPE_HINT]->(target)
 WITH method, e, target, count(arg) > 0 AS has_arg_th
-OPTIONAL MATCH (method)-[:TYPE_HINT]->(target)
-WITH method, e, target, has_arg_th, count(*) > 0 AS has_ret_th
+OPTIONAL MATCH (method)-[rth:TYPE_HINT]->(target)
+WITH method, e, target, has_arg_th, count(rth) > 0 AS has_ret_th
 RETURN target.node_id AS target_id,
        target.fqn AS target_fqn,
        target.kind AS target_kind,

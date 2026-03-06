@@ -7,10 +7,11 @@ The main entry point is build_definition(data) which dispatches to
 kind-specific builders based on node kind.
 """
 
-import re
+import re  # used in parse_property_doc
 from typing import Optional
 
 from ..models.results import DefinitionInfo
+
 
 
 def build_definition(data: dict) -> DefinitionInfo:
@@ -72,6 +73,7 @@ def build_method_definition(data: dict, info: DefinitionInfo) -> None:
     """Populate definition for Method/Function nodes.
 
     Collects typed arguments from children and return type from type_hint edges.
+    Arguments are sorted by their position in the method signature.
     """
     children = data.get("children", [])
     child_type_hints = data.get("child_type_hints", {})
@@ -86,6 +88,8 @@ def build_method_definition(data: dict, info: DefinitionInfo) -> None:
             if type_hints:
                 arg_dict["type"] = type_hints[0].get("name")
             info.arguments.append(arg_dict)
+
+    # Children are already in sot.json insertion order (via ordinal on CONTAINS edge)
 
     # Resolve return type from type_hint edges on the method itself
     type_hints = data.get("type_hints", [])
@@ -206,6 +210,9 @@ def build_class_definition(data: dict, info: DefinitionInfo) -> None:
             if doc_type:
                 dep["type"] = doc_type
         info.constructor_deps.append(dep)
+
+    # Children are already in sot.json insertion order (via ordinal on CONTAINS edge).
+    # Properties and constructor_deps inherit that order.
 
     # Inheritance
     inheritance = data.get("inheritance", {})

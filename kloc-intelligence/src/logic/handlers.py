@@ -43,6 +43,10 @@ class EdgeContext:
     containing_method_fqn: str | None = None
     containing_method_kind: str | None = None
     containing_class_id: str | None = None
+    containing_class_fqn: str | None = None
+    containing_class_kind: str | None = None
+    containing_class_file: str | None = None
+    containing_class_start_line: int | None = None
     call_kind: str | None = None
     access_chain: str | None = None
     on_kind: str | None = None
@@ -336,13 +340,11 @@ class ParamReturnHandler:
             cls_file = ctx.source_file
             cls_start_line = ctx.source_start_line
         elif cls_id is not None:
-            # We have a pre-resolved containing class -- use the data from
-            # EdgeContext. The caller should populate these via pre-fetched data.
-            # For now, we use the containing_class_id and need the FQN.
-            # The containing class data must be injected via the context.
-            # We fall back to source data if class FQN is not available.
-            # (The orchestration layer will pre-resolve class data.)
-            pass
+            # Pre-resolved containing class from Q2 query
+            cls_fqn = ctx.containing_class_fqn
+            cls_kind = ctx.containing_class_kind
+            cls_file = ctx.containing_class_file
+            cls_start_line = ctx.containing_class_start_line
 
         if cls_id is None:
             # No containing class found; skip

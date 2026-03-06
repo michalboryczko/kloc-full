@@ -133,6 +133,21 @@ LIMIT 1
 """
 
 # =============================================================================
+# Promoted Parameter Resolution
+# =============================================================================
+
+# Resolve a promoted constructor parameter FQN to its Property FQN.
+# Given a param FQN (e.g., "Order::__construct().$id"), find the Property
+# that has an ASSIGNED_FROM edge to the matching Value(parameter) node.
+# This is the Neo4j equivalent of kloc-cli's resolve_promoted_property_fqn().
+RESOLVE_PROMOTED_PARAM = """
+MATCH (prop:Node {kind: 'Property'})-[:ASSIGNED_FROM]->(param:Value {value_kind: 'parameter'})
+WHERE param.fqn = $param_fqn
+RETURN prop.fqn AS property_fqn
+LIMIT 1
+"""
+
+# =============================================================================
 # Argument Info
 # =============================================================================
 

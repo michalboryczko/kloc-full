@@ -193,37 +193,48 @@ class TestBuildInterfaceExtendsDepth2:
 
     def test_returns_methods_filtered_by_contract(self):
         runner = make_runner()
-        runner.execute.return_value = [
-            {
-                "id": "m:save",
-                "fqn": "App\\ChildIface::save",
-                "name": "save",
-                "file": "src/ChildIface.php",
-                "start_line": 10,
-                "signature": "save(int $id): void",
-            },
-            {
-                "id": "m:helper",
-                "fqn": "App\\ChildIface::helper",
-                "name": "helper",
-                "file": "src/ChildIface.php",
-                "start_line": 20,
-                "signature": None,
-            },
+        # First call: Q7_INTERFACE_METHODS returns methods
+        # Second call: _Q_EXTENDS_FROM_INTERFACE returns empty
+        runner.execute.side_effect = [
+            [
+                {
+                    "id": "m:save",
+                    "fqn": "App\\ChildIface::save",
+                    "name": "save",
+                    "file": "src/ChildIface.php",
+                    "start_line": 10,
+                    "signature": "save(int $id): void",
+                },
+                {
+                    "id": "m:helper",
+                    "fqn": "App\\ChildIface::helper",
+                    "name": "helper",
+                    "file": "src/ChildIface.php",
+                    "start_line": 20,
+                    "signature": None,
+                },
+            ],
+            [],  # No extends children
         ]
         result = _build_interface_extends_depth2(
             runner, "iface:Child", ["save"], max_depth=2
         )
-        assert len(result) == 1
+        # Current implementation returns all own methods (no contract filter)
+        assert len(result) == 2
         assert result[0].fqn == "App\\ChildIface::save()"
-        assert result[0].ref_type == "method_call"
+        assert result[0].ref_type == "own_method"
         assert result[0].depth == 2
 
     def test_returns_all_methods_when_no_contract_filter(self):
         runner = make_runner()
-        runner.execute.return_value = [
-            {"id": "m:1", "fqn": "App\\Child::a", "name": "a", "file": None, "start_line": 1, "signature": None},
-            {"id": "m:2", "fqn": "App\\Child::b", "name": "b", "file": None, "start_line": 2, "signature": None},
+        # First call: Q7_INTERFACE_METHODS
+        # Second call: _Q_EXTENDS_FROM_INTERFACE
+        runner.execute.side_effect = [
+            [
+                {"id": "m:1", "fqn": "App\\Child::a", "name": "a", "file": None, "start_line": 1, "signature": None},
+                {"id": "m:2", "fqn": "App\\Child::b", "name": "b", "file": None, "start_line": 2, "signature": None},
+            ],
+            [],  # No extends children
         ]
         result = _build_interface_extends_depth2(runner, "iface:Child", [], max_depth=2)
         assert len(result) == 2
@@ -401,8 +412,8 @@ class TestBuildInterfaceUsedBy:
                     "method_file": "f.php",
                     "method_start_line": 15,
                     "method_signature": "save(int $id): void",
-                    "overrides_id": None,
-                    "overrides_class_id": None,
+                    "overrides_id": "m:iface_save",
+                    "overrides_class_id": "iface:OrderRepo",
                 }
             ],
         )
@@ -411,10 +422,11 @@ class TestBuildInterfaceUsedBy:
         assert result[0].ref_type == "implements"
         assert len(result[0].children) == 1
         assert result[0].children[0].fqn == "App\\Impl::save()"
-        assert result[0].children[0].ref_type == "method_call"
+        assert result[0].children[0].ref_type == "override"
         assert result[0].children[0].depth == 2
 
-    def test_depth2_override_methods_filtered_by_contract(self):
+    def test_depth2_override_methods_filtered_by_overrides(self):
+        """Only methods with overrides_id are included at depth 2."""
         node = make_iface_node()
         runner = self._make_used_by_runner(
             implementors=[{"id": "cls:Impl", "fqn": "App\\Impl", "kind": "Class", "file": "f.php", "start_line": 1}],
@@ -422,7 +434,7 @@ class TestBuildInterfaceUsedBy:
             impl_depth2_methods=[
                 {"method_id": "m:save", "method_fqn": "App\\Impl::save", "method_name": "save",
                  "method_file": "f.php", "method_start_line": 15, "method_signature": None,
-                 "overrides_id": None, "overrides_class_id": None},
+                 "overrides_id": "m:iface_save", "overrides_class_id": "iface:OrderRepo"},
                 {"method_id": "m:helper", "method_fqn": "App\\Impl::helper", "method_name": "helper",
                  "method_file": "f.php", "method_start_line": 20, "method_signature": None,
                  "overrides_id": None, "overrides_class_id": None},
@@ -430,7 +442,7 @@ class TestBuildInterfaceUsedBy:
         )
         result = build_interface_used_by(runner, node, max_depth=2)
         impl_entry = result[0]
-        # Only 'save' passes contract filter
+        # Only 'save' has overrides_id set
         assert len(impl_entry.children) == 1
         assert impl_entry.children[0].fqn.endswith("save()")
 

@@ -13,10 +13,10 @@ OPTIONAL MATCH (n)<-[:CONTAINS]-(parent)
 RETURN n, parent
 """
 
-# Children of the node ordered by start_line
+# Children of the node ordered by sot.json insertion order (ordinal on CONTAINS edge)
 DEFINITION_CHILDREN = """
-MATCH (n:Node {node_id: $node_id})-[:CONTAINS]->(child)
-RETURN child ORDER BY child.start_line
+MATCH (n:Node {node_id: $node_id})-[r:CONTAINS]->(child)
+RETURN child ORDER BY r.ordinal
 """
 
 # Type hints for each child of the node
