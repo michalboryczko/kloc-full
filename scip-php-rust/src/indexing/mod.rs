@@ -3,8 +3,10 @@
 //! Contains the CST traversal driver (`index_file`), per-file indexing context,
 //! and stub emitters for definitions and references.
 
+pub mod calls;
 pub mod context;
 pub mod definitions;
+pub mod expression_tracker;
 pub mod references;
 
 // Re-exports
@@ -317,12 +319,75 @@ fn enter_node(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext)
             references::handle_expression(&php_node, ctx);
         }
 
-        // --- Expression/reference nodes: call stub handler ---
-        PhpNode::MethodCall(_)
-        | PhpNode::StaticCall(_)
-        | PhpNode::FuncCall(_)
-        | PhpNode::New(_)
-        | PhpNode::PropertyFetch(_)
+        // --- Expression/reference nodes: call stub handler + expression tracking ---
+        PhpNode::MethodCall(ref method_call) => {
+            references::handle_expression(&php_node, ctx);
+            let pkg = ctx.namer.project_package.clone();
+            let ver = ctx.namer.project_version.clone();
+            let rel = ctx.relative_path.clone();
+            ctx.expression_tracker.track_method_call(
+                method_call,
+                source,
+                &ctx.scope,
+                &ctx.var_types,
+                ctx.type_db,
+                &ctx.resolver,
+                &rel,
+                &pkg,
+                &ver,
+                ctx.namer,
+            );
+        }
+        PhpNode::StaticCall(ref static_call) => {
+            references::handle_expression(&php_node, ctx);
+            let pkg = ctx.namer.project_package.clone();
+            let ver = ctx.namer.project_version.clone();
+            let rel = ctx.relative_path.clone();
+            ctx.expression_tracker.track_static_call(
+                static_call,
+                source,
+                &ctx.scope,
+                ctx.type_db,
+                &ctx.resolver,
+                &rel,
+                &pkg,
+                &ver,
+                ctx.namer,
+            );
+        }
+        PhpNode::FuncCall(ref func_call) => {
+            references::handle_expression(&php_node, ctx);
+            let pkg = ctx.namer.project_package.clone();
+            let ver = ctx.namer.project_version.clone();
+            let rel = ctx.relative_path.clone();
+            ctx.expression_tracker.track_func_call(
+                func_call,
+                source,
+                &ctx.scope,
+                &ctx.resolver,
+                &rel,
+                &pkg,
+                &ver,
+                ctx.namer,
+            );
+        }
+        PhpNode::New(ref new_node) => {
+            references::handle_expression(&php_node, ctx);
+            let pkg = ctx.namer.project_package.clone();
+            let ver = ctx.namer.project_version.clone();
+            let rel = ctx.relative_path.clone();
+            ctx.expression_tracker.track_new_call(
+                new_node,
+                source,
+                &ctx.scope,
+                &ctx.resolver,
+                &rel,
+                &pkg,
+                &ver,
+                ctx.namer,
+            );
+        }
+        PhpNode::PropertyFetch(_)
         | PhpNode::StaticPropertyFetch(_)
         | PhpNode::ClassConstFetch(_)
         | PhpNode::Variable(_)

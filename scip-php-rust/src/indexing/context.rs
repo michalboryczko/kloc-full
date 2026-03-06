@@ -3,8 +3,9 @@
 use std::path::Path;
 
 use crate::composer::Composer;
+use crate::indexing::calls::{CallRecord, ValueRecord};
+use crate::indexing::expression_tracker::ExpressionTracker;
 use crate::names::resolver::NameResolver;
-use crate::output::calls::{CallRecord, ValueRecord};
 use crate::output::scip::{Occurrence, Relationship, SymbolInformation, symbol_roles};
 use crate::symbol::namer::SymbolNamer;
 use crate::symbol::scope::ScopeStack;
@@ -32,6 +33,9 @@ pub struct IndexingContext<'a> {
     symbols: Vec<SymbolInformation>,
     calls: Vec<CallRecord>,
     values: Vec<ValueRecord>,
+
+    // Expression tracker for call/value records
+    pub expression_tracker: ExpressionTracker,
 
     // Local variable counter
     pub local_counter: u32,
@@ -73,6 +77,7 @@ impl<'a> IndexingContext<'a> {
             symbols: Vec::new(),
             calls: Vec::new(),
             values: Vec::new(),
+            expression_tracker: ExpressionTracker::new(),
             local_counter: 0,
             type_db,
             composer,
