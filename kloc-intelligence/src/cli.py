@@ -64,11 +64,51 @@ def schema_verify():
 
 
 @app.command("import")
-def import_data(
-    sot_file: str = typer.Argument(help="Path to sot.json file"),
+def import_sot(
+    sot_path: str = typer.Argument(..., help="Path to sot.json file"),
+    clear: bool = typer.Option(True, help="Clear database before import"),
+    validate: bool = typer.Option(True, help="Validate after import"),
 ):
-    """Import sot.json data into Neo4j (placeholder for T02)."""
-    console.print(f"[yellow]Import not yet implemented.[/yellow] File: {sot_file}")
+    """Import a sot.json file into Neo4j."""
+    import time
+    from .config import Neo4jConfig
+    from .db.connection import Neo4jConnection
+    from .db.schema import ensure_schema, drop_all
+    from .db.importer import parse_sot, import_nodes, import_edges, validate_import
+
+    config = Neo4jConfig.from_env()
+    conn = Neo4jConnection(config)
+    conn.verify_connectivity()
+    start = time.perf_counter()
+
+    console.print(f"Parsing {sot_path}...")
+    nodes, edges = parse_sot(sot_path)
+    console.print(f"  Parsed {len(nodes):,} nodes, {len(edges):,} edges")
+
+    if clear:
+        console.print("Clearing database...")
+        drop_all(conn)
+        ensure_schema(conn)
+
+    console.print("Importing nodes...")
+    import_nodes(conn, nodes)
+    console.print("Importing edges...")
+    import_edges(conn, edges)
+
+    if validate:
+        report = validate_import(conn, len(nodes), len(edges))
+        node_status = "OK" if report["node_match"] else "MISMATCH"
+        edge_status = "OK" if report["edge_match"] else "MISMATCH"
+        console.print(
+            f"  Nodes: {report['node_count']:,} / {report['expected_nodes']:,}  {node_status}"
+        )
+        console.print(
+            f"  Edges: {report['edge_count']:,} / {report['expected_edges']:,}  {edge_status}"
+        )
+
+    total = time.perf_counter() - start
+    console.print(f"\nImport complete in {total:.1f}s")
+    conn.close()
 
 
 if __name__ == "__main__":

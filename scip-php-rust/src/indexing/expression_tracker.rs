@@ -222,8 +222,10 @@ impl ExpressionTracker {
     pub fn track_new_call(
         &mut self,
         node: &NewNode,
-        _source: &[u8],
+        source: &[u8],
         scope: &ScopeStack,
+        var_types: &VariableTypeMap,
+        type_db: &TypeDatabase,
         resolver: &NameResolver,
         relative_path: &str,
         pkg: &str,
@@ -261,13 +263,20 @@ impl ExpressionTracker {
         let caller = build_caller_symbol(&caller_fqn, scope, namer, pkg, ver);
         let line = node.node.start_position().row as u32 + 1;
 
+        let arguments = match node.arguments() {
+            Some(args_node) => Self::extract_arguments(
+                args_node, source, var_types, scope, type_db, resolver,
+            ),
+            None => Vec::new(),
+        };
+
         self.call_records.push(CallRecord {
             caller,
             callee,
             kind: CallKind::New,
             file: relative_path.to_string(),
             line,
-            arguments: Vec::new(),
+            arguments,
         });
     }
 
@@ -464,6 +473,12 @@ impl ExpressionTracker {
             let value_node = if arg.kind() == "named_argument" {
                 match arg.child_by_field_name("value") {
                     Some(v) => v,
+                    None => continue,
+                }
+            } else if arg.kind() == "argument" {
+                // Regular argument wrapper — unwrap to the inner expression
+                match arg.named_child(0) {
+                    Some(inner) => inner,
                     None => continue,
                 }
             } else {
@@ -783,14 +798,26 @@ mod tests {
     use crate::symbol::namer::SymbolNamer;
     use crate::types::TypeDatabase;
 
+    struct IndexResult {
+        result: crate::indexing::context::FileResult,
+        calls: Vec<CallRecord>,
+        values: Vec<ValueRecord>,
+    }
+
     fn setup_and_index(php_source: &str) -> (crate::indexing::context::FileResult, Vec<CallRecord>) {
-        setup_and_index_with_db(php_source, TypeDatabase::new())
+        let ir = setup_full(php_source, TypeDatabase::new());
+        (ir.result, ir.calls)
     }
 
     fn setup_and_index_with_db(
         php_source: &str,
         type_db: TypeDatabase,
     ) -> (crate::indexing::context::FileResult, Vec<CallRecord>) {
+        let ir = setup_full(php_source, type_db);
+        (ir.result, ir.calls)
+    }
+
+    fn setup_full(php_source: &str, type_db: TypeDatabase) -> IndexResult {
         let mut parser = PhpParser::new();
         let parsed = parser.parse(php_source, "test.php").unwrap();
 
@@ -815,8 +842,9 @@ mod tests {
 
         index_file(&parsed, &mut ctx);
         let calls = ctx.expression_tracker.call_records.clone();
+        let values = ctx.expression_tracker.value_records.clone();
         let result = ctx.into_result();
-        (result, calls)
+        IndexResult { result, calls, values }
     }
 
     #[test]
@@ -1149,4 +1177,396 @@ class Builder {
             method_calls.len()
         );
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Subtask 13.4: Property Access Tracking Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_property_read_tracking() {
+        let source = r#"<?php
+namespace App;
+
+class Foo {
+    public string $name = '';
+    public function bar(): void {
+        $x = $this->name;
+    }
+}
+"#;
+        let ir = setup_full(source, TypeDatabase::new());
+        let reads: Vec<_> = ir.values.iter()
+            .filter(|v| v.kind == ValueKind::PropertyRead)
+            .collect();
+        assert!(
+            !reads.is_empty(),
+            "Expected PropertyRead for $this->name"
+        );
+        let val = &reads[0];
+        assert!(val.target.contains("$name."), "target should contain $name., got: {}", val.target);
+        assert!(val.source.contains("bar()."), "source should be bar method");
+    }
+
+    #[test]
+    fn test_property_write_tracking() {
+        let source = r#"<?php
+namespace App;
+
+class Foo {
+    public string $name = '';
+    public function setName(): void {
+        $this->name = 'test';
+    }
+}
+"#;
+        let ir = setup_full(source, TypeDatabase::new());
+        let writes: Vec<_> = ir.values.iter()
+            .filter(|v| v.kind == ValueKind::PropertyWrite)
+            .collect();
+        assert!(
+            !writes.is_empty(),
+            "Expected PropertyWrite for $this->name = 'test'"
+        );
+        let val = &writes[0];
+        assert!(val.target.contains("$name."), "target should contain $name.");
+    }
+
+    #[test]
+    fn test_static_property_read_tracking() {
+        let source = r#"<?php
+namespace App;
+
+class Config {
+    public static string $instance = '';
+    public function test(): void {
+        $x = self::$instance;
+    }
+}
+"#;
+        let ir = setup_full(source, TypeDatabase::new());
+        let reads: Vec<_> = ir.values.iter()
+            .filter(|v| v.kind == ValueKind::StaticPropertyRead)
+            .collect();
+        assert!(
+            !reads.is_empty(),
+            "Expected StaticPropertyRead for self::$instance"
+        );
+        let val = &reads[0];
+        assert!(val.target.contains("$instance."), "target should contain $instance.");
+        assert!(val.target.contains("Config"), "target should reference Config class");
+    }
+
+    #[test]
+    fn test_static_property_write_tracking() {
+        let source = r#"<?php
+namespace App;
+
+class Config {
+    public static string $instance = '';
+    public function test(): void {
+        self::$instance = 'new';
+    }
+}
+"#;
+        let ir = setup_full(source, TypeDatabase::new());
+        let writes: Vec<_> = ir.values.iter()
+            .filter(|v| v.kind == ValueKind::StaticPropertyWrite)
+            .collect();
+        assert!(
+            !writes.is_empty(),
+            "Expected StaticPropertyWrite for self::$instance = 'new'"
+        );
+    }
+
+    #[test]
+    fn test_class_const_read_tracking() {
+        let source = r#"<?php
+namespace App;
+
+class Status {
+    const ACTIVE = 'active';
+    public function test(): void {
+        $x = self::ACTIVE;
+    }
+}
+"#;
+        let ir = setup_full(source, TypeDatabase::new());
+        let reads: Vec<_> = ir.values.iter()
+            .filter(|v| v.kind == ValueKind::ClassConstRead)
+            .collect();
+        assert!(
+            !reads.is_empty(),
+            "Expected ClassConstRead for self::ACTIVE"
+        );
+        let val = &reads[0];
+        assert!(val.target.contains("ACTIVE."), "target should contain ACTIVE., got: {}", val.target);
+    }
+
+    #[test]
+    fn test_class_pseudo_const_skipped() {
+        let source = r#"<?php
+namespace App;
+
+class Foo {
+    public function test(): void {
+        $x = self::class;
+    }
+}
+"#;
+        let ir = setup_full(source, TypeDatabase::new());
+        let const_reads: Vec<_> = ir.values.iter()
+            .filter(|v| v.kind == ValueKind::ClassConstRead)
+            .collect();
+        assert!(
+            const_reads.is_empty(),
+            "Expected no ClassConstRead for ::class pseudo-constant, got: {:?}",
+            const_reads.iter().map(|v| &v.target).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn test_property_unknown_receiver_skipped() {
+        let source = r#"<?php
+namespace App;
+
+class Foo {
+    public function bar($obj): void {
+        $x = $obj->name;
+    }
+}
+"#;
+        let ir = setup_full(source, TypeDatabase::new());
+        let prop_values: Vec<_> = ir.values.iter()
+            .filter(|v| matches!(v.kind, ValueKind::PropertyRead | ValueKind::PropertyWrite))
+            .collect();
+        assert!(
+            prop_values.is_empty(),
+            "Expected no ValueRecord for unknown receiver property access"
+        );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Subtask 13.5: Argument Value Extraction Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_string_literal_arg() {
+        let source = r#"<?php
+namespace App;
+
+class Foo {
+    public function bar(): void {
+        strlen('hello');
+    }
+}
+"#;
+        let ir = setup_full(source, TypeDatabase::new());
+        let strlen_calls: Vec<_> = ir.calls.iter()
+            .filter(|c| c.callee.contains("strlen"))
+            .collect();
+        assert!(!strlen_calls.is_empty(), "Expected strlen call");
+        let args = &strlen_calls[0].arguments;
+        assert_eq!(args.len(), 1, "strlen should have 1 argument");
+        match &args[0] {
+            ArgumentValue::StringLiteral { value } => assert_eq!(value, "hello"),
+            other => panic!("Expected StringLiteral, got: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_int_literal_arg() {
+        let source = r#"<?php
+namespace App;
+
+class Foo {
+    public function bar(): void {
+        substr('test', 42);
+    }
+}
+"#;
+        let ir = setup_full(source, TypeDatabase::new());
+        let calls: Vec<_> = ir.calls.iter()
+            .filter(|c| c.callee.contains("substr"))
+            .collect();
+        assert!(!calls.is_empty());
+        let args = &calls[0].arguments;
+        assert!(args.len() >= 2);
+        match &args[1] {
+            ArgumentValue::IntLiteral { value } => assert_eq!(*value, 42),
+            other => panic!("Expected IntLiteral(42), got: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_bool_null_args() {
+        let source = r#"<?php
+namespace App;
+
+class Foo {
+    public function bar(): void {
+        json_encode(true, false, null);
+    }
+}
+"#;
+        let ir = setup_full(source, TypeDatabase::new());
+        let calls: Vec<_> = ir.calls.iter()
+            .filter(|c| c.callee.contains("json_encode"))
+            .collect();
+        assert!(!calls.is_empty());
+        let args = &calls[0].arguments;
+        assert!(args.len() >= 3, "Expected at least 3 args, got {}", args.len());
+        match &args[0] {
+            ArgumentValue::BoolLiteral { value } => assert!(*value),
+            other => panic!("Expected BoolLiteral(true), got: {:?}", other),
+        }
+        match &args[1] {
+            ArgumentValue::BoolLiteral { value } => assert!(!*value),
+            other => panic!("Expected BoolLiteral(false), got: {:?}", other),
+        }
+        match &args[2] {
+            ArgumentValue::NullLiteral => {}
+            other => panic!("Expected NullLiteral, got: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_variable_arg() {
+        let source = r#"<?php
+namespace App;
+
+class Foo {
+    public function bar(): void {
+        $x = 'test';
+        strlen($x);
+    }
+}
+"#;
+        let ir = setup_full(source, TypeDatabase::new());
+        let calls: Vec<_> = ir.calls.iter()
+            .filter(|c| c.callee.contains("strlen"))
+            .collect();
+        assert!(!calls.is_empty());
+        let args = &calls[0].arguments;
+        assert_eq!(args.len(), 1);
+        match &args[0] {
+            ArgumentValue::Variable { name } => assert_eq!(name, "$x"),
+            other => panic!("Expected Variable($x), got: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_unknown_expression_arg() {
+        let source = r#"<?php
+namespace App;
+
+class Foo {
+    public function bar(): void {
+        strlen($a + $b);
+    }
+}
+"#;
+        let ir = setup_full(source, TypeDatabase::new());
+        let calls: Vec<_> = ir.calls.iter()
+            .filter(|c| c.callee.contains("strlen"))
+            .collect();
+        assert!(!calls.is_empty());
+        let args = &calls[0].arguments;
+        assert_eq!(args.len(), 1);
+        assert_eq!(args[0], ArgumentValue::Unknown);
+    }
+
+    #[test]
+    fn test_multiple_args_mixed() {
+        let source = r#"<?php
+namespace App;
+
+class Foo {
+    public function bar(): void {
+        array_slice(['a'], 0, 2);
+    }
+}
+"#;
+        let ir = setup_full(source, TypeDatabase::new());
+        let calls: Vec<_> = ir.calls.iter()
+            .filter(|c| c.callee.contains("array_slice"))
+            .collect();
+        assert!(!calls.is_empty());
+        let args = &calls[0].arguments;
+        assert_eq!(args.len(), 3, "Expected 3 args");
+        match &args[0] {
+            ArgumentValue::ArrayLiteral { elements } => {
+                assert_eq!(elements.len(), 1);
+            }
+            other => panic!("Expected ArrayLiteral, got: {:?}", other),
+        }
+        match &args[1] {
+            ArgumentValue::IntLiteral { value } => assert_eq!(*value, 0),
+            other => panic!("Expected IntLiteral(0), got: {:?}", other),
+        }
+        match &args[2] {
+            ArgumentValue::IntLiteral { value } => assert_eq!(*value, 2),
+            other => panic!("Expected IntLiteral(2), got: {:?}", other),
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Helper function unit tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_strip_string_quotes_single() {
+        assert_eq!(strip_string_quotes("'hello'"), "hello");
+    }
+
+    #[test]
+    fn test_strip_string_quotes_double() {
+        assert_eq!(strip_string_quotes("\"world\""), "world");
+    }
+
+    #[test]
+    fn test_strip_string_quotes_empty() {
+        assert_eq!(strip_string_quotes("''"), "");
+    }
+
+    #[test]
+    fn test_strip_string_quotes_no_quotes() {
+        assert_eq!(strip_string_quotes("bare"), "bare");
+    }
+
+    #[test]
+    fn test_strip_string_quotes_single_char() {
+        assert_eq!(strip_string_quotes("x"), "x");
+    }
+
+    #[test]
+    fn test_parse_php_int_decimal() {
+        assert_eq!(parse_php_int("42"), Some(42));
+        assert_eq!(parse_php_int("0"), Some(0));
+        assert_eq!(parse_php_int("-1"), Some(-1));
+    }
+
+    #[test]
+    fn test_parse_php_int_hex() {
+        assert_eq!(parse_php_int("0xFF"), Some(255));
+        assert_eq!(parse_php_int("0x1A"), Some(26));
+    }
+
+    #[test]
+    fn test_parse_php_int_binary() {
+        assert_eq!(parse_php_int("0b1010"), Some(10));
+        assert_eq!(parse_php_int("0B11"), Some(3));
+    }
+
+    #[test]
+    fn test_parse_php_int_octal() {
+        assert_eq!(parse_php_int("077"), Some(63));
+        assert_eq!(parse_php_int("010"), Some(8));
+    }
+
+    #[test]
+    fn test_parse_php_int_separators() {
+        assert_eq!(parse_php_int("1_000_000"), Some(1_000_000));
+        assert_eq!(parse_php_int("0xFF_FF"), Some(65535));
+    }
+
 }
