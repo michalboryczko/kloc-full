@@ -5,6 +5,8 @@
 use std::path::PathBuf;
 use std::process::Command;
 use scip_php_rust::discovery::discover_php_files;
+use scip_php_rust::names::FileNameResolver;
+use scip_php_rust::parser::PhpParser;
 
 fn rust_binary() -> PathBuf {
     // Use the built binary from the current workspace
@@ -178,4 +180,44 @@ fn test_file_discovery_reference_project() {
     for f in &files.project {
         assert_eq!(f.extension().unwrap(), "php");
     }
+}
+
+/// Test name resolution against the use_statements.php fixture.
+#[test]
+fn test_name_resolution_fixture() {
+    let fixture_path = fixtures_dir().join("use_statements.php");
+    assert!(fixture_path.exists(), "fixture missing: {:?}", fixture_path);
+
+    let mut parser = PhpParser::new();
+    let parsed = parser
+        .parse_file(&fixture_path)
+        .expect("Failed to parse use_statements.php");
+
+    let mut resolver = FileNameResolver::new();
+    resolver.initialize_from_file(parsed.root(), &parsed.source);
+
+    // Check namespace
+    assert_eq!(resolver.namespace(), "App\\Services");
+
+    // Check imports exist
+    let imports = resolver.resolver().class_imports();
+    assert!(imports.contains_key("User"), "missing User import");
+    assert_eq!(imports["User"].fqn, "App\\Models\\User");
+
+    assert!(imports.contains_key("Logger"), "missing Logger import");
+    assert_eq!(imports["Logger"].fqn, "Psr\\Log\\LoggerInterface");
+
+    assert!(imports.contains_key("Greetable"), "missing Greetable import");
+    assert_eq!(imports["Greetable"].fqn, "App\\Contracts\\Greetable");
+
+    // Check resolution
+    assert_eq!(resolver.resolve_class("User"), "App\\Models\\User");
+    assert_eq!(
+        resolver.resolve_class("UserService"),
+        "App\\Services\\UserService"
+    );
+    assert_eq!(
+        resolver.resolve_class("Logger"),
+        "Psr\\Log\\LoggerInterface"
+    );
 }

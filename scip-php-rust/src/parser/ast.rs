@@ -133,7 +133,7 @@ pub fn classify_node<'a>(node: Node<'a>, source: &'a [u8]) -> PhpNode<'a> {
         // Definition nodes
         "const_declaration" => PhpNode::ClassConst(ClassConstNode::new(node, source)),
         "enum_case" => PhpNode::EnumCase(EnumCaseNode::new(node, source)),
-        "simple_parameter" | "property_promotion_parameter" => {
+        "simple_parameter" | "property_promotion_parameter" | "variadic_parameter" => {
             PhpNode::Param(ParamNode::new(node, source))
         }
         "property_declaration" => PhpNode::Property(PropertyNode::new(node, source)),
@@ -1000,6 +1000,10 @@ impl<'a> StaticPropertyFetchNode<'a> {
         self.node
             .child_by_field_name("name")
             .map(|n| crate::parser::cst::node_text(n, self.source))
+    }
+
+    pub fn property_name_node(&self) -> Option<Node<'a>> {
+        self.node.child_by_field_name("name")
     }
 }
 

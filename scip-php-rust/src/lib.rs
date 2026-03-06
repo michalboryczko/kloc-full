@@ -6,6 +6,7 @@ pub mod composer;
 pub mod output;
 pub mod symbol;
 pub mod discovery;
+pub mod pipeline;
 
 /// Verify that tree-sitter-php is linked correctly.
 ///
