@@ -297,6 +297,54 @@ def inherit(
 
 
 @app.command()
+def context(
+    symbol: str = typer.Argument(..., help="Symbol to get context for"),
+    depth: int = typer.Option(1, "--depth", "-d", help="BFS depth for expansion"),
+    limit: int = typer.Option(100, "--limit", "-l", help="Maximum results per direction"),
+    impl: bool = typer.Option(False, "--impl", "-i", help="Include implementations/overrides"),
+    direct: bool = typer.Option(False, "--direct", help="Direct references only"),
+    with_imports: bool = typer.Option(False, "--with-imports", help="Include PHP imports"),
+    output_json: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
+):
+    """Get bidirectional context: what uses a symbol and what it uses."""
+    from .config import Neo4jConfig
+    from .db.connection import Neo4jConnection
+    from .db.query_runner import QueryRunner
+    from .db.queries.resolve import resolve_symbol as do_resolve
+    from .orchestration.context import execute_context
+    from .output.json_formatter import print_json as do_print_json
+    from .output.console import print_context_tree, context_tree_to_dict
+
+    config = Neo4jConfig.from_env()
+    conn = Neo4jConnection(config)
+    runner = QueryRunner(conn)
+
+    # Resolve symbol first
+    candidates = do_resolve(runner, symbol)
+    if not candidates:
+        console.print(f"[red]Symbol not found: {symbol}[/red]")
+        raise typer.Exit(1)
+
+    try:
+        result = execute_context(
+            runner, symbol,
+            depth=depth, limit=limit,
+            include_impl=impl, direct_only=direct,
+            with_imports=with_imports,
+        )
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+    if output_json:
+        do_print_json(context_tree_to_dict(result))
+    else:
+        print_context_tree(result)
+
+    conn.close()
+
+
+@app.command()
 def overrides(
     query: str = typer.Argument(..., help="Method to find overrides for"),
     direction: str = typer.Option("up", "--direction", "-D", help="Direction: up (parent) or down (children)"),
@@ -328,6 +376,17 @@ def overrides(
         print_overrides_result(result)
 
     conn.close()
+
+
+@app.command("mcp-server")
+def mcp_server(
+    database: str = typer.Option("neo4j", "--database", "-db", help="Neo4j database name"),
+    config: str = typer.Option(None, "--config", help="Path to config JSON with project->database mapping"),
+):
+    """Start MCP server for AI agent integration."""
+    from .server.mcp import run_mcp_server
+
+    run_mcp_server(database=database, config_path=config)
 
 
 if __name__ == "__main__":
