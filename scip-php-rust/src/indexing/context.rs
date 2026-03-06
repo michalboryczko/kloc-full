@@ -5,6 +5,7 @@ use std::path::Path;
 use crate::composer::Composer;
 use crate::indexing::calls::{CallRecord, ValueRecord};
 use crate::indexing::expression_tracker::ExpressionTracker;
+use crate::indexing::locals::LocalVariableTracker;
 use crate::names::resolver::NameResolver;
 use crate::output::scip::{Occurrence, Relationship, SymbolInformation, symbol_roles};
 use crate::symbol::namer::SymbolNamer;
@@ -36,6 +37,9 @@ pub struct IndexingContext<'a> {
 
     // Expression tracker for call/value records
     pub expression_tracker: ExpressionTracker,
+
+    // Local variable tracker
+    pub local_tracker: LocalVariableTracker,
 
     // Local variable counter
     pub local_counter: u32,
@@ -78,6 +82,7 @@ impl<'a> IndexingContext<'a> {
             calls: Vec::new(),
             values: Vec::new(),
             expression_tracker: ExpressionTracker::new(),
+            local_tracker: LocalVariableTracker::new(),
             local_counter: 0,
             type_db,
             composer,
@@ -147,7 +152,24 @@ impl<'a> IndexingContext<'a> {
     }
 
     /// Consume the context and return the collected file result.
-    pub fn into_result(self) -> FileResult {
+    pub fn into_result(mut self) -> FileResult {
+        // Convert local variable occurrences into SCIP occurrences
+        for local_occ in self.local_tracker.local_occurrences.drain(..) {
+            let role = if local_occ.is_definition {
+                symbol_roles::DEFINITION
+            } else {
+                symbol_roles::REFERENCE
+            };
+            self.occurrences.push(Occurrence {
+                range: local_occ.range,
+                symbol: local_occ.symbol,
+                symbol_roles: role,
+                override_documentation: Vec::new(),
+                diagnostics: Vec::new(),
+                enclosing_range: Vec::new(),
+            });
+        }
+
         FileResult {
             relative_path: self.relative_path,
             occurrences: self.occurrences,

@@ -7,11 +7,13 @@ pub mod calls;
 pub mod context;
 pub mod definitions;
 pub mod expression_tracker;
+pub mod locals;
 pub mod references;
 
 // Re-exports
 pub use context::{FileResult, IndexingContext};
 
+use crate::indexing::locals::ScopeKind;
 use crate::names::resolver::NameResolver;
 use crate::parser::ast::{classify_node, PhpNode};
 use crate::parser::cst::{child_by_kind, find_all, node_text};
@@ -36,6 +38,9 @@ pub fn index_file(parsed: &ParsedFile, ctx: &mut IndexingContext) {
     let mut scope_depth: u32 = 0;
     // Stack to track which nodes pushed a scope, so we pop on exit.
     let mut scope_pushed_stack: Vec<bool> = Vec::new();
+    // Parallel stack: tracks whether a local variable scope was pushed for each node.
+    // Values: 0 = no local scope, 1 = normal scope pushed, 2 = arrow function (no-op)
+    let mut local_scope_stack: Vec<u8> = Vec::new();
 
     let mut did_enter = true;
 
@@ -44,8 +49,9 @@ pub fn index_file(parsed: &ParsedFile, ctx: &mut IndexingContext) {
             let node = cursor.node();
 
             // Enter: classify and potentially push scope
-            let pushed = enter_node(node, source, ctx);
+            let (pushed, local_kind) = enter_node(node, source, ctx);
             scope_pushed_stack.push(pushed);
+            local_scope_stack.push(local_kind);
             if pushed {
                 scope_depth += 1;
             }
@@ -61,6 +67,13 @@ pub fn index_file(parsed: &ParsedFile, ctx: &mut IndexingContext) {
             if pushed {
                 ctx.scope.pop();
                 scope_depth -= 1;
+            }
+        }
+        if let Some(local_kind) = local_scope_stack.pop() {
+            match local_kind {
+                1 => ctx.local_tracker.exit_scope(),
+                2 => ctx.local_tracker.exit_arrow_function(),
+                _ => {}
             }
         }
 
@@ -182,11 +195,13 @@ fn resolve_phpdoc_type_to_fqn(type_expr: &str, ctx: &IndexingContext) -> Option<
 
 /// Process a node on entry during traversal.
 ///
-/// Returns `true` if a scope frame was pushed (must be popped on exit).
-fn enter_node(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext) -> bool {
+/// Returns `(scope_pushed, local_scope_kind)` where:
+/// - `scope_pushed`: true if a ScopeStack frame was pushed (must be popped on exit)
+/// - `local_scope_kind`: 0 = no local scope, 1 = normal scope pushed, 2 = arrow function (no-op)
+fn enter_node(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext) -> (bool, u8) {
     // Skip error nodes to avoid panics on malformed input
     if node.has_error() && node.kind() == "ERROR" {
-        return false;
+        return (false, 0);
     }
 
     let php_node = classify_node(node, source);
@@ -196,7 +211,7 @@ fn enter_node(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext)
         PhpNode::Namespace(ns) => {
             let ns_name = ns.name();
             ctx.scope.push_namespace(ns_name.to_string());
-            return true;
+            return (true, 0);
         }
 
         PhpNode::ClassLike(class_node) => {
@@ -221,7 +236,7 @@ fn enter_node(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext)
 
             // Call stub definition emitter
             definitions::emit_class_definition(class_node, ctx);
-            return true;
+            return (true, 0);
         }
 
         PhpNode::Method(method_node) => {
@@ -229,13 +244,16 @@ fn enter_node(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext)
             let is_static = method_node.is_static();
             ctx.scope.push_method(name, is_static);
 
+            // Push local variable scope
+            ctx.local_tracker.enter_scope(ScopeKind::Function);
+
             // Clear and populate var_types from parameter type hints + PHPDoc fallback
             ctx.var_types.clear();
             populate_var_types_from_params(method_node.parameters(), method_node.node, ctx);
 
             // Call stub definition emitter
             definitions::emit_method_definition(method_node, ctx);
-            return true;
+            return (true, 1);
         }
 
         PhpNode::Function(func_node) => {
@@ -249,13 +267,16 @@ fn enter_node(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext)
             };
             ctx.scope.push_function(fqn);
 
+            // Push local variable scope
+            ctx.local_tracker.enter_scope(ScopeKind::Function);
+
             // Clear and populate var_types from parameter type hints + PHPDoc fallback
             ctx.var_types.clear();
             populate_var_types_from_params(func_node.parameters(), func_node.node, ctx);
 
             // Call stub definition emitter
             definitions::emit_function_definition(func_node, ctx);
-            return true;
+            return (true, 1);
         }
 
         PhpNode::Closure(ref closure_node) => {
@@ -265,23 +286,36 @@ fn enter_node(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext)
 
             ctx.scope.push_closure();
 
+            // Push local variable scope
+            ctx.local_tracker.enter_scope(ScopeKind::Closure);
+
             // Non-static closures inherit $this from the enclosing class
             if !is_static_closure {
                 if let Some(class_fqn) = enclosing_class {
                     ctx.var_types.set("this", class_fqn);
                 }
             }
-            return true;
+            return (true, 1);
         }
 
         PhpNode::ArrowFunction(_) => {
             ctx.scope.push_arrow_function();
-            return true;
+            ctx.local_tracker.enter_arrow_function();
+            return (true, 2);
         }
 
         // --- Definition nodes: call stub emitters ---
         PhpNode::Param(param_node) => {
             definitions::emit_param_definition(param_node, ctx);
+            // Register param in local tracker (the definition occurrence was already
+            // emitted by emit_param_definition; we just need to record it so that
+            // subsequent references resolve correctly).
+            let param_name = param_node.name();
+            // The local_id was allocated by emit_param_definition via next_local_id().
+            // It's local_counter - 1 since it was just incremented.
+            if ctx.local_counter > 0 {
+                ctx.local_tracker.register_param(param_name, ctx.local_counter - 1);
+            }
         }
 
         PhpNode::Property(prop_node) => {
@@ -315,6 +349,9 @@ fn enter_node(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext)
                         }
                     }
                 }
+
+                // Define LHS variable(s) in local tracker
+                detect_assignment_lhs(left, source, ctx);
             }
             references::handle_expression(&php_node, ctx);
         }
@@ -445,12 +482,18 @@ fn enter_node(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext)
             );
         }
         PhpNode::Variable(_)
-        | PhpNode::Foreach(_)
         | PhpNode::Name(_) => {
             references::handle_expression(&php_node, ctx);
         }
 
-        // Everything else — check for trait use declarations, instanceof, catch
+        PhpNode::Foreach(ref foreach_node) => {
+            references::handle_expression(&php_node, ctx);
+            // Define foreach key and value variables
+            detect_foreach_variables(foreach_node, source, ctx);
+        }
+
+        // Everything else — check for trait use declarations, instanceof, catch,
+        // global declarations, static variable declarations
         _ => {
             // Handle `use Trait1, Trait2;` inside class bodies (use_declaration node)
             if node.kind() == "use_declaration" && ctx.scope.in_class_body() {
@@ -467,14 +510,216 @@ fn enter_node(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext)
                 }
             }
 
-            // Handle `catch (Exception $e)` — emit reference for exception class
+            // Handle `catch (Exception $e)` — emit reference for exception class + define variable
             if node.kind() == "catch_clause" {
                 references::handle_catch_clause(node, ctx);
+                detect_catch_variable(node, source, ctx);
+            }
+
+            // Handle `global $x, $y;`
+            if node.kind() == "global_declaration" {
+                detect_global_variables(node, source, ctx);
+            }
+
+            // Handle `static $x = 0, $y;`
+            if node.kind() == "static_variable_declaration" {
+                detect_static_variables(node, source, ctx);
             }
         }
     }
 
-    false
+    (false, 0)
+}
+
+/// Detect variable definitions on the left-hand side of an assignment.
+fn detect_assignment_lhs(lhs: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext) {
+    match lhs.kind() {
+        "variable_name" => {
+            // Skip variable variables ($$var): variable_name containing variable_name
+            if lhs.named_child_count() > 0 {
+                if let Some(child) = lhs.named_child(0) {
+                    if child.kind() == "variable_name" {
+                        return;
+                    }
+                }
+            }
+            let name = node_text(lhs, source).trim_start_matches('$');
+            let range = locals::node_to_scip_range(lhs);
+            ctx.local_tracker.define_variable(name, range, &mut ctx.local_counter);
+        }
+        "list_literal" | "array_creation_expression" => {
+            locals::define_destructuring_variables(
+                lhs,
+                source,
+                &mut ctx.local_tracker,
+                &mut ctx.local_counter,
+            );
+        }
+        _ => {} // property access, array access, etc. — not local variable definitions
+    }
+}
+
+/// Detect foreach key and value variable definitions.
+///
+/// tree-sitter-php foreach_statement CST structure:
+///   foreach ( $expr as $value ) { ... }
+///     -> named children: variable_name($expr), variable_name($value), compound_statement
+///   foreach ( $expr as $key => $value ) { ... }
+///     -> named children: variable_name($expr), pair($key => $value), compound_statement
+fn detect_foreach_variables(
+    foreach_node: &crate::parser::ast::ForeachNode,
+    source: &[u8],
+    ctx: &mut IndexingContext,
+) {
+    let node = foreach_node.node;
+
+    // Walk named children to find the foreach value variable(s).
+    // Skip the first named child (the iterable expression).
+    // The second named child is either:
+    //   - variable_name (simple: foreach ($items as $value))
+    //   - pair (key-value: foreach ($items as $key => $value))
+    //   - by_ref (reference: foreach ($items as &$value))
+    //   - list_literal/array_creation_expression (destructuring)
+    for i in 1..node.named_child_count() {
+        let child = match node.named_child(i) {
+            Some(c) => c,
+            None => continue,
+        };
+
+        match child.kind() {
+            "pair" => {
+                // Key => Value: named children are [key_var, value_var]
+                // pair children: <key> "=>" <value>
+                if let Some(key_node) = child.named_child(0) {
+                    define_foreach_var(key_node, source, ctx);
+                }
+                if let Some(value_node) = child.named_child(1) {
+                    define_foreach_var(value_node, source, ctx);
+                }
+                return;
+            }
+            "variable_name" => {
+                let name = node_text(child, source).trim_start_matches('$');
+                let range = locals::node_to_scip_range(child);
+                ctx.local_tracker.define_variable(name, range, &mut ctx.local_counter);
+                return;
+            }
+            "by_ref" => {
+                // foreach ($items as &$value)
+                for j in 0..child.named_child_count() {
+                    if let Some(var_node) = child.named_child(j) {
+                        if var_node.kind() == "variable_name" {
+                            let name = node_text(var_node, source).trim_start_matches('$');
+                            let range = locals::node_to_scip_range(var_node);
+                            ctx.local_tracker.define_variable(name, range, &mut ctx.local_counter);
+                        }
+                    }
+                }
+                return;
+            }
+            "list_literal" | "array_creation_expression" => {
+                locals::define_destructuring_variables(
+                    child,
+                    source,
+                    &mut ctx.local_tracker,
+                    &mut ctx.local_counter,
+                );
+                return;
+            }
+            "compound_statement" => {
+                // Body — stop looking
+                return;
+            }
+            _ => {}
+        }
+    }
+}
+
+/// Helper to define a foreach key or value variable from a node that may be
+/// a variable_name, by_ref, or destructuring expression.
+fn define_foreach_var(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext) {
+    match node.kind() {
+        "variable_name" => {
+            let name = node_text(node, source).trim_start_matches('$');
+            let range = locals::node_to_scip_range(node);
+            ctx.local_tracker.define_variable(name, range, &mut ctx.local_counter);
+        }
+        "by_ref" => {
+            for i in 0..node.named_child_count() {
+                if let Some(var_node) = node.named_child(i) {
+                    if var_node.kind() == "variable_name" {
+                        let name = node_text(var_node, source).trim_start_matches('$');
+                        let range = locals::node_to_scip_range(var_node);
+                        ctx.local_tracker.define_variable(name, range, &mut ctx.local_counter);
+                    }
+                }
+            }
+        }
+        "list_literal" | "array_creation_expression" => {
+            locals::define_destructuring_variables(
+                node,
+                source,
+                &mut ctx.local_tracker,
+                &mut ctx.local_counter,
+            );
+        }
+        _ => {}
+    }
+}
+
+/// Detect catch clause exception variable definition.
+fn detect_catch_variable(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext) {
+    // catch_clause: named children include the type(s) and optionally a variable_name
+    for i in 0..node.named_child_count() {
+        if let Some(child) = node.named_child(i) {
+            if child.kind() == "variable_name" {
+                let name = node_text(child, source).trim_start_matches('$');
+                let range = locals::node_to_scip_range(child);
+                ctx.local_tracker.define_variable(name, range, &mut ctx.local_counter);
+                break;
+            }
+        }
+    }
+}
+
+/// Detect global declaration variable definitions: `global $x, $y;`
+fn detect_global_variables(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext) {
+    for i in 0..node.named_child_count() {
+        if let Some(child) = node.named_child(i) {
+            if child.kind() == "variable_name" {
+                let name = node_text(child, source).trim_start_matches('$');
+                let range = locals::node_to_scip_range(child);
+                ctx.local_tracker.define_variable(name, range, &mut ctx.local_counter);
+            }
+        }
+    }
+}
+
+/// Detect static variable declaration definitions: `static $x = 0, $y;`
+fn detect_static_variables(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext) {
+    for i in 0..node.named_child_count() {
+        if let Some(child) = node.named_child(i) {
+            // Each child is a static_variable_declaration element
+            // Look for variable_name within
+            if child.kind() == "variable_name" {
+                let name = node_text(child, source).trim_start_matches('$');
+                let range = locals::node_to_scip_range(child);
+                ctx.local_tracker.define_variable(name, range, &mut ctx.local_counter);
+            } else {
+                // Might be wrapped in another node — look for variable_name children
+                for j in 0..child.named_child_count() {
+                    if let Some(grandchild) = child.named_child(j) {
+                        if grandchild.kind() == "variable_name" {
+                            let name = node_text(grandchild, source).trim_start_matches('$');
+                            let range = locals::node_to_scip_range(grandchild);
+                            ctx.local_tracker.define_variable(name, range, &mut ctx.local_counter);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -835,5 +1080,124 @@ class Processor {
             !refs.is_empty(),
             "Expected method reference for $svc->process() via PHPDoc @param fallback"
         );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Local variable tracking integration tests
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_local_var_simple_assignment() {
+        let source = r#"<?php
+function run(): void {
+    $x = 'hello';
+    $x = 'world';
+}
+"#;
+        let result = setup_and_index(source);
+        let locals: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.starts_with("local "))
+            .collect();
+        // Expect: param-less function, so $x first = definition, $x second = reference
+        let defs: Vec<_> = locals.iter()
+            .filter(|o| o.symbol_roles == crate::output::scip::symbol_roles::DEFINITION)
+            .collect();
+        let refs: Vec<_> = locals.iter()
+            .filter(|o| o.symbol_roles == crate::output::scip::symbol_roles::REFERENCE)
+            .collect();
+        assert!(!defs.is_empty(), "Expected at least one local definition for $x");
+        assert!(!refs.is_empty(), "Expected at least one local reference for $x re-assignment");
+    }
+
+    #[test]
+    fn test_local_var_this_not_tracked() {
+        let source = r#"<?php
+class Foo {
+    public function run(): void {
+        $this->bar();
+    }
+}
+"#;
+        let result = setup_and_index(source);
+        let this_locals: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.starts_with("local ") && o.range[0] == 3) // line 3: $this->bar()
+            .collect();
+        // $this should NOT be tracked as a local variable
+        assert!(this_locals.is_empty(), "Expected $this NOT to be tracked as local variable");
+    }
+
+    #[test]
+    fn test_local_var_foreach_key_value() {
+        let source = r#"<?php
+function run(): void {
+    $items = [];
+    foreach ($items as $key => $value) {
+        echo $key;
+    }
+}
+"#;
+        let result = setup_and_index(source);
+        let local_defs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.starts_with("local ") && o.symbol_roles == crate::output::scip::symbol_roles::DEFINITION)
+            .collect();
+        // Should have definitions for $items, $key, $value (at minimum)
+        assert!(local_defs.len() >= 3,
+            "Expected at least 3 local definitions ($items, $key, $value), got {}",
+            local_defs.len());
+    }
+
+    #[test]
+    fn test_local_var_catch_variable() {
+        let source = r#"<?php
+function run(): void {
+    try {
+        throw new \Exception();
+    } catch (\Exception $e) {
+        echo $e;
+    }
+}
+"#;
+        let result = setup_and_index(source);
+        let catch_defs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.starts_with("local ") && o.symbol_roles == crate::output::scip::symbol_roles::DEFINITION)
+            .collect();
+        // Should have at least a definition for $e
+        assert!(!catch_defs.is_empty(), "Expected local definition for catch variable $e");
+    }
+
+    #[test]
+    fn test_local_var_list_destructuring() {
+        let source = r#"<?php
+function run(): void {
+    [$first, $second] = [1, 2];
+}
+"#;
+        let result = setup_and_index(source);
+        let local_defs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.starts_with("local ") && o.symbol_roles == crate::output::scip::symbol_roles::DEFINITION)
+            .collect();
+        assert!(local_defs.len() >= 2,
+            "Expected at least 2 local definitions ($first, $second), got {}",
+            local_defs.len());
+    }
+
+    #[test]
+    fn test_local_var_param_registered() {
+        let source = r#"<?php
+function greet(string $name): void {
+    $greeting = 'Hello ' . $name;
+}
+"#;
+        let result = setup_and_index(source);
+        // $name param definition was emitted by emit_param_definition (Task 10)
+        // $greeting should be a new local definition
+        // $name in the function body should resolve as a reference (not a new definition)
+        let local_defs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.starts_with("local ") && o.symbol_roles == crate::output::scip::symbol_roles::DEFINITION)
+            .collect();
+        // At least: $name param def + $greeting def = 2 definitions
+        assert!(local_defs.len() >= 2,
+            "Expected at least 2 local definitions ($name param + $greeting), got {}",
+            local_defs.len());
     }
 }

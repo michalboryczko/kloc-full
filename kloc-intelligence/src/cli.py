@@ -111,5 +111,59 @@ def import_sot(
     conn.close()
 
 
+@app.command()
+def resolve(
+    query: str = typer.Argument(..., help="Symbol to resolve"),
+    output_json: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
+):
+    """Resolve a symbol to its definition(s)."""
+    import json as json_mod
+
+    from .config import Neo4jConfig
+    from .db.connection import Neo4jConnection
+    from .db.query_runner import QueryRunner
+    from .db.queries.resolve import resolve_symbol as do_resolve
+
+    config = Neo4jConfig.from_env()
+    conn = Neo4jConnection(config)
+    runner = QueryRunner(conn)
+    candidates = do_resolve(runner, query)
+
+    if output_json:
+        result = {
+            "query": query,
+            "candidates": [
+                {
+                    "id": n.node_id,
+                    "kind": n.kind,
+                    "name": n.name,
+                    "fqn": n.fqn,
+                    "file": n.file,
+                    "line": n.start_line + 1 if n.start_line is not None else None,
+                }
+                for n in candidates
+            ],
+        }
+        console.print(json_mod.dumps(result, indent=2))
+    else:
+        if not candidates:
+            console.print(f"No matches for: {query}")
+        else:
+            table = Table(title=f"Resolve: {query}")
+            table.add_column("Kind", style="cyan")
+            table.add_column("FQN", style="green")
+            table.add_column("File", style="yellow")
+            table.add_column("Line")
+            for n in candidates:
+                table.add_row(
+                    n.kind,
+                    n.fqn,
+                    n.file or "",
+                    str(n.start_line + 1) if n.start_line is not None else "",
+                )
+            console.print(table)
+    conn.close()
+
+
 if __name__ == "__main__":
     app()
