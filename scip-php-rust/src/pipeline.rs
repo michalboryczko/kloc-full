@@ -66,10 +66,12 @@ pub fn collect_types_parallel(
     type_db: &TypeDatabase,
 ) {
     files.par_iter().for_each(|file| {
-        let source = match std::fs::read_to_string(file) {
+        let raw = match std::fs::read_to_string(file) {
             Ok(s) => s,
             Err(_) => return,
         };
+        // Strip UTF-8 BOM if present
+        let source = raw.strip_prefix('\u{FEFF}').unwrap_or(&raw);
 
         let mut parser = PhpParser::new();
         let parsed = match parser.parse(&source, file.as_path()) {
@@ -100,7 +102,7 @@ pub fn index_files_parallel(
     project_root: &Path,
 ) -> Vec<FileResult> {
     files.par_iter().filter_map(|file| {
-        let source = match std::fs::read(file) {
+        let raw = match std::fs::read(file) {
             Ok(s) => s,
             Err(e) => {
                 eprintln!("Warning: cannot read {}: {}", file.display(), e);
@@ -108,7 +110,14 @@ pub fn index_files_parallel(
             }
         };
 
-        let source_str = match std::str::from_utf8(&source) {
+        // Strip UTF-8 BOM if present
+        let source = if raw.starts_with(&[0xEF, 0xBB, 0xBF]) {
+            &raw[3..]
+        } else {
+            &raw[..]
+        };
+
+        let source_str = match std::str::from_utf8(source) {
             Ok(s) => s,
             Err(_) => {
                 eprintln!("Warning: non-UTF-8 content in {}", file.display());
@@ -537,5 +546,100 @@ class Broken {
         assert_eq!(results[0].relative_path, "src/Bar.php");
         assert_eq!(results[1].relative_path, "src/Baz.php");
         assert_eq!(results[2].relative_path, "src/Foo.php");
+    }
+
+    #[test]
+    fn test_empty_file() {
+        let (dir, file_path) = setup_project_with_file("<?php\n");
+        let type_db = TypeDatabase::new();
+        let composer = Composer::load(dir.path()).unwrap();
+        let namer = SymbolNamer::new("test/project", "1.0.0");
+        let result = index_single_file(&file_path, &type_db, &composer, &namer, dir.path()).unwrap();
+        assert!(result.occurrences.is_empty());
+    }
+
+    #[test]
+    fn test_syntax_error_no_panic() {
+        let (dir, file_path) = setup_project_with_file("<?php\nclass Broken {\n  public function ( {\n  }\n}\n");
+        let type_db = TypeDatabase::new();
+        let composer = Composer::load(dir.path()).unwrap();
+        let namer = SymbolNamer::new("test/project", "1.0.0");
+        let result = index_single_file(&file_path, &type_db, &composer, &namer, dir.path());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_bom_handling() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::write(dir.path().join("composer.json"), r#"{"name": "test/project", "version": "1.0.0"}"#).unwrap();
+        fs::create_dir_all(dir.path().join("src")).unwrap();
+        // Write file with UTF-8 BOM
+        let mut content = vec![0xEF, 0xBB, 0xBF]; // BOM
+        content.extend_from_slice(b"<?php\nclass BomClass {}\n");
+        fs::write(dir.path().join("src/Bom.php"), &content).unwrap();
+
+        let files = vec![dir.path().join("src/Bom.php")];
+        let type_db = Arc::new(TypeDatabase::new());
+        collect_types_parallel(&files, &type_db);
+
+        assert!(type_db.has_class("BomClass"), "BOM file should still be parseable");
+    }
+
+    #[test]
+    fn test_php80_features() {
+        let source = r#"<?php
+// Named arguments, match expression, nullsafe
+class User {
+    public ?string $name;
+    public function getName(): ?string { return $this->name; }
+}
+$user = new User();
+$city = $user?->getName();
+$label = match (1) {
+    1 => 'one',
+    default => 'other',
+};
+"#;
+        let (dir, file_path) = setup_project_with_file(source);
+        let type_db = TypeDatabase::new();
+        let composer = Composer::load(dir.path()).unwrap();
+        let namer = SymbolNamer::new("test/project", "1.0.0");
+        let result = index_single_file(&file_path, &type_db, &composer, &namer, dir.path());
+        assert!(result.is_ok(), "PHP 8.0 features should not panic");
+    }
+
+    #[test]
+    fn test_php81_enum() {
+        let source = r#"<?php
+enum Status: string {
+    case Active = 'active';
+    case Inactive = 'inactive';
+    public function label(): string { return $this->value; }
+}
+"#;
+        let (dir, file_path) = setup_project_with_file(source);
+        let type_db = TypeDatabase::new();
+        let composer = Composer::load(dir.path()).unwrap();
+        let namer = SymbolNamer::new("test/project", "1.0.0");
+        let result = index_single_file(&file_path, &type_db, &composer, &namer, dir.path());
+        assert!(result.is_ok(), "PHP 8.1 enums should not panic");
+    }
+
+    #[test]
+    fn test_php82_readonly_class() {
+        let source = r#"<?php
+readonly class ImmutableValue {
+    public function __construct(
+        public string $value,
+        public int $count,
+    ) {}
+}
+"#;
+        let (dir, file_path) = setup_project_with_file(source);
+        let type_db = TypeDatabase::new();
+        let composer = Composer::load(dir.path()).unwrap();
+        let namer = SymbolNamer::new("test/project", "1.0.0");
+        let result = index_single_file(&file_path, &type_db, &composer, &namer, dir.path());
+        assert!(result.is_ok(), "PHP 8.2 readonly class should not panic");
     }
 }
