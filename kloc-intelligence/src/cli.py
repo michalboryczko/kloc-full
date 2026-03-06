@@ -231,5 +231,104 @@ def deps(
     conn.close()
 
 
+@app.command()
+def owners(
+    query: str = typer.Argument(..., help="Symbol to find owners of"),
+    output_json: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
+):
+    """Show containment chain for a symbol (Method -> Class -> File)."""
+    from .config import Neo4jConfig
+    from .db.connection import Neo4jConnection
+    from .db.query_runner import QueryRunner
+    from .orchestration.simple import run_owners
+    from .output.json_formatter import print_json as do_print_json
+    from .output.console import print_owners_result
+
+    config = Neo4jConfig.from_env()
+    conn = Neo4jConnection(config)
+    runner = QueryRunner(conn)
+
+    try:
+        result = run_owners(runner, query)
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+    if output_json:
+        do_print_json(result.to_dict())
+    else:
+        print_owners_result(result)
+
+    conn.close()
+
+
+@app.command()
+def inherit(
+    query: str = typer.Argument(..., help="Symbol to find inheritance tree of"),
+    direction: str = typer.Option("up", "--direction", "-D", help="Direction: up (ancestors) or down (descendants)"),
+    depth: int = typer.Option(5, "--depth", "-d", help="Maximum BFS depth"),
+    limit: int = typer.Option(100, "--limit", "-l", help="Maximum total results"),
+    output_json: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
+):
+    """Show inheritance tree for a class/interface/trait/enum."""
+    from .config import Neo4jConfig
+    from .db.connection import Neo4jConnection
+    from .db.query_runner import QueryRunner
+    from .orchestration.simple import run_inherit
+    from .output.json_formatter import print_json as do_print_json
+    from .output.console import print_inherit_result
+
+    config = Neo4jConfig.from_env()
+    conn = Neo4jConnection(config)
+    runner = QueryRunner(conn)
+
+    try:
+        result = run_inherit(runner, query, direction=direction, depth=depth, limit=limit)
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+    if output_json:
+        do_print_json(result.to_dict())
+    else:
+        print_inherit_result(result)
+
+    conn.close()
+
+
+@app.command()
+def overrides(
+    query: str = typer.Argument(..., help="Method to find overrides for"),
+    direction: str = typer.Option("up", "--direction", "-D", help="Direction: up (parent) or down (children)"),
+    depth: int = typer.Option(5, "--depth", "-d", help="Maximum BFS depth"),
+    limit: int = typer.Option(100, "--limit", "-l", help="Maximum total results"),
+    output_json: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
+):
+    """Show override chain for a method."""
+    from .config import Neo4jConfig
+    from .db.connection import Neo4jConnection
+    from .db.query_runner import QueryRunner
+    from .orchestration.simple import run_overrides
+    from .output.json_formatter import print_json as do_print_json
+    from .output.console import print_overrides_result
+
+    config = Neo4jConfig.from_env()
+    conn = Neo4jConnection(config)
+    runner = QueryRunner(conn)
+
+    try:
+        result = run_overrides(runner, query, direction=direction, depth=depth, limit=limit)
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+    if output_json:
+        do_print_json(result.to_dict())
+    else:
+        print_overrides_result(result)
+
+    conn.close()
+
+
 if __name__ == "__main__":
     app()
