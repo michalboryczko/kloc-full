@@ -339,7 +339,6 @@ def _build_access_chain(
     src_call_kind = rec.get("src_call_kind")
     prop_fqn = rec.get("prop_fqn")
     prop_name = rec.get("prop_name")
-    prop_kind = rec.get("prop_kind")
     src_recv_value_kind = rec.get("src_recv_value_kind")
     src_recv_name = rec.get("src_recv_name")
 
@@ -446,7 +445,6 @@ def build_generic_used_by(
             source_signature = r.get("source_signature")
             edge_file = r.get("edge_file")
             edge_line = r.get("edge_line")
-            containing_method_id = r.get("containing_method_id")
 
             # Location: prefer edge location, fall back to source node
             file = edge_file or source_file
@@ -546,7 +544,6 @@ def build_generic_used_by(
 
             # Determine entry FQN/kind — for source nodes
             entry_fqn = source_fqn
-            entry_kind = source_kind
 
             # If source is a Method, format FQN with ()
             if source_kind == "Method" and not entry_fqn.endswith("()"):

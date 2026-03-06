@@ -628,9 +628,6 @@ def build_class_used_by_depth_callers(
         )
         if uses_edge and uses_edge.get("loc_line") is not None:
             call_line = uses_edge["loc_line"]
-            entry_file = uses_edge.get("loc_file") or r.get("caller_file")
-        else:
-            entry_file = r.get("caller_file")
 
         # Determine refType based on depth
         if depth >= 3:
@@ -1275,7 +1272,6 @@ def build_class_used_by(
                 entry.children.sort(key=lambda e: (e.file or "", e.line if e.line is not None else 0))
 
         # Expand property_access entries with per-method children
-        short_class = node.fqn.rsplit("\\", 1)[-1] if "\\" in node.fqn else node.fqn
         for entry in result_property_access:
             prop_fqn = entry.node_id  # We stored prop_fqn as node_id
             groups = bucket.property_access_groups.get(prop_fqn, [])
@@ -1292,13 +1288,13 @@ def build_class_used_by(
                 class_part = method_fqn.split("::")[0].split("\\")[-1] if "::" in method_fqn else ""
                 child_display = f"{class_part}::{method_short}" if class_part else method_short
 
-                lines = [l for l in group["lines"] if l is not None]
+                lines = [ln for ln in group["lines"] if ln is not None]
                 lines_sorted = sorted(lines)
                 first_line = lines_sorted[0] if lines_sorted else None
 
                 sites = None
                 if len(lines_sorted) > 1:
-                    sites = [{"line": l} for l in lines_sorted]
+                    sites = [{"line": ln} for ln in lines_sorted]
 
                 child_entry = ContextEntry(
                     depth=2,

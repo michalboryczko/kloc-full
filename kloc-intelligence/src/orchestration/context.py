@@ -35,7 +35,6 @@ from .interface_context import (
 )
 from .method_context import (
     build_execution_flow,
-    build_method_used_by,
     get_type_references,
 )
 from .generic_context import build_generic_used_by
@@ -48,7 +47,6 @@ from .property_context import (
     build_property_uses,
 )
 from ..logic.polymorphic import (
-    get_implementations_for_node,
     get_concrete_implementors,
 )
 
@@ -225,7 +223,6 @@ def _build_outgoing_tree(
     if kind in ("Method", "Function"):
         cycle_guard: set[str] = {target.node_id}
         count: list[int] = [0]
-        shown_impl_for: set[str] = set()
 
         # Get structural type references
         type_entries = get_type_references(
