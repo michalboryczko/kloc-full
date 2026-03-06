@@ -6,6 +6,7 @@
 pub mod collector;
 pub mod debug_dump;
 pub mod phpdoc;
+pub mod resolver;
 pub mod upper_chain;
 
 use std::collections::HashMap;
@@ -256,6 +257,26 @@ impl TypeDatabase {
             let upper_key = format!("{}::${}", upper, prop_name);
             if self.property_types.contains_key(&upper_key) {
                 return Some(upper.clone());
+            }
+        }
+
+        None
+    }
+
+    /// Resolve property type by walking the transitive upper chain.
+    /// Returns the property type from the first class that defines the property.
+    pub fn resolve_property_type(&self, class_fqn: &str, prop_name: &str) -> Option<&str> {
+        let fqn = Self::normalize_fqn(class_fqn);
+
+        // Check the class itself first
+        if let Some(pt) = self.get_property_type(fqn, prop_name) {
+            return Some(pt);
+        }
+
+        // Walk transitive uppers
+        for upper in self.get_all_uppers(fqn) {
+            if let Some(pt) = self.get_property_type(upper, prop_name) {
+                return Some(pt);
             }
         }
 
@@ -520,5 +541,76 @@ mod tests {
         let db = TypeDatabase::with_capacity(100, 500);
         assert!(db.defs.capacity() >= 100);
         assert!(db.method_params.capacity() >= 500);
+    }
+
+    #[test]
+    fn test_method_found_via_trait() {
+        let mut db = TypeDatabase::new();
+
+        db.insert_def("App\\Models\\User", make_class_def(SymbolKind::Class));
+        db.insert_def("App\\Models\\BaseModel", make_class_def(SymbolKind::Class));
+        db.insert_def("App\\Traits\\Timestamps", make_class_def(SymbolKind::Trait));
+
+        db.add_uppers(
+            "App\\Models\\User",
+            vec![
+                "App\\Models\\BaseModel".to_string(),
+                "App\\Traits\\Timestamps".to_string(),
+            ],
+        );
+
+        db.add_method("App\\Traits\\Timestamps", "touch", Some("void".to_string()), vec![]);
+
+        upper_chain::build_transitive_uppers(&mut db);
+
+        assert_eq!(
+            db.resolve_method("App\\Models\\User", "touch"),
+            Some("App\\Traits\\Timestamps".to_string())
+        );
+    }
+
+    #[test]
+    fn test_circular_trait_guard() {
+        let mut db = TypeDatabase::new();
+
+        db.insert_def("TraitA", make_class_def(SymbolKind::Trait));
+        db.insert_def("TraitB", make_class_def(SymbolKind::Trait));
+
+        db.add_uppers("TraitA", vec!["TraitB".to_string()]);
+        db.add_uppers("TraitB", vec!["TraitA".to_string()]);
+
+        upper_chain::build_transitive_uppers(&mut db);
+
+        // Should return None without panic or infinite loop
+        assert_eq!(db.resolve_method("TraitA", "nonexistent"), None);
+    }
+
+    #[test]
+    fn test_resolve_property_type_through_inheritance() {
+        let mut db = TypeDatabase::new();
+
+        db.insert_def("ChildClass", make_class_def(SymbolKind::Class));
+        db.insert_def("ParentClass", make_class_def(SymbolKind::Class));
+        db.add_uppers("ChildClass", vec!["ParentClass".to_string()]);
+
+        db.add_property("ParentClass", "name", Some("string".to_string()));
+
+        upper_chain::build_transitive_uppers(&mut db);
+
+        assert_eq!(db.resolve_property_type("ChildClass", "name"), Some("string"));
+    }
+
+    #[test]
+    fn test_method_return_type_self_keyword() {
+        let mut db = TypeDatabase::new();
+
+        db.insert_def("Builder", make_class_def(SymbolKind::Class));
+        db.add_method("Builder", "where", Some("self".to_string()), vec![]);
+
+        upper_chain::build_transitive_uppers(&mut db);
+
+        let return_type = db.resolve_method_return_type("Builder", "where");
+        assert_eq!(return_type, Some("self"));
+        // The caller (resolve_expr_type) handles "self" -> current class FQN conversion
     }
 }

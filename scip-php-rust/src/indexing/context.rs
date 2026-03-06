@@ -24,6 +24,8 @@ pub struct IndexingContext<'a> {
     // Per-file mutable state
     pub resolver: NameResolver,
     pub scope: ScopeStack,
+    /// Per-callable variable type map. Reset when entering a new callable scope.
+    pub var_types: crate::types::resolver::VariableTypeMap,
 
     // Output accumulators
     occurrences: Vec<Occurrence>,
@@ -66,6 +68,7 @@ impl<'a> IndexingContext<'a> {
         IndexingContext {
             resolver: NameResolver::new(),
             scope: ScopeStack::new(),
+            var_types: crate::types::resolver::VariableTypeMap::new(),
             occurrences: Vec::new(),
             symbols: Vec::new(),
             calls: Vec::new(),

@@ -107,6 +107,77 @@ fn initialize_resolver(resolver: &mut NameResolver, root: tree_sitter::Node, sou
     }
 }
 
+/// Populate var_types from a formal_parameters node.
+/// Iterates parameter children, resolves type hints to FQNs, skips primitives.
+/// Falls back to PHPDoc @param annotations when native type hints are absent.
+fn populate_var_types_from_params(
+    params_node: Option<tree_sitter::Node>,
+    decl_node: tree_sitter::Node,
+    ctx: &mut IndexingContext,
+) {
+    let params_node = match params_node {
+        Some(n) => n,
+        None => return,
+    };
+
+    // Parse PHPDoc once for fallback
+    let phpdoc = crate::types::phpdoc::get_docblock(decl_node, ctx.source)
+        .map(|doc| crate::types::phpdoc::parse_phpdoc(&doc));
+
+    // Iterate named children — each is a simple_parameter, variadic_parameter, or property_promotion_parameter
+    for i in 0..params_node.named_child_count() {
+        let child = match params_node.named_child(i) {
+            Some(c) => c,
+            None => continue,
+        };
+
+        // Get the parameter name
+        let param_name = match child.child_by_field_name("name") {
+            Some(n) => node_text(n, ctx.source),
+            None => continue,
+        };
+
+        // Try native type hint first
+        let native_fqn = child.child_by_field_name("type").map(|type_node| {
+            crate::types::resolver::resolve_type_node_to_fqn(
+                type_node,
+                ctx.source,
+                &ctx.resolver,
+            )
+        });
+
+        let has_native = native_fqn.as_ref().map_or(false, |fqn| !fqn.is_empty());
+
+        if has_native {
+            ctx.var_types.set(param_name, native_fqn.unwrap());
+            continue;
+        }
+
+        // Fall back to PHPDoc @param
+        let param_name_without_dollar = param_name.trim_start_matches('$');
+        if let Some(ref doc) = phpdoc {
+            // DocInfo.params is Vec<(type_expr, param_name_without_dollar)>
+            if let Some((type_expr, _)) = doc.params.iter().find(|(_, name)| name == param_name_without_dollar) {
+                if let Some(fqn) = resolve_phpdoc_type_to_fqn(type_expr, ctx) {
+                    ctx.var_types.set(param_name, fqn);
+                }
+            }
+        }
+    }
+}
+
+/// Resolve a PHPDoc type expression to a class FQN.
+/// Strips nullable, takes first union member, strips generics.
+fn resolve_phpdoc_type_to_fqn(type_expr: &str, ctx: &IndexingContext) -> Option<String> {
+    let class_name = crate::types::phpdoc::normalize_type(type_expr)?;
+    let fqn = ctx.resolver.resolve_class(&class_name);
+    if fqn.is_empty() {
+        None
+    } else {
+        Some(fqn)
+    }
+}
+
 /// Process a node on entry during traversal.
 ///
 /// Returns `true` if a scope frame was pushed (must be popped on exit).
@@ -156,6 +227,10 @@ fn enter_node(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext)
             let is_static = method_node.is_static();
             ctx.scope.push_method(name, is_static);
 
+            // Clear and populate var_types from parameter type hints + PHPDoc fallback
+            ctx.var_types.clear();
+            populate_var_types_from_params(method_node.parameters(), method_node.node, ctx);
+
             // Call stub definition emitter
             definitions::emit_method_definition(method_node, ctx);
             return true;
@@ -172,13 +247,28 @@ fn enter_node(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext)
             };
             ctx.scope.push_function(fqn);
 
+            // Clear and populate var_types from parameter type hints + PHPDoc fallback
+            ctx.var_types.clear();
+            populate_var_types_from_params(func_node.parameters(), func_node.node, ctx);
+
             // Call stub definition emitter
             definitions::emit_function_definition(func_node, ctx);
             return true;
         }
 
-        PhpNode::Closure(_) => {
+        PhpNode::Closure(ref closure_node) => {
+            // Save current class before pushing closure scope
+            let enclosing_class = ctx.scope.current_class().map(|s| s.to_string());
+            let is_static_closure = closure_node.is_static();
+
             ctx.scope.push_closure();
+
+            // Non-static closures inherit $this from the enclosing class
+            if !is_static_closure {
+                if let Some(class_fqn) = enclosing_class {
+                    ctx.var_types.set("this", class_fqn);
+                }
+            }
             return true;
         }
 
@@ -204,6 +294,29 @@ fn enter_node(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext)
             definitions::emit_enum_case_definition(case_node, ctx);
         }
 
+        // --- Assignment nodes: track variable types + handle sub-expressions ---
+        PhpNode::Assign(ref assign_node) => {
+            // Track variable type from assignment RHS
+            if let Some(left) = assign_node.left() {
+                if left.kind() == "variable_name" {
+                    let var_name = node_text(left, source);
+                    if let Some(right) = assign_node.right() {
+                        if let Some(rhs_type) = crate::types::resolver::resolve_expr_type(
+                            right,
+                            source,
+                            &ctx.var_types,
+                            &ctx.scope,
+                            ctx.type_db,
+                            &ctx.resolver,
+                        ) {
+                            ctx.var_types.set(var_name, rhs_type);
+                        }
+                    }
+                }
+            }
+            references::handle_expression(&php_node, ctx);
+        }
+
         // --- Expression/reference nodes: call stub handler ---
         PhpNode::MethodCall(_)
         | PhpNode::StaticCall(_)
@@ -213,7 +326,6 @@ fn enter_node(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext)
         | PhpNode::StaticPropertyFetch(_)
         | PhpNode::ClassConstFetch(_)
         | PhpNode::Variable(_)
-        | PhpNode::Assign(_)
         | PhpNode::Foreach(_)
         | PhpNode::Name(_) => {
             references::handle_expression(&php_node, ctx);
@@ -255,10 +367,13 @@ mod tests {
     use crate::types::TypeDatabase;
 
     fn setup_and_index(php_source: &str) -> FileResult {
+        setup_and_index_with_db(php_source, TypeDatabase::new())
+    }
+
+    fn setup_and_index_with_db(php_source: &str, type_db: TypeDatabase) -> FileResult {
         let mut parser = PhpParser::new();
         let parsed = parser.parse(php_source, "test.php").unwrap();
 
-        let type_db = TypeDatabase::new();
         let dir = tempfile::tempdir().unwrap();
         std::fs::write(
             dir.path().join("composer.json"),
@@ -450,6 +565,156 @@ class UserService {
         assert_eq!(
             ctx.resolver.resolve_class("Logger"),
             "Psr\\Log\\LoggerInterface"
+        );
+    }
+
+    #[test]
+    fn test_closure_inherits_this() {
+        // Non-static closure inside a method should inherit $this
+        let source = r#"<?php
+namespace App;
+
+class Processor {
+    private string $name = '';
+    public function process(): void {
+        $fn = function() {
+            $this->name;
+        };
+    }
+}
+"#;
+        let result = setup_and_index(source);
+        // $this->name inside closure should produce a property reference
+        let prop_refs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.contains("$name") && o.symbol_roles == crate::output::scip::symbol_roles::REFERENCE)
+            .collect();
+        assert!(
+            !prop_refs.is_empty(),
+            "Expected property reference for $this->name inside closure"
+        );
+    }
+
+    #[test]
+    fn test_static_closure_no_this() {
+        // Static closure should NOT have $this available
+        let source = r#"<?php
+namespace App;
+
+class Foo {
+    private string $name = '';
+    public function test(): void {
+        $fn = static function() {
+            // $this is not available here
+        };
+    }
+}
+"#;
+        // Should not panic
+        let result = setup_and_index(source);
+        assert!(!result.occurrences.is_empty());
+    }
+
+    #[test]
+    fn test_fluent_interface_chain() {
+        // Test that $this->method() chains resolve correctly when
+        // method return types are "self"
+        let source = r#"<?php
+namespace App;
+
+class QueryBuilder {
+    public function where(string $col): self { return $this; }
+    public function limit(int $n): self { return $this; }
+    public function execute(): array { return []; }
+    public function test(): void {
+        $this->where('a')->limit(10)->execute();
+    }
+}
+"#;
+        // We need a TypeDatabase with method return types for fluent chain
+        let mut type_db = TypeDatabase::new();
+        type_db.add_method("App\\QueryBuilder", "where", Some("self".to_string()), vec![]);
+        type_db.add_method("App\\QueryBuilder", "limit", Some("self".to_string()), vec![]);
+        type_db.add_method("App\\QueryBuilder", "execute", Some("array".to_string()), vec![]);
+        crate::types::upper_chain::build_transitive_uppers(&mut type_db);
+
+        let result = setup_and_index_with_db(source, type_db);
+        let ref_role = crate::output::scip::symbol_roles::REFERENCE;
+        // All three method calls should produce references
+        let where_refs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.contains("where().") && o.symbol_roles == ref_role)
+            .collect();
+        let limit_refs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.contains("limit().") && o.symbol_roles == ref_role)
+            .collect();
+        let execute_refs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.contains("execute().") && o.symbol_roles == ref_role)
+            .collect();
+        assert!(
+            !where_refs.is_empty(),
+            "Expected reference for where() in fluent chain"
+        );
+        assert!(
+            !limit_refs.is_empty(),
+            "Expected reference for limit() in fluent chain"
+        );
+        assert!(
+            !execute_refs.is_empty(),
+            "Expected reference for execute() in fluent chain"
+        );
+    }
+
+    #[test]
+    fn test_this_method_call_in_method() {
+        // $this->method() inside a method body should resolve to the current class
+        let source = r#"<?php
+namespace App;
+
+class Builder {
+    public function where(string $col): self { return $this; }
+    public function build(): void {
+        $this->where('id');
+    }
+}
+"#;
+        let result = setup_and_index(source);
+        let refs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.contains("where().") && o.symbol_roles == crate::output::scip::symbol_roles::REFERENCE)
+            .collect();
+        assert!(
+            !refs.is_empty(),
+            "Expected method reference for $this->where() call"
+        );
+    }
+
+    #[test]
+    fn test_phpdoc_param_fallback() {
+        // When a parameter has no native type hint, PHPDoc @param should be used
+        let source = r#"<?php
+namespace App;
+
+use App\Services\UserService;
+
+class Processor {
+    /**
+     * @param UserService $svc The service
+     */
+    public function handle($svc): void {
+        $svc->process();
+    }
+}
+"#;
+        // We need UserService.process in the TypeDatabase for the reference to emit
+        let mut type_db = TypeDatabase::new();
+        type_db.add_method("App\\Services\\UserService", "process", Some("void".to_string()), vec![]);
+        crate::types::upper_chain::build_transitive_uppers(&mut type_db);
+
+        let result = setup_and_index_with_db(source, type_db);
+        let refs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.contains("process().") && o.symbol_roles == crate::output::scip::symbol_roles::REFERENCE)
+            .collect();
+        assert!(
+            !refs.is_empty(),
+            "Expected method reference for $svc->process() via PHPDoc @param fallback"
         );
     }
 }

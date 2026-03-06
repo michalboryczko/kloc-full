@@ -18,7 +18,7 @@ fn node_to_scip_range(node: tree_sitter::Node) -> Vec<u32> {
 }
 
 /// PHP primitive/built-in type names that should NOT produce class references in type hints.
-fn is_primitive_type(name: &str) -> bool {
+pub fn is_primitive_type(name: &str) -> bool {
     let lower = name.to_ascii_lowercase();
     matches!(
         lower.as_str(),
@@ -161,8 +161,8 @@ fn handle_func_call(node: &crate::parser::ast::FuncCallNode, ctx: &mut IndexingC
     ctx.add_reference(symbol, node_to_scip_range(func_node));
 }
 
-/// Handle `$this->method()` — emit method reference for current class.
-/// For unknown objects, skip (no panic).
+/// Handle `$obj->method()` — emit method reference using type resolution.
+/// Falls back to $this check for backwards compatibility when no var_types.
 fn handle_method_call(node: &crate::parser::ast::MethodCallNode, ctx: &mut IndexingContext) {
     let method_name = match node.method_name() {
         Some(n) => n,
@@ -174,32 +174,35 @@ fn handle_method_call(node: &crate::parser::ast::MethodCallNode, ctx: &mut Index
         None => return,
     };
 
-    // Check if the object is $this
     let object_node = match node.object() {
         Some(n) => n,
         None => return,
     };
 
-    let object_text = node_text(object_node, ctx.source);
-    if object_text == "$this" {
-        // Resolve to current class
-        let class_fqn = match ctx.scope.current_class() {
-            Some(fqn) => fqn.to_string(),
-            None => return,
-        };
+    // Use full type resolution
+    let receiver_type = crate::types::resolver::resolve_expr_type(
+        object_node,
+        ctx.source,
+        &ctx.var_types,
+        &ctx.scope,
+        ctx.type_db,
+        &ctx.resolver,
+    );
+
+    if let Some(class_fqn) = receiver_type {
+        let class_fqn = crate::types::resolver::strip_nullable(&class_fqn).to_string();
         let pkg = ctx.namer.project_package.clone();
         let ver = ctx.namer.project_version.clone();
         let method_symbol = ctx.namer.symbol_for_method(&class_fqn, method_name, &pkg, &ver);
         ctx.add_reference(method_symbol, node_to_scip_range(method_name_node));
     }
-    // For other objects ($obj->method()), skip — no type info available
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 11.3: Property and Constant Access References
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// Handle `$this->prop` — emit property reference for current class.
+/// Handle `$obj->prop` — emit property reference using type resolution.
 fn handle_property_fetch(node: &crate::parser::ast::PropertyFetchNode, ctx: &mut IndexingContext) {
     let prop_name = match node.property_name() {
         Some(n) => n,
@@ -211,24 +214,28 @@ fn handle_property_fetch(node: &crate::parser::ast::PropertyFetchNode, ctx: &mut
         None => return,
     };
 
-    // Check if the object is $this
     let object_node = match node.object() {
         Some(n) => n,
         None => return,
     };
 
-    let object_text = node_text(object_node, ctx.source);
-    if object_text == "$this" {
-        let class_fqn = match ctx.scope.current_class() {
-            Some(fqn) => fqn.to_string(),
-            None => return,
-        };
+    // Use full type resolution
+    let receiver_type = crate::types::resolver::resolve_expr_type(
+        object_node,
+        ctx.source,
+        &ctx.var_types,
+        &ctx.scope,
+        ctx.type_db,
+        &ctx.resolver,
+    );
+
+    if let Some(class_fqn) = receiver_type {
+        let class_fqn = crate::types::resolver::strip_nullable(&class_fqn).to_string();
         let pkg = ctx.namer.project_package.clone();
         let ver = ctx.namer.project_version.clone();
         let prop_symbol = ctx.namer.symbol_for_property(&class_fqn, prop_name, &pkg, &ver);
         ctx.add_reference(prop_symbol, node_to_scip_range(prop_name_node));
     }
-    // For other objects, skip — no type info
 }
 
 /// Handle `Foo::$prop` — emit scope class reference + property reference.
