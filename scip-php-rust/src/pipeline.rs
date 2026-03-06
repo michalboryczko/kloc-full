@@ -66,12 +66,18 @@ pub fn collect_types_parallel(
     type_db: &TypeDatabase,
 ) {
     files.par_iter().for_each(|file| {
-        let raw = match std::fs::read_to_string(file) {
+        let raw_bytes = match std::fs::read(file) {
             Ok(s) => s,
             Err(_) => return,
         };
-        // Strip UTF-8 BOM if present
-        let source = raw.strip_prefix('\u{FEFF}').unwrap_or(&raw);
+        // Strip UTF-8 BOM if present, then lossy-convert non-UTF-8 (e.g. ISO-8859-1)
+        let bytes = if raw_bytes.starts_with(&[0xEF, 0xBB, 0xBF]) {
+            &raw_bytes[3..]
+        } else {
+            &raw_bytes[..]
+        };
+        let raw = String::from_utf8_lossy(bytes);
+        let source: &str = &raw;
 
         let mut parser = PhpParser::new();
         let parsed = match parser.parse(&source, file.as_path()) {
@@ -110,20 +116,14 @@ pub fn index_files_parallel(
             }
         };
 
-        // Strip UTF-8 BOM if present
+        // Strip UTF-8 BOM if present, then lossy-convert non-UTF-8 (e.g. ISO-8859-1)
         let source = if raw.starts_with(&[0xEF, 0xBB, 0xBF]) {
             &raw[3..]
         } else {
             &raw[..]
         };
-
-        let source_str = match std::str::from_utf8(source) {
-            Ok(s) => s,
-            Err(_) => {
-                eprintln!("Warning: non-UTF-8 content in {}", file.display());
-                return None;
-            }
-        };
+        let source_lossy = String::from_utf8_lossy(source);
+        let source_str: &str = &source_lossy;
 
         let mut parser = PhpParser::new();
         let parsed = match parser.parse(source_str, file.as_path()) {
