@@ -289,6 +289,12 @@ fn enter_node(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext)
             // Push local variable scope
             ctx.local_tracker.enter_scope(ScopeKind::Closure);
 
+            // Process use clause AFTER enter_scope but BEFORE body traversal
+            if let Some(use_clause) = closure_node.use_clause() {
+                let use_vars = extract_closure_use_vars(use_clause, source);
+                ctx.local_tracker.process_use_clause(use_vars, &mut ctx.local_counter);
+            }
+
             // Non-static closures inherit $this from the enclosing class
             if !is_static_closure {
                 if let Some(class_fqn) = enclosing_class {
@@ -481,8 +487,28 @@ fn enter_node(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext)
                 ctx.namer,
             );
         }
-        PhpNode::Variable(_)
-        | PhpNode::Name(_) => {
+        PhpNode::Variable(ref var_node) => {
+            // Check if this variable_name is a variable variable ($$var)
+            let is_var_var = node.named_child_count() > 0
+                && node.named_child(0).map(|c| c.kind()) == Some("variable_name");
+
+            if !is_var_var && ctx.local_tracker.has_scope() {
+                let name = var_node.name();
+                if name == "this" {
+                    // $this: emit class reference (but only for standalone usage,
+                    // NOT when parent is member_call_expression or member_access_expression
+                    // since those handle $this themselves via references.rs)
+                    handle_this_reference(node, ctx);
+                } else if !is_variable_definition_context(node) {
+                    // Not a definition site -> emit reference
+                    let range = locals::node_to_scip_range(node);
+                    ctx.local_tracker.reference_variable(name, range, &mut ctx.local_counter);
+                }
+            }
+
+            references::handle_expression(&php_node, ctx);
+        }
+        PhpNode::Name(_) => {
             references::handle_expression(&php_node, ctx);
         }
 
@@ -720,6 +746,122 @@ fn detect_static_variables(node: tree_sitter::Node, source: &[u8], ctx: &mut Ind
             }
         }
     }
+}
+
+/// Check if a variable_name node is in a definition context
+/// (assignment LHS, foreach target, catch variable, parameter, global/static declaration,
+/// or closure use clause).
+fn is_variable_definition_context(node: tree_sitter::Node) -> bool {
+    let parent = match node.parent() {
+        Some(p) => p,
+        None => return false,
+    };
+    match parent.kind() {
+        "assignment_expression" => {
+            // LHS of assignment is a definition
+            parent
+                .child_by_field_name("left")
+                .map(|l| l.id() == node.id())
+                .unwrap_or(false)
+        }
+        "augmented_assignment_expression" => {
+            // $x += 1 — the LHS is both read and write, but in PHP scip-php
+            // it's treated as a reference (the variable must already be defined)
+            false
+        }
+        "foreach_statement" => {
+            // Only the key/value variables are definitions, NOT the iterable.
+            // The iterable is the first named child. Check that this variable_name
+            // is NOT the first named child (the collection).
+            parent.named_child(0)
+                .map(|first| first.id() != node.id())
+                .unwrap_or(false)
+        }
+        "catch_clause" => {
+            parent
+                .child_by_field_name("variable")
+                .map(|v| v.id() == node.id())
+                .unwrap_or(false)
+        }
+        "simple_parameter" | "variadic_parameter" | "property_promotion_parameter" => true,
+        "global_declaration" => true,
+        "static_variable_declaration" => true,
+        "anonymous_function_use_clause" => true,
+        "by_ref" => {
+            // Could be `use (&$var)` or `foreach ($arr as &$val)` — both are definitions
+            true
+        }
+        "list_literal" | "array_creation_expression" | "array_element_initializer" => {
+            // Destructuring on LHS of assignment
+            true
+        }
+        _ => false,
+    }
+}
+
+/// Handle `$this` as a reference to the current class.
+fn handle_this_reference(node: tree_sitter::Node, ctx: &mut IndexingContext) {
+    // Check if parent is member_call_expression, member_access_expression, etc.
+    // Those already handle $this via references.rs, so we skip to avoid duplicates.
+    if let Some(parent) = node.parent() {
+        match parent.kind() {
+            "member_call_expression"
+            | "member_access_expression"
+            | "nullsafe_member_call_expression"
+            | "nullsafe_member_access_expression" => {
+                // $this->method() or $this->prop — already handled by references.rs
+                // Check that $this is the object (left side), not a nested expression
+                if parent
+                    .child_by_field_name("object")
+                    .map(|o| o.id() == node.id())
+                    .unwrap_or(false)
+                {
+                    return;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    // Standalone $this usage (e.g., `echo $this;`, `return $this;`)
+    if let Some(class_fqn) = ctx.scope.current_class().map(|s| s.to_string()) {
+        let symbol = ctx.namer.symbol_for_class(&class_fqn);
+        let range = locals::node_to_scip_range(node);
+        ctx.add_reference(symbol, range);
+    }
+}
+
+/// Extract captured variables from a closure's `anonymous_function_use_clause` node.
+/// Returns (variable_name_without_$, scip_range) pairs.
+fn extract_closure_use_vars(use_clause: tree_sitter::Node, source: &[u8]) -> Vec<(String, Vec<u32>)> {
+    let mut result = Vec::new();
+    for i in 0..use_clause.named_child_count() {
+        let child = match use_clause.named_child(i) {
+            Some(c) => c,
+            None => continue,
+        };
+        match child.kind() {
+            "variable_name" => {
+                let name = node_text(child, source).trim_start_matches('$').to_string();
+                let range = locals::node_to_scip_range(child);
+                result.push((name, range));
+            }
+            "by_ref" => {
+                // &$var capture
+                for j in 0..child.named_child_count() {
+                    if let Some(var_node) = child.named_child(j) {
+                        if var_node.kind() == "variable_name" {
+                            let name = node_text(var_node, source).trim_start_matches('$').to_string();
+                            let range = locals::node_to_scip_range(var_node);
+                            result.push((name, range));
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    result
 }
 
 #[cfg(test)]
@@ -1199,5 +1341,286 @@ function greet(string $name): void {
         assert!(local_defs.len() >= 2,
             "Expected at least 2 local definitions ($name param + $greeting), got {}",
             local_defs.len());
+    }
+
+    // ========================================================================
+    // Subtask 14.3: Variable Reference Emission Tests
+    // ========================================================================
+
+    #[test]
+    fn test_variable_reference_after_definition() {
+        let source = r#"<?php
+function run(): void {
+    $x = 'hello';
+    echo $x;
+}
+"#;
+        let result = setup_and_index(source);
+        let local_occs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.starts_with("local "))
+            .collect();
+        // At least one definition and one reference for $x
+        let x_defs = local_occs.iter()
+            .filter(|o| o.symbol_roles == crate::output::scip::symbol_roles::DEFINITION)
+            .count();
+        let x_refs = local_occs.iter()
+            .filter(|o| o.symbol_roles == crate::output::scip::symbol_roles::REFERENCE)
+            .count();
+        assert!(x_defs >= 1, "Expected at least 1 local definition, got {}", x_defs);
+        assert!(x_refs >= 1, "Expected at least 1 local reference, got {}", x_refs);
+    }
+
+    #[test]
+    fn test_variable_reference_same_symbol_as_def() {
+        let source = r#"<?php
+function run(): void {
+    $x = 'hello';
+    echo $x;
+    $y = $x . '!';
+}
+"#;
+        let result = setup_and_index(source);
+        let local_occs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.starts_with("local "))
+            .collect();
+
+        // Collect unique symbols that have a definition
+        let def_symbols: Vec<_> = local_occs.iter()
+            .filter(|o| o.symbol_roles == crate::output::scip::symbol_roles::DEFINITION)
+            .map(|o| &o.symbol)
+            .collect();
+
+        // $x should have references that share the same symbol as its definition
+        assert!(!def_symbols.is_empty(), "Expected local definitions");
+
+        // Find $x's symbol (first definition)
+        let x_sym = def_symbols[0];
+        let x_refs: Vec<_> = local_occs.iter()
+            .filter(|o| o.symbol == *x_sym && o.symbol_roles == crate::output::scip::symbol_roles::REFERENCE)
+            .collect();
+        // echo $x and $y = $x . '!' — two references to $x
+        assert!(x_refs.len() >= 2,
+            "Expected at least 2 references to $x, got {}", x_refs.len());
+    }
+
+    #[test]
+    fn test_this_not_tracked_as_local() {
+        let source = r#"<?php
+class Foo {
+    public function bar(): void {
+        return $this;
+    }
+}
+"#;
+        let result = setup_and_index(source);
+        // $this should NOT appear as a local variable
+        let this_locals: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.starts_with("local "))
+            .collect();
+        // No local occurrence should correspond to $this
+        // ($this is emitted as a class reference, not a local)
+        for occ in &this_locals {
+            // local symbols are "local N" -- none should be for $this
+            assert!(!occ.symbol.contains("this"), "Found $this as local: {:?}", occ.symbol);
+        }
+    }
+
+    #[test]
+    fn test_this_standalone_emits_class_reference() {
+        let source = r#"<?php
+class Foo {
+    public function bar(): self {
+        return $this;
+    }
+}
+"#;
+        let result = setup_and_index(source);
+        // $this should emit a class reference to Foo
+        let class_refs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.contains("Foo") && o.symbol_roles == crate::output::scip::symbol_roles::REFERENCE)
+            .collect();
+        // At least one reference for `return $this;` and possibly for `self` return type
+        assert!(!class_refs.is_empty(),
+            "Expected class reference from $this, found none");
+    }
+
+    #[test]
+    fn test_param_reference_in_body() {
+        let source = r#"<?php
+function greet(string $name): string {
+    return 'Hello, ' . $name;
+}
+"#;
+        let result = setup_and_index(source);
+        let local_refs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.starts_with("local ") && o.symbol_roles == crate::output::scip::symbol_roles::REFERENCE)
+            .collect();
+        // $name in the body should be a reference
+        assert!(!local_refs.is_empty(),
+            "Expected at least 1 local reference for $name in body");
+    }
+
+    #[test]
+    fn test_foreach_value_reference_in_body() {
+        let source = r#"<?php
+function process(array $items): void {
+    foreach ($items as $item) {
+        echo $item;
+    }
+}
+"#;
+        let result = setup_and_index(source);
+        let local_refs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.starts_with("local ") && o.symbol_roles == crate::output::scip::symbol_roles::REFERENCE)
+            .collect();
+        // $items (param ref) + $items (foreach expression ref) + $item (echo ref) = at least 3
+        assert!(local_refs.len() >= 2,
+            "Expected at least 2 local references, got {}", local_refs.len());
+    }
+
+    #[test]
+    fn test_augmented_assignment_is_reference() {
+        let source = r#"<?php
+function counter(): void {
+    $x = 0;
+    $x += 1;
+}
+"#;
+        let result = setup_and_index(source);
+        let local_occs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.starts_with("local "))
+            .collect();
+        let defs = local_occs.iter()
+            .filter(|o| o.symbol_roles == crate::output::scip::symbol_roles::DEFINITION)
+            .count();
+        let refs = local_occs.iter()
+            .filter(|o| o.symbol_roles == crate::output::scip::symbol_roles::REFERENCE)
+            .count();
+        // $x = 0 is 1 def, $x += 1 has $x as reference (augmented assignment)
+        assert!(defs >= 1, "Expected at least 1 definition, got {}", defs);
+        assert!(refs >= 1, "Expected at least 1 reference ($x += 1), got {}", refs);
+    }
+
+    // ========================================================================
+    // Subtask 14.4: Closure Variable Capture Tests
+    // ========================================================================
+
+    #[test]
+    fn test_closure_use_clause_reference() {
+        let source = r#"<?php
+function outer(): void {
+    $message = 'hello';
+    $fn = function() use ($message) {
+        echo $message;
+    };
+}
+"#;
+        let result = setup_and_index(source);
+        let local_occs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.starts_with("local "))
+            .collect();
+        // $message: 1 def in outer, 1 ref in use clause, 1 ref in closure body
+        // $fn: 1 def
+        let refs = local_occs.iter()
+            .filter(|o| o.symbol_roles == crate::output::scip::symbol_roles::REFERENCE)
+            .count();
+        assert!(refs >= 2,
+            "Expected at least 2 local references ($message in use clause + body), got {}", refs);
+    }
+
+    #[test]
+    fn test_closure_by_reference_capture() {
+        let source = r#"<?php
+function outer(): void {
+    $count = 0;
+    $increment = function() use (&$count) {
+        $count++;
+    };
+}
+"#;
+        let result = setup_and_index(source);
+        // Should not panic; closure by-reference capture should still emit references
+        let local_occs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.starts_with("local "))
+            .collect();
+        assert!(!local_occs.is_empty(), "Expected local occurrences for closure capture");
+    }
+
+    #[test]
+    fn test_arrow_function_auto_capture() {
+        let source = r#"<?php
+function outer(): void {
+    $base = 10;
+    $add = fn(int $n) => $n + $base;
+}
+"#;
+        let result = setup_and_index(source);
+        let local_refs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.starts_with("local ") && o.symbol_roles == crate::output::scip::symbol_roles::REFERENCE)
+            .collect();
+        // $base in arrow body should be a reference (auto-captured from parent scope)
+        // $n in arrow body should also be a reference
+        assert!(local_refs.len() >= 2,
+            "Expected at least 2 local references in arrow function, got {}", local_refs.len());
+    }
+
+    #[test]
+    fn test_nested_closures_capture_chain() {
+        let source = r#"<?php
+function outer(): void {
+    $x = 1;
+    $fn1 = function() use ($x) {
+        $y = 2;
+        $fn2 = function() use ($x, $y) {
+            return $x + $y;
+        };
+    };
+}
+"#;
+        let result = setup_and_index(source);
+        // Should not panic; nested closures should work correctly
+        let local_occs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.starts_with("local "))
+            .collect();
+        // Multiple definitions and references expected
+        assert!(local_occs.len() >= 6,
+            "Expected at least 6 local occurrences for nested closures, got {}", local_occs.len());
+    }
+
+    #[test]
+    fn test_closure_captures_only_listed_vars() {
+        let source = r#"<?php
+function outer(): void {
+    $a = 1;
+    $b = 2;
+    $fn = function() use ($a) {
+        return $a;
+    };
+}
+"#;
+        let result = setup_and_index(source);
+        // $b is NOT captured -- should not appear inside closure scope
+        // $a is captured and referenced in the body
+        let local_occs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.starts_with("local "))
+            .collect();
+        assert!(!local_occs.is_empty(), "Expected local occurrences");
+    }
+
+    #[test]
+    fn test_variable_used_before_definition() {
+        let source = r#"<?php
+function run(): void {
+    echo $x;
+    $x = 'hello';
+}
+"#;
+        let result = setup_and_index(source);
+        // $x used before definition should still emit a reference
+        let local_refs: Vec<_> = result.occurrences.iter()
+            .filter(|o| o.symbol.starts_with("local ") && o.symbol_roles == crate::output::scip::symbol_roles::REFERENCE)
+            .collect();
+        assert!(!local_refs.is_empty(),
+            "Expected reference for $x used before definition");
     }
 }

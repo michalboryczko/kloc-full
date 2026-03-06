@@ -119,6 +119,85 @@ impl LocalVariableTracker {
         }
     }
 
+    /// Emit a reference occurrence for a variable use.
+    /// `name`: variable name WITHOUT the leading `$`
+    /// `range`: SCIP range [line, col, end_line, end_col]
+    pub fn reference_variable(
+        &mut self,
+        name: &str,
+        range: Vec<u32>,
+        local_counter: &mut u32,
+    ) {
+        if name == "this" {
+            return;
+        }
+
+        if self.scope_stack.is_empty() {
+            return;
+        }
+
+        let symbol = match self.lookup_variable(name) {
+            Some(id) => SymbolNamer::symbol_for_local_var(id),
+            None => {
+                // Variable used before definition -- allocate a new local ID
+                // to match PHP behavior (PHP allows undefined variable usage).
+                let id = *local_counter;
+                *local_counter += 1;
+                if let Some(scope) = self.scope_stack.last_mut() {
+                    scope.definitions.insert(name.to_string(), id);
+                }
+                SymbolNamer::symbol_for_local_var(id)
+            }
+        };
+
+        self.local_occurrences.push(LocalOccurrence {
+            symbol,
+            range,
+            is_definition: false,
+        });
+    }
+
+    /// Process a closure's `use` clause.
+    ///
+    /// For each captured variable, emit a reference to the parent scope's
+    /// definition and register the variable in the current (closure) scope.
+    /// Must be called AFTER `enter_scope(Closure)` but BEFORE processing the body.
+    ///
+    /// `use_vars`: list of (variable_name_without_$, range)
+    pub fn process_use_clause(
+        &mut self,
+        use_vars: Vec<(String, Vec<u32>)>,
+        local_counter: &mut u32,
+    ) {
+        for (name, range) in use_vars {
+            // Look up in parent scope (second-to-last on stack)
+            let parent_symbol = if self.scope_stack.len() >= 2 {
+                self.scope_stack[self.scope_stack.len() - 2]
+                    .definitions
+                    .get(&name)
+                    .map(|id| SymbolNamer::symbol_for_local_var(*id))
+            } else {
+                None
+            };
+
+            if let Some(sym) = parent_symbol {
+                // Emit reference pointing to parent scope's definition
+                self.local_occurrences.push(LocalOccurrence {
+                    symbol: sym,
+                    range,
+                    is_definition: false,
+                });
+            }
+
+            // Register in current (closure) scope so body references resolve
+            let id = *local_counter;
+            *local_counter += 1;
+            if let Some(scope) = self.scope_stack.last_mut() {
+                scope.definitions.insert(name, id);
+            }
+        }
+    }
+
     /// Look up a variable in the current scope (for reference resolution by Dev-2).
     pub fn lookup_variable(&self, name: &str) -> Option<u32> {
         // Walk scopes from innermost to outermost.
@@ -342,5 +421,178 @@ mod tests {
         // No scope pushed -- define should be a no-op
         tracker.define_variable("x", vec![0, 0, 0, 2], &mut counter);
         assert!(tracker.local_occurrences.is_empty());
+    }
+
+    // ========================================================================
+    // Subtask 14.3: reference_variable tests
+    // ========================================================================
+
+    #[test]
+    fn test_reference_variable_after_definition() {
+        let mut tracker = LocalVariableTracker::new();
+        let mut counter = 0u32;
+        tracker.enter_scope(ScopeKind::Function);
+
+        // Define $x
+        tracker.define_variable("x", vec![1, 0, 1, 2], &mut counter);
+        assert_eq!(tracker.local_occurrences.len(), 1);
+        assert!(tracker.local_occurrences[0].is_definition);
+
+        // Reference $x
+        tracker.reference_variable("x", vec![2, 0, 2, 2], &mut counter);
+        assert_eq!(tracker.local_occurrences.len(), 2);
+        assert!(!tracker.local_occurrences[1].is_definition);
+        // Same symbol as definition
+        assert_eq!(tracker.local_occurrences[0].symbol, tracker.local_occurrences[1].symbol);
+    }
+
+    #[test]
+    fn test_reference_variable_before_definition() {
+        let mut tracker = LocalVariableTracker::new();
+        let mut counter = 0u32;
+        tracker.enter_scope(ScopeKind::Function);
+
+        // Reference $x before any definition
+        tracker.reference_variable("x", vec![1, 0, 1, 2], &mut counter);
+        assert_eq!(tracker.local_occurrences.len(), 1);
+        assert!(!tracker.local_occurrences[0].is_definition);
+        assert_eq!(tracker.local_occurrences[0].symbol, "local 0");
+
+        // Subsequent definition of $x should be a reference (already registered)
+        tracker.define_variable("x", vec![2, 0, 2, 2], &mut counter);
+        assert_eq!(tracker.local_occurrences.len(), 2);
+        assert!(!tracker.local_occurrences[1].is_definition);
+        // Same symbol
+        assert_eq!(tracker.local_occurrences[0].symbol, tracker.local_occurrences[1].symbol);
+    }
+
+    #[test]
+    fn test_reference_this_skipped() {
+        let mut tracker = LocalVariableTracker::new();
+        let mut counter = 0u32;
+        tracker.enter_scope(ScopeKind::Function);
+
+        tracker.reference_variable("this", vec![1, 0, 1, 5], &mut counter);
+        assert!(tracker.local_occurrences.is_empty());
+        assert_eq!(counter, 0);
+    }
+
+    #[test]
+    fn test_reference_variable_no_scope() {
+        let mut tracker = LocalVariableTracker::new();
+        let mut counter = 0u32;
+
+        // No scope -- reference should be a no-op
+        tracker.reference_variable("x", vec![1, 0, 1, 2], &mut counter);
+        assert!(tracker.local_occurrences.is_empty());
+    }
+
+    #[test]
+    fn test_reference_param_in_body() {
+        let mut tracker = LocalVariableTracker::new();
+        let mut counter = 1u32; // Start at 1; param was registered with id 0
+        tracker.enter_scope(ScopeKind::Function);
+
+        // Register param (no occurrence emitted)
+        tracker.register_param("name", 0);
+
+        // Reference $name in body
+        tracker.reference_variable("name", vec![2, 10, 2, 15], &mut counter);
+        assert_eq!(tracker.local_occurrences.len(), 1);
+        assert!(!tracker.local_occurrences[0].is_definition);
+        assert_eq!(tracker.local_occurrences[0].symbol, "local 0");
+    }
+
+    // ========================================================================
+    // Subtask 14.4: process_use_clause tests
+    // ========================================================================
+
+    #[test]
+    fn test_process_use_clause_references_parent() {
+        let mut tracker = LocalVariableTracker::new();
+        let mut counter = 0u32;
+
+        // Outer function scope: define $message
+        tracker.enter_scope(ScopeKind::Function);
+        tracker.define_variable("message", vec![2, 4, 2, 12], &mut counter);
+        assert_eq!(counter, 1);
+
+        // Enter closure scope
+        tracker.enter_scope(ScopeKind::Closure);
+
+        // Process use clause: use ($message)
+        tracker.process_use_clause(
+            vec![("message".to_string(), vec![3, 25, 3, 33])],
+            &mut counter,
+        );
+
+        // Should have: 1 def ($message in outer) + 1 ref ($message in use clause)
+        assert_eq!(tracker.local_occurrences.len(), 2);
+        assert!(tracker.local_occurrences[0].is_definition);
+        assert!(!tracker.local_occurrences[1].is_definition);
+        // use clause ref points to parent's symbol
+        assert_eq!(tracker.local_occurrences[1].symbol, "local 0");
+
+        // $message should be known in the closure scope
+        assert!(tracker.lookup_variable("message").is_some());
+    }
+
+    #[test]
+    fn test_process_use_clause_unknown_parent_var() {
+        let mut tracker = LocalVariableTracker::new();
+        let mut counter = 0u32;
+
+        // Outer scope: no $unknown defined
+        tracker.enter_scope(ScopeKind::Function);
+        tracker.enter_scope(ScopeKind::Closure);
+
+        // Process use clause for a variable not defined in parent
+        tracker.process_use_clause(
+            vec![("unknown".to_string(), vec![3, 25, 3, 33])],
+            &mut counter,
+        );
+
+        // No reference emitted to parent (since parent doesn't have it)
+        // But variable is still registered in closure scope
+        assert!(tracker.local_occurrences.is_empty());
+        assert!(tracker.lookup_variable("unknown").is_some());
+    }
+
+    #[test]
+    fn test_nested_closure_capture_chain() {
+        let mut tracker = LocalVariableTracker::new();
+        let mut counter = 0u32;
+
+        // Outer function: define $x
+        tracker.enter_scope(ScopeKind::Function);
+        tracker.define_variable("x", vec![1, 4, 1, 6], &mut counter);
+
+        // Closure 1: capture $x
+        tracker.enter_scope(ScopeKind::Closure);
+        tracker.process_use_clause(
+            vec![("x".to_string(), vec![3, 25, 3, 27])],
+            &mut counter,
+        );
+
+        // Closure 2: capture $x from closure 1
+        tracker.enter_scope(ScopeKind::Closure);
+        tracker.process_use_clause(
+            vec![("x".to_string(), vec![5, 25, 5, 27])],
+            &mut counter,
+        );
+
+        // Reference $x in closure 2 body
+        tracker.reference_variable("x", vec![6, 10, 6, 12], &mut counter);
+
+        // Expected:
+        // 1. $x def in outer (local 0)
+        // 2. $x ref in use clause of closure 1 (local 0)
+        // 3. $x ref in use clause of closure 2 (local 1, the captured copy in closure 1)
+        // 4. $x ref in closure 2 body (local 2, the captured copy in closure 2)
+        assert_eq!(tracker.local_occurrences.len(), 4);
+        assert!(tracker.local_occurrences[0].is_definition); // def
+        assert!(!tracker.local_occurrences[1].is_definition); // ref to parent
+        assert!(!tracker.local_occurrences[2].is_definition); // ref to closure1's copy
+        assert!(!tracker.local_occurrences[3].is_definition); // ref in body
     }
 }
