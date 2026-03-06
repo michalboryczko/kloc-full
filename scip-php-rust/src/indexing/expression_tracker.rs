@@ -1,9 +1,12 @@
 //! Expression tracker: produces CallRecord and ValueRecord entries
 //! from PHP call expressions during indexing.
 
-use crate::indexing::calls::{CallKind, CallRecord, ValueRecord};
+use crate::indexing::calls::{ArgumentValue, CallKind, CallRecord, ValueKind, ValueRecord};
 use crate::names::resolver::NameResolver;
-use crate::parser::ast::{FuncCallNode, MethodCallNode, NewNode, StaticCallNode};
+use crate::parser::ast::{
+    ClassConstFetchNode, FuncCallNode, MethodCallNode, NewNode, PropertyFetchNode,
+    StaticCallNode, StaticPropertyFetchNode,
+};
 use crate::parser::cst::node_text;
 use crate::symbol::scope::ScopeStack;
 use crate::types::TypeDatabase;
@@ -38,9 +41,18 @@ impl ExpressionTracker {
         ver: &str,
         namer: &crate::symbol::namer::SymbolNamer,
     ) {
+        // Skip dynamic method calls: $obj->$method()
+        let method_name_node = match node.method_name_node() {
+            Some(n) => n,
+            None => return,
+        };
+        if method_name_node.kind() == "variable_name" {
+            return; // dynamic: $obj->$method()
+        }
+
         let method_name = match node.method_name() {
             Some(n) => n,
-            None => return, // dynamic: $obj->$method()
+            None => return,
         };
 
         let caller_fqn = match scope.current_callable_fqn() {
@@ -81,13 +93,20 @@ impl ExpressionTracker {
         // Line is 0-indexed in tree-sitter, we want 1-indexed
         let line = node.node.start_position().row as u32 + 1;
 
+        let arguments = match node.arguments() {
+            Some(args_node) => Self::extract_arguments(
+                args_node, source, var_types, scope, type_db, resolver,
+            ),
+            None => Vec::new(),
+        };
+
         self.call_records.push(CallRecord {
             caller,
             callee,
             kind,
             file: relative_path.to_string(),
             line,
-            arguments: Vec::new(), // Stub: Dev-2 implements argument extraction
+            arguments,
         });
     }
 
@@ -99,6 +118,7 @@ impl ExpressionTracker {
         node: &StaticCallNode,
         source: &[u8],
         scope: &ScopeStack,
+        var_types: &VariableTypeMap,
         type_db: &TypeDatabase,
         resolver: &NameResolver,
         relative_path: &str,
@@ -130,13 +150,20 @@ impl ExpressionTracker {
         let caller = build_caller_symbol(&caller_fqn, scope, namer, pkg, ver);
         let line = node.node.start_position().row as u32 + 1;
 
+        let arguments = match node.arguments() {
+            Some(args_node) => Self::extract_arguments(
+                args_node, source, var_types, scope, type_db, resolver,
+            ),
+            None => Vec::new(),
+        };
+
         self.call_records.push(CallRecord {
             caller,
             callee,
             kind: CallKind::StaticCall,
             file: relative_path.to_string(),
             line,
-            arguments: Vec::new(),
+            arguments,
         });
     }
 
@@ -146,8 +173,10 @@ impl ExpressionTracker {
     pub fn track_func_call(
         &mut self,
         node: &FuncCallNode,
-        _source: &[u8],
+        source: &[u8],
         scope: &ScopeStack,
+        var_types: &VariableTypeMap,
+        type_db: &TypeDatabase,
         resolver: &NameResolver,
         relative_path: &str,
         pkg: &str,
@@ -170,13 +199,20 @@ impl ExpressionTracker {
         let caller = build_caller_symbol(&caller_fqn, scope, namer, pkg, ver);
         let line = node.node.start_position().row as u32 + 1;
 
+        let arguments = match node.arguments() {
+            Some(args_node) => Self::extract_arguments(
+                args_node, source, var_types, scope, type_db, resolver,
+            ),
+            None => Vec::new(),
+        };
+
         self.call_records.push(CallRecord {
             caller,
             callee,
             kind: CallKind::FuncCall,
             file: relative_path.to_string(),
             line,
-            arguments: Vec::new(),
+            arguments,
         });
     }
 
@@ -235,12 +271,455 @@ impl ExpressionTracker {
         });
     }
 
+    /// Track a property access: `$obj->prop` or `$obj?->prop`.
+    ///
+    /// Emits a ValueRecord with PropertyRead or PropertyWrite kind.
+    /// Skips if the object type cannot be resolved.
+    pub fn track_property_access(
+        &mut self,
+        node: &PropertyFetchNode,
+        source: &[u8],
+        scope: &ScopeStack,
+        var_types: &VariableTypeMap,
+        type_db: &TypeDatabase,
+        resolver: &NameResolver,
+        relative_path: &str,
+        pkg: &str,
+        ver: &str,
+        namer: &crate::symbol::namer::SymbolNamer,
+    ) {
+        let prop_name = match node.property_name() {
+            Some(n) => n,
+            None => return,
+        };
+
+        let caller_fqn = match scope.current_callable_fqn() {
+            Some(fqn) => fqn,
+            None => return,
+        };
+
+        let object_node = match node.object() {
+            Some(n) => n,
+            None => return,
+        };
+
+        let receiver_type = crate::types::resolver::resolve_expr_type(
+            object_node, source, var_types, scope, type_db, resolver,
+        );
+
+        let class_fqn = match receiver_type {
+            Some(ref t) => crate::types::resolver::strip_nullable(t).to_string(),
+            None => return,
+        };
+
+        let target = namer.symbol_for_property(&class_fqn, prop_name, pkg, ver);
+        let source_sym = build_caller_symbol(&caller_fqn, scope, namer, pkg, ver);
+
+        let kind = if is_write_context(node.node) {
+            ValueKind::PropertyWrite
+        } else {
+            ValueKind::PropertyRead
+        };
+
+        let line = node.node.start_position().row as u32 + 1;
+
+        self.value_records.push(ValueRecord {
+            source: source_sym,
+            target,
+            kind,
+            file: relative_path.to_string(),
+            line,
+        });
+    }
+
+    /// Track a static property access: `Foo::$prop`.
+    ///
+    /// Handles self/static/parent resolution.
+    pub fn track_static_property_access(
+        &mut self,
+        node: &StaticPropertyFetchNode,
+        _source: &[u8],
+        scope: &ScopeStack,
+        type_db: &TypeDatabase,
+        resolver: &NameResolver,
+        relative_path: &str,
+        pkg: &str,
+        ver: &str,
+        namer: &crate::symbol::namer::SymbolNamer,
+    ) {
+        let scope_text = match node.scope_text() {
+            Some(s) => s,
+            None => return,
+        };
+        let prop_name = match node.property_name() {
+            Some(n) => n,
+            None => return,
+        };
+
+        let caller_fqn = match scope.current_callable_fqn() {
+            Some(fqn) => fqn,
+            None => return,
+        };
+
+        let class_fqn = match resolve_scope_class(scope_text, scope, type_db, resolver) {
+            Some(fqn) => fqn,
+            None => return,
+        };
+
+        // Strip leading $ from property name
+        let prop_name_clean = prop_name.trim_start_matches('$');
+        let target = namer.symbol_for_property(&class_fqn, prop_name_clean, pkg, ver);
+        let source_sym = build_caller_symbol(&caller_fqn, scope, namer, pkg, ver);
+
+        let kind = if is_write_context(node.node) {
+            ValueKind::StaticPropertyWrite
+        } else {
+            ValueKind::StaticPropertyRead
+        };
+
+        let line = node.node.start_position().row as u32 + 1;
+
+        self.value_records.push(ValueRecord {
+            source: source_sym,
+            target,
+            kind,
+            file: relative_path.to_string(),
+            line,
+        });
+    }
+
+    /// Track a class constant access: `Foo::CONST`.
+    ///
+    /// Skips `::class` pseudo-constant.
+    pub fn track_class_const_access(
+        &mut self,
+        node: &ClassConstFetchNode,
+        _source: &[u8],
+        scope: &ScopeStack,
+        type_db: &TypeDatabase,
+        resolver: &NameResolver,
+        relative_path: &str,
+        pkg: &str,
+        ver: &str,
+        namer: &crate::symbol::namer::SymbolNamer,
+    ) {
+        let scope_text = match node.scope_text() {
+            Some(s) => s,
+            None => return,
+        };
+        let const_name = match node.const_name() {
+            Some(n) => n,
+            None => return,
+        };
+
+        // Skip ::class pseudo-constant
+        if const_name == "class" {
+            return;
+        }
+
+        let caller_fqn = match scope.current_callable_fqn() {
+            Some(fqn) => fqn,
+            None => return,
+        };
+
+        let class_fqn = match resolve_scope_class(scope_text, scope, type_db, resolver) {
+            Some(fqn) => fqn,
+            None => return,
+        };
+
+        let target = namer.symbol_for_class_const(&class_fqn, const_name, pkg, ver);
+        let source_sym = build_caller_symbol(&caller_fqn, scope, namer, pkg, ver);
+
+        let line = node.node.start_position().row as u32 + 1;
+
+        self.value_records.push(ValueRecord {
+            source: source_sym,
+            target,
+            kind: ValueKind::ClassConstRead,
+            file: relative_path.to_string(),
+            line,
+        });
+    }
+
+    /// Extract ArgumentValues from a call's arguments node.
+    ///
+    /// Iterates the named children of an `arguments` node. Named arguments
+    /// extract only the value field; spread arguments are skipped.
+    pub fn extract_arguments(
+        arguments_node: tree_sitter::Node,
+        source: &[u8],
+        var_types: &VariableTypeMap,
+        scope: &ScopeStack,
+        type_db: &TypeDatabase,
+        resolver: &NameResolver,
+    ) -> Vec<ArgumentValue> {
+        let mut result = Vec::new();
+        for i in 0..arguments_node.named_child_count() {
+            let arg = match arguments_node.named_child(i) {
+                Some(a) => a,
+                None => continue,
+            };
+
+            // Named argument: extract only the value expression
+            let value_node = if arg.kind() == "named_argument" {
+                match arg.child_by_field_name("value") {
+                    Some(v) => v,
+                    None => continue,
+                }
+            } else {
+                arg
+            };
+
+            // Skip spread arguments
+            if value_node.kind() == "variadic_unpacking" || value_node.kind() == "spread_element" {
+                continue;
+            }
+
+            result.push(Self::track_value(value_node, source, var_types, scope, type_db, resolver));
+        }
+        result
+    }
+
+    /// Convert a single expression node to an ArgumentValue.
+    /// Matches PHP ExpressionTracker::trackValue() 14-case dispatch.
+    fn track_value(
+        node: tree_sitter::Node,
+        source: &[u8],
+        var_types: &VariableTypeMap,
+        scope: &ScopeStack,
+        type_db: &TypeDatabase,
+        resolver: &NameResolver,
+    ) -> ArgumentValue {
+        match node.kind() {
+            // Case 1: String literal
+            "string" => {
+                let text = node_text(node, source);
+                let value = strip_string_quotes(text);
+                ArgumentValue::StringLiteral {
+                    value: value.to_string(),
+                }
+            }
+            // Encapsed string (double-quoted with interpolation) — treat as Unknown
+            "encapsed_string" => ArgumentValue::Unknown,
+
+            // Case 2: Integer literal
+            "integer" => {
+                let text = node_text(node, source);
+                let value = parse_php_int(text).unwrap_or(0);
+                ArgumentValue::IntLiteral { value }
+            }
+
+            // Case 3: Float literal
+            "float" => {
+                let text = node_text(node, source);
+                let value = text.replace('_', "").parse::<f64>().unwrap_or(0.0);
+                ArgumentValue::FloatLiteral { value }
+            }
+
+            // Case 4: Boolean / Null constants
+            "boolean" => {
+                let text = node_text(node, source).to_ascii_lowercase();
+                ArgumentValue::BoolLiteral {
+                    value: text == "true",
+                }
+            }
+            "null" => ArgumentValue::NullLiteral,
+
+            // Case 5: Variable
+            "variable_name" => {
+                let name = node_text(node, source).to_string();
+                ArgumentValue::Variable { name }
+            }
+
+            // Case 6: Class constant: Foo::BAR
+            "class_constant_access_expression" => {
+                let scope_node = node.named_child(0);
+                let name_node = node.named_child(1);
+                let scope_text = scope_node
+                    .map(|n| node_text(n, source))
+                    .unwrap_or("");
+                let const_name = name_node
+                    .map(|n| node_text(n, source))
+                    .unwrap_or("");
+                let class_fqn = resolver.resolve_class(scope_text);
+                ArgumentValue::ClassConst {
+                    class: class_fqn,
+                    name: const_name.to_string(),
+                }
+            }
+
+            // Case 7: Static property: Foo::$prop
+            "scoped_property_access_expression" => {
+                let scope_node = node.child_by_field_name("scope");
+                let name_node = node.child_by_field_name("name");
+                let scope_text = scope_node
+                    .map(|n| node_text(n, source))
+                    .unwrap_or("");
+                let prop_name = name_node
+                    .map(|n| node_text(n, source))
+                    .unwrap_or("");
+                let class_fqn = resolver.resolve_class(scope_text);
+                ArgumentValue::StaticPropertyFetch {
+                    class: class_fqn,
+                    name: prop_name.to_string(),
+                }
+            }
+
+            // Case 8: Property fetch: $obj->prop, $obj?->prop
+            "member_access_expression" | "nullsafe_member_access_expression" => {
+                let prop_name = node
+                    .child_by_field_name("name")
+                    .map(|n| node_text(n, source))
+                    .unwrap_or("");
+                let object_type = node.child_by_field_name("object").and_then(|obj| {
+                    crate::types::resolver::resolve_expr_type(
+                        obj, source, var_types, scope, type_db, resolver,
+                    )
+                });
+                ArgumentValue::PropertyFetch {
+                    object_type,
+                    name: prop_name.to_string(),
+                }
+            }
+
+            // Case 9: Method call: $obj->method(), $obj?->method()
+            "member_call_expression" | "nullsafe_member_call_expression" => {
+                let method = node
+                    .child_by_field_name("name")
+                    .map(|n| node_text(n, source))
+                    .unwrap_or("");
+                let object_type = node.child_by_field_name("object").and_then(|obj| {
+                    crate::types::resolver::resolve_expr_type(
+                        obj, source, var_types, scope, type_db, resolver,
+                    )
+                });
+                ArgumentValue::MethodCall {
+                    object_type,
+                    method: method.to_string(),
+                }
+            }
+
+            // Case 10: Static call: Foo::method()
+            "scoped_call_expression" => {
+                let scope_node = node.child_by_field_name("scope");
+                let name_node = node.child_by_field_name("name");
+                let scope_text = scope_node
+                    .map(|n| node_text(n, source))
+                    .unwrap_or("");
+                let method = name_node
+                    .map(|n| node_text(n, source))
+                    .unwrap_or("");
+                let class_fqn = resolver.resolve_class(scope_text);
+                ArgumentValue::StaticCall {
+                    class: class_fqn,
+                    method: method.to_string(),
+                }
+            }
+
+            // Case 11: Function call: func()
+            "function_call_expression" => {
+                let func_name = node
+                    .child_by_field_name("function")
+                    .map(|n| node_text(n, source))
+                    .unwrap_or("");
+                let resolution = resolver.resolve_function(func_name);
+                ArgumentValue::FuncCall {
+                    function: resolution.primary().to_string(),
+                }
+            }
+
+            // Case 12: new expression
+            "object_creation_expression" => {
+                // Look for a name-like child
+                let mut class_fqn = String::new();
+                for i in 0..node.named_child_count() {
+                    if let Some(child) = node.named_child(i) {
+                        if matches!(child.kind(), "name" | "qualified_name" | "namespace_name") {
+                            let class_name = node_text(child, source);
+                            class_fqn = resolver.resolve_class(class_name);
+                            break;
+                        }
+                    }
+                }
+                ArgumentValue::New { class: class_fqn }
+            }
+
+            // Case 13: Array literal — recurse into elements
+            "array_creation_expression" => {
+                let mut elements = Vec::new();
+                for i in 0..node.named_child_count() {
+                    if let Some(child) = node.named_child(i) {
+                        if child.kind() == "array_element_initializer" {
+                            // Array element has value as last named child
+                            // or child_by_field_name("value")
+                            if let Some(val) = child.child_by_field_name("value") {
+                                elements.push(Self::track_value(
+                                    val, source, var_types, scope, type_db, resolver,
+                                ));
+                            } else if child.named_child_count() > 0 {
+                                // Fallback: last named child is the value
+                                let last_idx = child.named_child_count() - 1;
+                                if let Some(val) = child.named_child(last_idx) {
+                                    elements.push(Self::track_value(
+                                        val, source, var_types, scope, type_db, resolver,
+                                    ));
+                                }
+                            }
+                        }
+                    }
+                }
+                ArgumentValue::ArrayLiteral { elements }
+            }
+
+            // Case 14: Everything else
+            _ => ArgumentValue::Unknown,
+        }
+    }
+
     /// Drain all collected records, returning (calls, values).
     pub fn drain(&mut self) -> (Vec<CallRecord>, Vec<ValueRecord>) {
         (
             std::mem::take(&mut self.call_records),
             std::mem::take(&mut self.value_records),
         )
+    }
+}
+
+/// Check if a node is in write context (LHS of assignment_expression).
+fn is_write_context(node: tree_sitter::Node<'_>) -> bool {
+    if let Some(parent) = node.parent() {
+        if parent.kind() == "assignment_expression" {
+            if let Some(left) = parent.child_by_field_name("left") {
+                return left.id() == node.id();
+            }
+        }
+    }
+    false
+}
+
+/// Strip surrounding quotes from a PHP string literal.
+fn strip_string_quotes(text: &str) -> &str {
+    if text.len() >= 2 {
+        let first = text.as_bytes()[0];
+        let last = text.as_bytes()[text.len() - 1];
+        if (first == b'\'' && last == b'\'') || (first == b'"' && last == b'"') {
+            return &text[1..text.len() - 1];
+        }
+    }
+    text
+}
+
+/// Parse a PHP integer literal, handling hex/octal/binary/decimal and _ separators.
+fn parse_php_int(text: &str) -> Option<i64> {
+    let text = text.replace('_', "");
+    if text.starts_with("0x") || text.starts_with("0X") {
+        i64::from_str_radix(&text[2..], 16).ok()
+    } else if text.starts_with("0b") || text.starts_with("0B") {
+        i64::from_str_radix(&text[2..], 2).ok()
+    } else if text.starts_with('0') && text.len() > 1 && !text.contains('.') {
+        i64::from_str_radix(&text[1..], 8).ok()
+    } else {
+        text.parse().ok()
     }
 }
 

@@ -387,10 +387,59 @@ fn enter_node(node: tree_sitter::Node, source: &[u8], ctx: &mut IndexingContext)
                 ctx.namer,
             );
         }
-        PhpNode::PropertyFetch(_)
-        | PhpNode::StaticPropertyFetch(_)
-        | PhpNode::ClassConstFetch(_)
-        | PhpNode::Variable(_)
+        PhpNode::PropertyFetch(ref prop_fetch) => {
+            references::handle_expression(&php_node, ctx);
+            let pkg = ctx.namer.project_package.clone();
+            let ver = ctx.namer.project_version.clone();
+            let rel = ctx.relative_path.clone();
+            ctx.expression_tracker.track_property_access(
+                prop_fetch,
+                source,
+                &ctx.scope,
+                &ctx.var_types,
+                ctx.type_db,
+                &ctx.resolver,
+                &rel,
+                &pkg,
+                &ver,
+                ctx.namer,
+            );
+        }
+        PhpNode::StaticPropertyFetch(ref static_prop) => {
+            references::handle_expression(&php_node, ctx);
+            let pkg = ctx.namer.project_package.clone();
+            let ver = ctx.namer.project_version.clone();
+            let rel = ctx.relative_path.clone();
+            ctx.expression_tracker.track_static_property_access(
+                static_prop,
+                source,
+                &ctx.scope,
+                ctx.type_db,
+                &ctx.resolver,
+                &rel,
+                &pkg,
+                &ver,
+                ctx.namer,
+            );
+        }
+        PhpNode::ClassConstFetch(ref const_fetch) => {
+            references::handle_expression(&php_node, ctx);
+            let pkg = ctx.namer.project_package.clone();
+            let ver = ctx.namer.project_version.clone();
+            let rel = ctx.relative_path.clone();
+            ctx.expression_tracker.track_class_const_access(
+                const_fetch,
+                source,
+                &ctx.scope,
+                ctx.type_db,
+                &ctx.resolver,
+                &rel,
+                &pkg,
+                &ver,
+                ctx.namer,
+            );
+        }
+        PhpNode::Variable(_)
         | PhpNode::Foreach(_)
         | PhpNode::Name(_) => {
             references::handle_expression(&php_node, ctx);

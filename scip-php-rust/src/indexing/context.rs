@@ -387,22 +387,24 @@ mod tests {
         ctx.add_call(CallRecord {
             caller: "App\\Foo::bar".to_string(),
             callee: "App\\Baz::qux".to_string(),
+            kind: crate::indexing::calls::CallKind::MethodCall,
             file: "test.php".to_string(),
-            range: vec![5, 0, 5, 10],
-            kind: "method_call".to_string(),
+            line: 5,
+            arguments: vec![],
         });
 
         ctx.add_value(ValueRecord {
-            symbol: "local 0".to_string(),
-            value_type: "App\\Foo".to_string(),
+            source: "App\\Foo::bar".to_string(),
+            target: "App\\Foo#$name.".to_string(),
+            kind: crate::indexing::calls::ValueKind::PropertyRead,
             file: "test.php".to_string(),
-            range: vec![3, 0, 3, 5],
+            line: 3,
         });
 
         let result = ctx.into_result();
         assert_eq!(result.calls.len(), 1);
         assert_eq!(result.calls[0].callee, "App\\Baz::qux");
         assert_eq!(result.values.len(), 1);
-        assert_eq!(result.values[0].value_type, "App\\Foo");
+        assert_eq!(result.values[0].target, "App\\Foo#$name.");
     }
 }
