@@ -165,5 +165,71 @@ def resolve(
     conn.close()
 
 
+@app.command()
+def usages(
+    query: str = typer.Argument(..., help="Symbol to find usages of"),
+    depth: int = typer.Option(1, "--depth", "-d", help="BFS depth for expansion"),
+    limit: int = typer.Option(100, "--limit", "-l", help="Maximum total results"),
+    output_json: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
+):
+    """Find all usages of a symbol (incoming USES edges)."""
+    from .config import Neo4jConfig
+    from .db.connection import Neo4jConnection
+    from .db.query_runner import QueryRunner
+    from .orchestration.usages import run_usages
+    from .output.json_formatter import print_json as do_print_json
+    from .output.console import print_usages_result
+
+    config = Neo4jConfig.from_env()
+    conn = Neo4jConnection(config)
+    runner = QueryRunner(conn)
+
+    try:
+        result = run_usages(runner, query, depth=depth, limit=limit)
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+    if output_json:
+        do_print_json(result.to_dict())
+    else:
+        print_usages_result(result)
+
+    conn.close()
+
+
+@app.command()
+def deps(
+    query: str = typer.Argument(..., help="Symbol to find dependencies of"),
+    depth: int = typer.Option(1, "--depth", "-d", help="BFS depth for expansion"),
+    limit: int = typer.Option(100, "--limit", "-l", help="Maximum total results"),
+    output_json: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
+):
+    """Find all dependencies of a symbol (outgoing USES edges)."""
+    from .config import Neo4jConfig
+    from .db.connection import Neo4jConnection
+    from .db.query_runner import QueryRunner
+    from .orchestration.deps import run_deps
+    from .output.json_formatter import print_json as do_print_json
+    from .output.console import print_deps_result
+
+    config = Neo4jConfig.from_env()
+    conn = Neo4jConnection(config)
+    runner = QueryRunner(conn)
+
+    try:
+        result = run_deps(runner, query, depth=depth, limit=limit)
+    except ValueError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(1)
+
+    if output_json:
+        do_print_json(result.to_dict())
+    else:
+        print_deps_result(result)
+
+    conn.close()
+
+
 if __name__ == "__main__":
     app()
