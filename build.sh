@@ -30,10 +30,15 @@ if [ "$FORCE" = true ]; then
     echo "Force mode: cleaning build directories..."
     rm -rf "$BIN_DIR"
     # Clean each repo's build artifacts
-    for dir in kloc-cli kloc-mapper scip-php; do
+    for dir in kloc-cli kloc-mapper scip-php kloc-indexer-php; do
         if [ -d "$dir" ]; then
             rm -rf "$dir/dist" "$dir/build" "$dir/__pycache__" "$dir/.pyinstaller"
-            echo "  Cleaned $dir/dist, $dir/build"
+            # Rust cleanup
+            if [ -d "$dir/target" ]; then
+                rm -rf "$dir/target"
+                echo "  Cleaned $dir/target (Rust)"
+            fi
+            echo "  Cleaned $dir"
         fi
     done
     echo ""
@@ -67,6 +72,13 @@ while IFS= read -r line; do
 
         # We have all info, build this repo
         if [ -n "$name" ] && [ -n "$build_script" ] && [ -n "$binary_path" ]; then
+            # Skip no-op builds (handle both true and "true" from YAML)
+            if [ "$build_script" = "true" ] || [ "$build_script" = '"true"' ]; then
+                echo "=== $name === (no build needed)"
+                echo ""
+                continue
+            fi
+
             if [ -d "$name" ]; then
                 echo "=== Building $name ==="
                 (cd "$name" && $build_script)

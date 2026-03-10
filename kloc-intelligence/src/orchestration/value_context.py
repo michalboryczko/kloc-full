@@ -228,7 +228,9 @@ def _resolve_on_kind(recv_value_kind: str | None) -> str | None:
     return recv_value_kind
 
 
-def _resolve_call_on(runner: QueryRunner, call_id: str) -> tuple[str | None, str | None]:
+def _resolve_call_on(
+    runner: QueryRunner, call_id: str,
+) -> tuple[str | None, str | None, str | None, str | None, int | None]:
     """Resolve on/on_kind for a Call node.
 
     Uses Q3_RECEIVER_IDENTITY to find explicit receiver. Falls back to
@@ -236,7 +238,9 @@ def _resolve_call_on(runner: QueryRunner, call_id: str) -> tuple[str | None, str
     graph_utils.py logic for access/method/method_static calls).
 
     Returns:
-        (on, on_kind) tuple.
+        (on, on_kind, access_chain_symbol, on_file, on_line) tuple.
+        access_chain_symbol: FQN of the property in an access chain (e.g. 'Class::$prop').
+        on_file/on_line: location of the receiver for local/param receivers.
     """
     from ..db.queries.context_value import Q3_RECEIVER_IDENTITY
 
@@ -244,6 +248,8 @@ def _resolve_call_on(runner: QueryRunner, call_id: str) -> tuple[str | None, str
     if recv_rec:
         recv_kind = recv_rec.get("recv_kind") if isinstance(recv_rec, dict) else recv_rec["recv_kind"]
         recv_name = recv_rec.get("recv_name") if isinstance(recv_rec, dict) else recv_rec["recv_name"]
+        recv_file = recv_rec.get("recv_file") if isinstance(recv_rec, dict) else recv_rec["recv_file"]
+        recv_start_line = recv_rec.get("recv_start_line") if isinstance(recv_rec, dict) else recv_rec["recv_start_line"]
         prop_fqn = recv_rec.get("prop_fqn") if isinstance(recv_rec, dict) else recv_rec["prop_fqn"]
         prop_name = recv_rec.get("prop_name") if isinstance(recv_rec, dict) else recv_rec["prop_name"]
         src_recv_kind = recv_rec.get("src_recv_kind") if isinstance(recv_rec, dict) else recv_rec["src_recv_kind"]
@@ -258,11 +264,18 @@ def _resolve_call_on(runner: QueryRunner, call_id: str) -> tuple[str | None, str
                 on = f"{src_recv_name}->{member}"
             else:
                 on = f"$this->{member}"
-            return on, "property"
+            return on, "property", prop_fqn, None, None
         elif recv_kind == "self":
-            return "$this", "self"
+            return "$this", "self", None, None, None
         elif recv_kind:
-            return recv_name, _resolve_on_kind(recv_kind)
+            on_kind = _resolve_on_kind(recv_kind)
+            # For local/param receivers, include file:line
+            on_file = None
+            on_line = None
+            if recv_kind in ("local", "parameter"):
+                on_file = recv_file
+                on_line = recv_start_line
+            return recv_name, on_kind, None, on_file, on_line
 
     # Fallback: no receiver edge. Check call_kind for implicit $this.
     # Matches kloc-cli graph_utils.py: if call_kind in (access, method, method_static) => $this/self
@@ -270,9 +283,9 @@ def _resolve_call_on(runner: QueryRunner, call_id: str) -> tuple[str | None, str
     if ck_rec:
         ck = ck_rec.get("call_kind") if isinstance(ck_rec, dict) else ck_rec["call_kind"]
         if ck in ("access", "method", "method_static"):
-            return "$this", "self"
+            return "$this", "self", None, None, None
 
-    return None, None
+    return None, None, None, None, None
 
 
 # =============================================================================
@@ -411,7 +424,22 @@ def build_value_consumer_chain(
         callee = _build_callee_display(consumer_target_name, consumer_target_kind)
 
         # Resolve on/on_kind for the consumer call (Q3 + implicit $this fallback)
-        consumer_on, consumer_on_kind = _resolve_call_on(runner, consumer_call_id)
+        consumer_on, consumer_on_kind, access_chain_symbol, on_file, on_line = _resolve_call_on(runner, consumer_call_id)
+
+        # Build member_ref for correct console rendering order (arrow before tag)
+        member_ref = MemberRef(
+            target_name=callee or "",
+            target_fqn=consumer_target_fqn,
+            target_kind=consumer_target_kind,
+            file=call_file,
+            line=call_line,
+            reference_type=ref_type,
+            access_chain=consumer_on,
+            access_chain_symbol=access_chain_symbol,
+            on_kind=consumer_on_kind,
+            on_file=on_file,
+            on_line=on_line,
+        ) if consumer_target_fqn else None
 
         entry = ContextEntry(
             depth=depth,
@@ -422,6 +450,7 @@ def build_value_consumer_chain(
             line=call_line,
             signature=consumer_target_sig,
             children=[],
+            member_ref=member_ref,
             arguments=arguments,
             ref_type=ref_type,
             callee=callee,
@@ -466,11 +495,26 @@ def build_value_consumer_chain(
         arguments = _build_arguments_from_records(runner, access_call_id)
 
         # Resolve on/on_kind for standalone access (Q3 + implicit $this fallback)
-        standalone_on, standalone_on_kind = _resolve_call_on(runner, access_call_id)
+        standalone_on, standalone_on_kind, access_chain_symbol, on_file, on_line = _resolve_call_on(runner, access_call_id)
         # Fall back to value-level on/on_kind if Q3 doesn't resolve
         if standalone_on is None:
             standalone_on = value_on
             standalone_on_kind = value_on_kind
+
+        # Build member_ref for correct console rendering order (arrow before tag)
+        member_ref = MemberRef(
+            target_name=callee or "",
+            target_fqn=target_fqn,
+            target_kind=target_kind,
+            file=call_file,
+            line=call_line,
+            reference_type=ref_type,
+            access_chain=standalone_on,
+            access_chain_symbol=access_chain_symbol,
+            on_kind=standalone_on_kind,
+            on_file=on_file,
+            on_line=on_line,
+        ) if target_fqn else None
 
         entry = ContextEntry(
             depth=depth,
@@ -480,6 +524,7 @@ def build_value_consumer_chain(
             file=call_file,
             line=call_line,
             children=[],
+            member_ref=member_ref,
             arguments=arguments,
             ref_type=ref_type,
             callee=callee,
@@ -516,7 +561,22 @@ def build_value_consumer_chain(
         callee = _build_callee_display(consumer_target_name, consumer_target_kind)
 
         # Resolve on/on_kind for direct argument consumer calls (Q3 + implicit $this fallback)
-        direct_on, direct_on_kind = _resolve_call_on(runner, consumer_call_id)
+        direct_on, direct_on_kind, access_chain_symbol, on_file, on_line = _resolve_call_on(runner, consumer_call_id)
+
+        # Build member_ref for correct console rendering order (arrow before tag)
+        member_ref = MemberRef(
+            target_name=callee or "",
+            target_fqn=consumer_target_fqn,
+            target_kind=consumer_target_kind,
+            file=call_file,
+            line=call_line,
+            reference_type=ref_type,
+            access_chain=direct_on,
+            access_chain_symbol=access_chain_symbol,
+            on_kind=direct_on_kind,
+            on_file=on_file,
+            on_line=on_line,
+        ) if consumer_target_fqn else None
 
         entry = ContextEntry(
             depth=depth,
@@ -527,6 +587,7 @@ def build_value_consumer_chain(
             line=call_line,
             signature=consumer_target_sig,
             children=[],
+            member_ref=member_ref,
             arguments=arguments,
             ref_type=ref_type,
             callee=callee,
@@ -912,6 +973,23 @@ def build_value_source_chain(
                             runner, arg_val_id, depth + 1, max_depth, limit, visited
                         )
                         entry.children.extend(children)
+            elif arg.source_chain:
+                # Result argument (e.g., $input->customerEmail) — trace the
+                # receiver Value to follow data flow across method boundaries
+                for step in arg.source_chain:
+                    on_fqn = step.get("on")
+                    if on_fqn:
+                        on_rec = runner.execute_single(
+                            "MATCH (v:Value {fqn: $fqn}) RETURN v.node_id AS value_id LIMIT 1",
+                            fqn=on_fqn,
+                        )
+                        if on_rec:
+                            on_val_id = on_rec.get("value_id") if isinstance(on_rec, dict) else on_rec["value_id"]
+                            if on_val_id and on_val_id not in visited:
+                                children = build_value_source_chain(
+                                    runner, on_val_id, depth + 1, max_depth, limit, visited
+                                )
+                                entry.children.extend(children)
 
     return [entry]
 

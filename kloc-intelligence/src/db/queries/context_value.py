@@ -73,6 +73,8 @@ OPTIONAL MATCH (recv)<-[:PRODUCES]-(src_call:Call)-[:CALLS]->(prop)
 OPTIONAL MATCH (src_call)-[:RECEIVER]->(src_recv:Value)
 RETURN recv.value_kind AS recv_kind,
        recv.name AS recv_name,
+       recv.file AS recv_file,
+       recv.start_line AS recv_start_line,
        src_call.call_kind AS src_call_kind,
        prop.fqn AS prop_fqn,
        prop.name AS prop_name,

@@ -35,7 +35,7 @@ show_help() {
     echo "kloc - PHP code intelligence pipeline"
     echo ""
     echo "Usage:"
-    echo "  kloc.sh index --project <name> -d <project-dir> [--internal-all] [--experimental]"
+    echo "  kloc.sh index --project <name> -d <project-dir> [--internal-all] [--rust-indexer]"
     echo "  kloc.sh cli   --project <name> <command> [args...]"
     echo ""
     echo "Commands:"
@@ -47,6 +47,7 @@ show_help() {
     echo "  -d <path>           PHP project directory to index (index mode)"
     echo "  --internal-all      Treat vendor packages as internal (index mode)"
     echo "  --experimental      Include experimental call kinds (index mode)"
+    echo "  --rust-indexer      Use Rust indexer (kloc-indexer-php) instead of scip-php"
     echo "  -h, --help          Show this help"
     echo ""
     echo "Data stored in: data/<project_name>/"
@@ -81,6 +82,7 @@ PROJECT=""
 PROJECT_DIR=""
 INTERNAL_ALL=""
 EXPERIMENTAL=""
+USE_RUST_INDEXER=""
 CLI_ARGS=()
 PARSING_PROJECT=false
 PARSING_DIR=false
@@ -124,6 +126,13 @@ for arg in "$@"; do
                 CLI_ARGS+=("$arg")
             fi
             ;;
+        --rust-indexer)
+            if [[ "$COMMAND" == "index" ]]; then
+                USE_RUST_INDEXER="1"
+            else
+                CLI_ARGS+=("$arg")
+            fi
+            ;;
         *)
             CLI_ARGS+=("$arg")
             ;;
@@ -160,12 +169,28 @@ case "$COMMAND" in
         echo ""
 
         # Step 1: Generate SCIP index
-        echo "[1/2] Generating SCIP index..."
-        "$SCRIPT_DIR/scip-php/bin/scip-php.sh" \
-            -d "$PROJECT_DIR" \
-            -o "$DATA_DIR" \
-            $INTERNAL_ALL \
-            $EXPERIMENTAL
+        if [[ -n "$USE_RUST_INDEXER" ]]; then
+            RUST_INDEXER_BIN="$SCRIPT_DIR/kloc-indexer-php/target/release/kloc-indexer-php"
+            if [[ ! -x "$RUST_INDEXER_BIN" ]] && [[ -f "$BIN_DIR/kloc-indexer-php" ]]; then
+                RUST_INDEXER_BIN="$BIN_DIR/kloc-indexer-php"
+            fi
+            if [[ ! -x "$RUST_INDEXER_BIN" ]]; then
+                echo "Error: Rust indexer not found. Build with: cd kloc-indexer-php && cargo build --release"
+                exit 1
+            fi
+            echo "[1/2] Generating SCIP index (Rust indexer)..."
+            "$RUST_INDEXER_BIN" \
+                -d "$PROJECT_DIR" \
+                -o "$INDEX_FILE" \
+                $INTERNAL_ALL
+        else
+            echo "[1/2] Generating SCIP index (scip-php)..."
+            "$SCRIPT_DIR/scip-php/bin/scip-php.sh" \
+                -d "$PROJECT_DIR" \
+                -o "$DATA_DIR" \
+                $INTERNAL_ALL \
+                $EXPERIMENTAL
+        fi
         echo ""
 
         if [[ ! -f "$INDEX_FILE" ]]; then
