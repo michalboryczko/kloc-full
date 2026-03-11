@@ -19,3 +19,15 @@ repos:
     build: ./build/build.sh
     binary: ./bin/scip-php.sh
     description: PHP SCIP indexer (Docker-based)
+
+  - name: kloc-indexer-php
+    url: https://github.com/michalboryczko/kloc-php-indexer.git
+    build: cargo build --release
+    binary: target/release/kloc-indexer-php
+    description: Rust SCIP indexer (200x faster drop-in replacement for scip-php)
+
+  - name: kloc-reference-project-php
+    url: https://github.com/michalboryczko/kloc-reference-project-php.git
+    build: "true"
+    binary: "true"
+    description: PHP reference project for testing and contract validation

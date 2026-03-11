@@ -1,8 +1,10 @@
-# Subproject directories (fetched by setup.sh)
+# Subproject directories (fetched by setup.sh or standalone repos)
 kloc-cli/
 kloc-mapper/
 scip-php/
 kloc-reference-project-php/
+kloc-indexer-php/
+kloc-intelligence/
 
 # Artifacts
 artifacts/

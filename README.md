@@ -1,111 +1,111 @@
-# kloc-full
+# kloc
 
-Meta repository for the **KLOC (Knowledge of Code)** project - a toolkit for extracting and querying rich code context for AI coding agents.
+Meta-repository for the **KLOC (Knowledge of Code)** project -- a toolkit for extracting and querying rich code context from PHP codebases, designed for AI coding agents.
 
-## Overview
-
-KLOC provides a pipeline to transform source code into a queryable graph representation:
+## Pipeline
 
 ```
-Source Code → SCIP Index → SoT JSON → Queries/MCP
+PHP Source -> [scip-php | kloc-indexer-php] -> index.json -> kloc-mapper -> sot.json -> [kloc-cli | kloc-intelligence] -> output
 ```
 
 ## Components
 
-| Repository | Description |
-|------------|-------------|
-| [kloc-mapper](https://github.com/michalboryczko/kloc-mapper) | Converts SCIP indexes to Source-of-Truth (SoT) JSON |
-| [kloc-cli](https://github.com/michalboryczko/kloc-cli) | CLI for querying SoT JSON (deps, usages, context, inherit) |
-| [scip-php](https://github.com/michalboryczko/scip-php) | PHP SCIP indexer |
+| Directory | Language | Description |
+|-----------|----------|-------------|
+| `kloc-cli/` | Python | CLI for querying Source-of-Truth JSON (deps, usages, context, inherit) |
+| `kloc-mapper/` | Python | Converts SCIP indexes to Source-of-Truth (SoT) JSON |
+| `scip-php/` | PHP | SCIP indexer for PHP projects (Docker-based) |
+| `kloc-indexer-php/` | Rust | Drop-in replacement for scip-php, ~200x faster |
+| `kloc-intelligence/` | Python | Neo4j-backed graph DB query engine with MCP server |
+| `kloc-reference-project-php/` | PHP | Symfony 7.2 reference project for testing |
+| `kloc-contracts/` | JSON/Python | Pipeline validation schemas (sot-json, scip-php-output, kloc-cli-context) |
+
+Sub-repos (`kloc-cli`, `kloc-mapper`, `scip-php`, `kloc-indexer-php`, `kloc-reference-project-php`) are managed via `repos.yml` and cloned by `setup.sh`. `kloc-intelligence` and `kloc-contracts` live directly in this repository.
+
+## Prerequisites
+
+- Python 3.11+ with [uv](https://github.com/astral-sh/uv)
+- Docker (for scip-php and kloc-intelligence/Neo4j)
+- Rust 1.75+ (for kloc-indexer-php, optional)
 
 ## Quick Start
 
 ```bash
-# Clone this meta repo
-git clone https://github.com/michalboryczko/kloc-full.git
-cd kloc-full
-
-# Fetch all component repos
+# Clone and set up all sub-repos
+git clone https://github.com/michalboryczko/kloc-full.git && cd kloc-full
 ./setup.sh
-
-# Build all binaries
 ./build.sh
-
-# Binaries are now in bin/
-./bin/kloc-mapper --help
-./bin/kloc-cli --help
-./bin/scip-php --help
 ```
 
-## Selective Setup/Build
+### Dev Pipeline (reference project)
 
 ```bash
-# Setup only specific repo
-./setup.sh kloc-cli
-./setup.sh scip-php
+# Index the reference project and query it
+./kloc-dev.sh context "App\Service\OrderService" --depth 3
 
-# Build only specific repo
-./build.sh kloc-cli
-./build.sh scip-php
+# Same, using the Rust indexer
+./kloc-dev.sh context "App\Service\OrderService" --depth 3 --rust-indexer
 ```
 
-## Usage Pipeline
+### Production Pipeline
 
 ```bash
-# 1. Index your PHP project
-./bin/scip-php -d /path/to/your/php-project -o index.scip
+# Index a PHP project
+./kloc.sh index --project myapp -d /path/to/php-project
 
-# 2. Convert SCIP index to SoT JSON
-./bin/kloc-mapper map -s index.scip -o sot.json --pretty
+# Index with the Rust indexer
+./kloc.sh index --project myapp -d /path/to/php-project --rust-indexer
 
-# 3. Query the codebase
-./bin/kloc-cli context "UserService::createUser" --sot sot.json --impl
-./bin/kloc-cli deps "UserController" --sot sot.json --depth 2
-./bin/kloc-cli usages "User" --sot sot.json
-
-# 4. Or use MCP server for AI integration
-./bin/kloc-cli mcp-server --sot sot.json
+# Query it
+./kloc.sh cli --project myapp context "App\Service\OrderService" --depth 2
 ```
 
-### Full Example
+### kloc-intelligence (Neo4j backend)
 
 ```bash
-# Index a Symfony project
-./bin/scip-php -d ~/projects/my-symfony-app -o my-app.scip
-
-# Convert to queryable format
-./bin/kloc-mapper map -s my-app.scip -o my-app-sot.json
-
-# Find all usages of a service
-./bin/kloc-cli usages "App\\Service\\PaymentService" --sot my-app-sot.json --depth 2
-
-# Get context with interface implementations
-./bin/kloc-cli context "PaymentServiceInterface::process" --sot my-app-sot.json --impl
+cd kloc-intelligence
+docker compose -f docker/docker-compose.yml up -d
+uv run kloc-intelligence import artifacts/sot.json
+uv run kloc-intelligence context "App\Service\OrderService" --depth 3
 ```
 
-## Directory Structure
+## Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `kloc.sh` | Production pipeline: index a PHP project and query it |
+| `kloc-dev.sh` | Dev pipeline: indexes the reference project and runs kloc-cli |
+| `setup.sh` | Clone or update all sub-repos defined in `repos.yml` |
+| `build.sh` | Build binaries from all sub-repos |
+| `repos.yml` | Sub-repository URLs and build configuration |
+
+## Directory Layout
 
 ```
-kloc-full/
-├── setup.sh          # Fetch all repos
-├── build.sh          # Build all binaries
-├── repos.yml         # Repository definitions
-├── bin/              # Built binaries (after build.sh)
-├── kloc-cli/         # Cloned repo (after setup.sh)
-├── kloc-mapper/      # Cloned repo (after setup.sh)
-└── scip-php/         # Cloned repo (after setup.sh)
+kloc/
+  kloc.sh                  # Production pipeline
+  kloc-dev.sh              # Dev pipeline
+  setup.sh / build.sh      # Repo management
+  repos.yml                # Sub-repo definitions
+  kloc-cli/                # Query CLI (sub-repo)
+  kloc-mapper/             # SCIP-to-SoT mapper (sub-repo)
+  scip-php/                # PHP SCIP indexer (sub-repo)
+  kloc-indexer-php/         # Rust SCIP indexer (sub-repo)
+  kloc-intelligence/        # Neo4j query engine + MCP server
+  kloc-reference-project-php/  # Test fixture (sub-repo)
+  kloc-contracts/           # JSON schemas for pipeline validation
+  artifacts/                # Pipeline output (index.json, sot.json)
+  data/                     # Test datasets
 ```
 
-## Development
+## Indexer Comparison
 
-To work on individual components:
-
-```bash
-cd kloc-cli
-source venv/bin/activate  # or: source .venv/bin/activate
-pip install -e ".[dev]"
-pytest
-```
+| | scip-php | kloc-indexer-php |
+|---|----------|-----------------|
+| Language | PHP (Docker) | Rust (native binary) |
+| Speed (41 files) | ~2s | ~0.01s |
+| Output | index.json + calls.json | index.json + calls.json |
+| Status | Production | Drop-in compatible, all parity metrics match |
 
 ## License
 
