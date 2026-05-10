@@ -2,16 +2,19 @@
 
 This guide walks you through setting up kloc and using it to analyze a PHP codebase. By the end, you will be able to query your project's class hierarchy, method calls, and dependencies from the command line.
 
-The core pipeline is **scip-php → kloc-mapper → kloc-cli**. Two optional components extend it:
+The core pipeline is **kloc-indexer-php → kloc-mapper → kloc-cli**. Two optional components extend it:
 
 - **kloc-symfony** — extracts Symfony framework architecture (routes, DI, message handlers, event listeners, console commands, flows) as `symfony-kloc.json`. Only relevant if your project is a Symfony app. See [kloc-symfony.md](kloc-symfony.md).
 - **kloc-intelligence** — a graph-native code-intelligence service backed by Neo4j (plus Qdrant for AI features). Imports `sot.json` (and optionally `symfony-kloc.json`) once, then answers the same queries as kloc-cli plus multi-hop Cypher traversals, flow analysis, and semantic search. See [kloc-intelligence.md](kloc-intelligence.md).
+
+> The legacy Docker-based `scip-php` indexer is deprecated and replaced by `kloc-indexer-php`. It is no longer fetched by `setup.sh` or built by `build.sh`; `kloc.sh` / `kloc-dev.sh` still accept `--scip-php` if you clone `scip-php/` yourself.
 
 ## Prerequisites
 
 - **Python 3.12+** -- required for kloc-cli and kloc-mapper (kloc-intelligence needs 3.11+)
 - **uv** -- Python package manager ([install guide](https://docs.astral.sh/uv/getting-started/installation/))
-- **Docker** -- required for the scip-php indexer, kloc-symfony, and the kloc-intelligence backing services (Neo4j + Qdrant)
+- **Rust toolchain** -- required to build `kloc-indexer-php` (the SCIP indexer); `cargo build --release`, or build via `./build.sh`
+- **Docker** -- required for kloc-symfony and the kloc-intelligence backing services (Neo4j + Qdrant)
 - **A PHP project** to analyze (with Composer dependencies installed)
 - *(kloc-symfony only)* the project must be a **Symfony 6.x or 7.x** app with `vendor/autoload.php` present
 - *(kloc-intelligence AI features only)* an OpenAI-compatible **LLM + embedding API key** (OpenRouter, Gemini, OpenAI, …)
@@ -37,8 +40,7 @@ The monorepo is composed of several sub-repositories (listed in `repos.yml`). Th
 |-----------|------|-----------|
 | `kloc-cli` | Stateless CLI that queries `sot.json` | yes |
 | `kloc-mapper` | Maps the SCIP index → `sot.json` | yes |
-| `scip-php` | Docker-based PHP SCIP indexer | yes (or `kloc-indexer-php`) |
-| `kloc-indexer-php` | Rust SCIP indexer — faster drop-in replacement for `scip-php` | optional |
+| `kloc-indexer-php` | Rust SCIP indexer for PHP projects → `index.json` | yes |
 | `kloc-symfony` | Symfony framework extractor → `symfony-kloc.json` | optional |
 | `kloc-intelligence` | Neo4j/Qdrant-backed code-intelligence service | optional |
 | `kloc-reference-project-php` | PHP reference project for tests / experimentation | optional |
@@ -48,7 +50,7 @@ To set up only a specific component:
 ```bash
 ./setup.sh kloc-cli            # CLI query tool only
 ./setup.sh kloc-mapper         # SCIP-to-SoT mapper only
-./setup.sh scip-php            # PHP indexer only
+./setup.sh kloc-indexer-php    # PHP indexer only
 ./setup.sh kloc-symfony        # Symfony framework extractor only
 ./setup.sh kloc-intelligence   # Graph code-intelligence service only
 ```
@@ -81,15 +83,15 @@ Verify the installation:
 cd kloc-mapper && uv run kloc-mapper --help && cd ..
 ```
 
-### 5. Build the scip-php Docker image
+### 5. Build the kloc-indexer-php indexer
 
 ```bash
-cd scip-php
-./build/build.sh
+cd kloc-indexer-php
+cargo build --release
 cd ..
 ```
 
-This builds a Docker image named `scip-php` that contains the PHP indexer.
+This produces the indexer binary at `kloc-indexer-php/target/release/kloc-indexer-php`. Alternatively, `./build.sh kloc-indexer-php` builds it and copies the binary to `bin/kloc-indexer-php`.
 
 ### 6. (Optional) Build the kloc-symfony Docker image
 
@@ -129,8 +131,8 @@ See [kloc-intelligence.md](kloc-intelligence.md) for the full command reference.
 The core kloc pipeline has three stages:
 
 ```
-PHP project  -->  scip-php  -->  kloc-mapper  -->  kloc-cli
-               (index.json)     (sot.json)       (queries)
+PHP project  -->  kloc-indexer-php  -->  kloc-mapper  -->  kloc-cli
+                    (index.json)         (sot.json)       (queries)
 ```
 
 Two optional branches plug in after the mapper:
@@ -147,23 +149,25 @@ Two optional branches plug in after the mapper:
                                          --> CLI / MCP / Cypher
 ```
 
-### Stage 1: Run scip-php on your PHP project
+### Stage 1: Run kloc-indexer-php on your PHP project
 
-scip-php analyzes your PHP source code and produces an `index.json` file containing symbol definitions, references, and call graph data.
+kloc-indexer-php analyzes your PHP source code and produces an `index.json` file containing symbol definitions, references, and call graph data.
 
 ```bash
-./scip-php/bin/scip-php.sh -d /path/to/your/php-project -o /path/to/output
+./kloc-indexer-php/target/release/kloc-indexer-php -d /path/to/your/php-project -o /path/to/output/index.json
+# or, if you ran ./build.sh:  ./bin/kloc-indexer-php -d /path/to/your/php-project -o /path/to/output/index.json
 ```
 
 Options:
-- `-d, --project-dir` -- path to your PHP project root (required)
-- `-o, --output` -- output directory for index.json (default: current directory)
+- `-d, --project-root` -- path to your PHP project root (required)
+- `-o, --output` -- output path for `index.json` (default: `<project>/.kloc/index.json`)
 - `--experimental` -- include experimental call kinds (function calls, array access, etc.)
 - `--internal-all` -- treat all vendor packages as internal (full indexing of dependencies)
+- `--threads N`, `--php-version VERSION` -- see `kloc-indexer-php --help`
 
 Your PHP project should have Composer dependencies installed (`composer install`) before indexing.
 
-Output: `index.json` in the specified output directory.
+Output: `index.json` at the specified path.
 
 ### Stage 2: Run kloc-mapper to produce sot.json
 
@@ -351,7 +355,7 @@ Run without a kloc-cli command to just produce the index and sot.json:
 
 ## Building Standalone Binaries
 
-You can build standalone binaries for kloc-cli and kloc-mapper using `build.sh`. These binaries do not require Python or uv to run.
+You can build standalone binaries for kloc-cli, kloc-mapper, and kloc-indexer-php using `build.sh` — they are copied into the `bin/` directory at the monorepo root. The kloc-cli/kloc-mapper binaries do not require Python or uv to run.
 
 ### Build all components
 
@@ -362,9 +366,9 @@ You can build standalone binaries for kloc-cli and kloc-mapper using `build.sh`.
 ### Build a specific component
 
 ```bash
-./build.sh kloc-cli       # Build kloc-cli binary only
-./build.sh kloc-mapper     # Build kloc-mapper binary only
-./build.sh scip-php        # Build scip-php only
+./build.sh kloc-cli           # Build kloc-cli binary only
+./build.sh kloc-mapper        # Build kloc-mapper binary only
+./build.sh kloc-indexer-php   # Build the Rust indexer only
 ```
 
 Binaries are placed in the `bin/` directory at the monorepo root.
@@ -398,13 +402,13 @@ git clone https://github.com/michalboryczko/kloc.git
 cd kloc
 ./setup.sh
 
-# 2. Install tools
+# 2. Install / build tools
 cd kloc-cli && uv pip install -e ".[dev]" && cd ..
 cd kloc-mapper && uv pip install -e ".[dev]" && cd ..
-cd scip-php && ./build/build.sh && cd ..
+cd kloc-indexer-php && cargo build --release && cd ..
 
 # 3. Index your PHP project
-./scip-php/bin/scip-php.sh -d /path/to/your/project -o ./output
+./kloc-indexer-php/target/release/kloc-indexer-php -d /path/to/your/project -o ./output/index.json
 
 # 4. Map to sot.json
 cd kloc-mapper

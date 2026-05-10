@@ -14,17 +14,11 @@ repos:
     binary: dist/kloc-mapper
     description: SCIP to SoT JSON mapper
 
-  - name: scip-php
-    url: https://github.com/michalboryczko/scip-php.git
-    build: ./build/build.sh
-    binary: ./bin/scip-php.sh
-    description: PHP SCIP indexer (Docker-based)
-
   - name: kloc-indexer-php
     url: https://github.com/michalboryczko/kloc-php-indexer.git
     build: cargo build --release
     binary: target/release/kloc-indexer-php
-    description: Rust SCIP indexer (200x faster drop-in replacement for scip-php)
+    description: Rust SCIP indexer for PHP projects
 
   - name: kloc-symfony
     url: https://github.com/michalboryczko/kloc-symfony.git

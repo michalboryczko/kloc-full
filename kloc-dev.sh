@@ -4,12 +4,15 @@ set -euo pipefail
 # kloc-dev: Full pipeline wrapper for development
 # Indexes reference project -> maps to sot.json -> runs kloc-cli
 #
+# By default uses the Rust indexer (kloc-indexer-php). Pass --scip-php to use
+# the legacy Docker-based scip-php indexer.
+#
 # Usage:
 #   ./kloc-dev.sh context "App\Service\OrderService" --depth 2 --impl
 #   ./kloc-dev.sh context "App\Service\OrderService" --id=my-test --depth 2
 #   ./kloc-dev.sh resolve "App\Entity\Order" --id=my-test
 #   ./kloc-dev.sh context "App\Service\OrderService" --internal-all
-#   ./kloc-dev.sh context "App\Service\OrderService" --rust-indexer
+#   ./kloc-dev.sh context "App\Service\OrderService" --scip-php
 #
 # Artifacts are stored in: artifacts/kloc-dev/{id}/
 # When --id is provided and artifacts exist, the index/map steps are skipped.
@@ -22,7 +25,8 @@ ARTIFACTS_BASE="$SCRIPT_DIR/artifacts/$SCRIPT_NAME"
 
 RUN_ID=""
 INTERNAL_ALL=""
-USE_RUST_INDEXER=""
+# Default to Rust indexer; --scip-php opts out
+USE_RUST_INDEXER="1"
 PASSTHROUGH_ARGS=()
 
 for arg in "$@"; do
@@ -35,6 +39,9 @@ for arg in "$@"; do
             ;;
         --rust-indexer)
             USE_RUST_INDEXER="1"
+            ;;
+        --scip-php|--legacy-indexer)
+            USE_RUST_INDEXER=""
             ;;
         *)
             PASSTHROUGH_ARGS+=("$arg")

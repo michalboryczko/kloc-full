@@ -35,19 +35,20 @@ show_help() {
     echo "kloc - PHP code intelligence pipeline"
     echo ""
     echo "Usage:"
-    echo "  kloc.sh index --project <name> -d <project-dir> [--internal-all] [--rust-indexer]"
+    echo "  kloc.sh index --project <name> -d <project-dir> [--internal-all] [--scip-php]"
     echo "  kloc.sh cli   --project <name> <command> [args...]"
     echo ""
     echo "Commands:"
-    echo "  index    Index a PHP project (scip-php + kloc-mapper)"
+    echo "  index    Index a PHP project (kloc-indexer-php + kloc-mapper)"
     echo "  cli      Run kloc-cli queries against indexed project"
     echo ""
     echo "Options:"
     echo "  --project <name>    Project name (used for data directory)"
     echo "  -d <path>           PHP project directory to index (index mode)"
     echo "  --internal-all      Treat vendor packages as internal (index mode)"
-    echo "  --experimental      Include experimental call kinds (index mode)"
-    echo "  --rust-indexer      Use Rust indexer (kloc-indexer-php) instead of scip-php"
+    echo "  --experimental      Include experimental call kinds (index mode, scip-php only)"
+    echo "  --scip-php          Use legacy scip-php indexer instead of Rust indexer"
+    echo "  --rust-indexer      Use Rust indexer (default — kept for backwards compat)"
     echo "  -h, --help          Show this help"
     echo ""
     echo "Data stored in: data/<project_name>/"
@@ -82,7 +83,8 @@ PROJECT=""
 PROJECT_DIR=""
 INTERNAL_ALL=""
 EXPERIMENTAL=""
-USE_RUST_INDEXER=""
+# Default to Rust indexer; --scip-php opts out
+USE_RUST_INDEXER="1"
 CLI_ARGS=()
 PARSING_PROJECT=false
 PARSING_DIR=false
@@ -129,6 +131,13 @@ for arg in "$@"; do
         --rust-indexer)
             if [[ "$COMMAND" == "index" ]]; then
                 USE_RUST_INDEXER="1"
+            else
+                CLI_ARGS+=("$arg")
+            fi
+            ;;
+        --scip-php|--legacy-indexer)
+            if [[ "$COMMAND" == "index" ]]; then
+                USE_RUST_INDEXER=""
             else
                 CLI_ARGS+=("$arg")
             fi

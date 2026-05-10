@@ -5,10 +5,10 @@ set -euo pipefail
 # Run setup.sh first to ensure repos are cloned
 #
 # Usage:
-#   ./build.sh              # Build all repos
-#   ./build.sh kloc-cli     # Build only kloc-cli
-#   ./build.sh --force      # Clean build dirs first, then build all
-#   ./build.sh --force kloc-cli  # Clean + build specific repo
+#   ./build.sh                    # Build all repos
+#   ./build.sh kloc-cli           # Build only kloc-cli
+#   ./build.sh --force            # Clean build dirs first, then build all
+#   ./build.sh --force kloc-cli   # Clean + build a specific repo
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
@@ -30,7 +30,7 @@ if [ "$FORCE" = true ]; then
     echo "Force mode: cleaning build directories..."
     rm -rf "$BIN_DIR"
     # Clean each repo's build artifacts
-    for dir in kloc-cli kloc-mapper scip-php kloc-indexer-php; do
+    for dir in kloc-cli kloc-mapper kloc-indexer-php; do
         if [ -d "$dir" ]; then
             rm -rf "$dir/dist" "$dir/build" "$dir/__pycache__" "$dir/.pyinstaller"
             # Rust cleanup
