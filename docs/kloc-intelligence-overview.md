@@ -164,13 +164,17 @@ Use it for any Symfony codebase you're trying to understand. Use it before chang
 
 ### What it does
 
-`enrich` is a batch operation that walks every Class/Method node and produces:
+There are two enrichment paths, both LLM-driven:
+
+**Node enrichment (`enrich`)** is a batch operation that walks every Class/Method node and produces:
 1. A 2–5 sentence human-language **explanation** of what the code does (stored as a node property in Neo4j: `n.explanation`, `n.explain_model`, `n.explain_at`).
 2. A vector **embedding** of both the source code and the explanation, written to two Qdrant collections: `code_embeddings` and `explain_embeddings`. Large classes are split by method boundary so each embedding represents one logical unit.
 
 Both steps use OpenAI-compatible providers (configurable per-operation — see [usage/kloc-intelligence.md](usage/kloc-intelligence.md)). Default LLM is `minimax/minimax-m2.7` via OpenRouter; default embeddings are `qwen/qwen3-embedding-8b` 4096-dim. Each can be swapped for Gemini, OpenAI, or any OpenAI-compat endpoint.
 
 `explain <symbol>` runs the same pipeline for a single node on demand (used when the batch hasn't been run yet, or when you want to refresh a specific node).
+
+**Flow enrichment (`enrich-flows`)** is the equivalent for `:Flow` nodes. For each flow, it walks the depth-3 bidirectional context of the entry method (with polymorphic implementations included), attaches source snippets from the referenced nodes, and asks the LLM for a *1–3 sentence abstract description* optimized for business-vocabulary search queries (think "process customer orders", not "ProcessOrdersCommand::execute calls OrderService::createOrder"). The result is stored as `f.explanation` and embedded into a third Qdrant collection (`flow_explain_embeddings`) so semantic search returns flows alongside code.
 
 ### Why it exists
 
@@ -202,7 +206,7 @@ Don't enrich vendor code — the value is low and the LLM will hallucinate confi
 
 Grep finds substring matches. `usages`/`deps` find graph neighbors. Neither answers "find code that does X" when you don't know the right substring or the right starting node. That's the question semantic search exists for.
 
-The two-collection setup matters: `code_embeddings` is good for finding code that *looks* like the query (similar structure, similar variable names), while `explain_embeddings` is good for finding code that *behaves* like the query (because the LLM-authored explanation describes behavior in plain language). Merging both gets you both kinds of recall.
+The three-collection setup matters: `code_embeddings` is good for finding code that *looks* like the query (similar structure, similar variable names); `explain_embeddings` is good for finding code that *behaves* like the query (LLM-authored explanation in plain language); `flow_explain_embeddings` is good for finding the *application surface* that drives a business process (HTTP routes, message handlers, CLI commands, event subscribers). Merging all three gets you all three kinds of recall.
 
 ### When to use it / when not to
 

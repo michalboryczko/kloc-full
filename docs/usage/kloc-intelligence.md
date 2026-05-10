@@ -148,6 +148,19 @@ The response is a discriminated union with `mode`:
 
 Use detail mode to find an entry method's `node_id`, then feed that to `kloc_context` for the deep call-tree investigation. Flows know boundaries; `context` walks the tree.
 
+#### enrich-flows — generate business-process summaries for flows
+
+**Question:** "What business process does each flow drive, in plain language?"
+
+```bash
+uv run kloc-intelligence enrich-flows
+uv run kloc-intelligence enrich-flows --force      # re-enrich already enriched
+```
+
+For each `:Flow`, walks the depth-3 bidirectional context (with implementations) of the entry method, attaches source snippets from the referenced nodes, and asks the LLM for a 1–3 sentence abstract description optimized for business-vocabulary search queries. The result is stored as `f.explanation` on the flow node and embedded into the `flow_explain_embeddings` Qdrant collection so `search` returns flows alongside other code.
+
+The summaries are deliberately abstract: business vocabulary (orders, customers, payments) over implementation vocabulary (controllers, dispatchers). The goal is recall on phrases like "process customer orders" or "send notification when delivery fails", not implementation accuracy.
+
 ### Symbol resolution
 
 #### resolve — find where a symbol is defined
@@ -297,7 +310,7 @@ Start the server over stdio:
 uv run kloc-intelligence mcp-server
 ```
 
-Tools exposed (15 in this build):
+Tools exposed (16 in this build):
 
 | Tool | Equivalent CLI |
 |------|----------------|
@@ -313,6 +326,7 @@ Tools exposed (15 in this build):
 | `kloc_search` | `search` |
 | `kloc_enrich` | `enrich` |
 | `kloc_import_flows` | `import-flows` |
+| `kloc_enrich_flows` | `enrich-flows` |
 | `kloc_flows` | `flows` |
 | `kloc_source` | `source` |
 | `kloc_chunks` | `chunks` |
