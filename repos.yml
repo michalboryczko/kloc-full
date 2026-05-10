@@ -26,6 +26,18 @@ repos:
     binary: target/release/kloc-indexer-php
     description: Rust SCIP indexer (200x faster drop-in replacement for scip-php)
 
+  - name: kloc-symfony
+    url: https://github.com/michalboryczko/kloc-symfony.git
+    build: "true"
+    binary: "true"
+    description: Symfony framework extractor (routes, DI, handlers, listeners, commands, flows) -> symfony-kloc.json
+
+  - name: kloc-intelligence
+    url: https://github.com/michalboryczko/kloc-intelligence.git
+    build: "true"
+    binary: "true"
+    description: Graph-native code intelligence service (Neo4j + Qdrant) over sot.json
+
   - name: kloc-reference-project-php
     url: https://github.com/michalboryczko/kloc-reference-project-php.git
     build: "true"

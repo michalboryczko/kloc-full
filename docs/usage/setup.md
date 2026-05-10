@@ -2,12 +2,19 @@
 
 This guide walks you through setting up kloc and using it to analyze a PHP codebase. By the end, you will be able to query your project's class hierarchy, method calls, and dependencies from the command line.
 
+The core pipeline is **scip-php → kloc-mapper → kloc-cli**. Two optional components extend it:
+
+- **kloc-symfony** — extracts Symfony framework architecture (routes, DI, message handlers, event listeners, console commands, flows) as `symfony-kloc.json`. Only relevant if your project is a Symfony app. See [kloc-symfony.md](kloc-symfony.md).
+- **kloc-intelligence** — a graph-native code-intelligence service backed by Neo4j (plus Qdrant for AI features). Imports `sot.json` (and optionally `symfony-kloc.json`) once, then answers the same queries as kloc-cli plus multi-hop Cypher traversals, flow analysis, and semantic search. See [kloc-intelligence.md](kloc-intelligence.md).
+
 ## Prerequisites
 
-- **Python 3.12+** -- required for kloc-cli and kloc-mapper
+- **Python 3.12+** -- required for kloc-cli and kloc-mapper (kloc-intelligence needs 3.11+)
 - **uv** -- Python package manager ([install guide](https://docs.astral.sh/uv/getting-started/installation/))
-- **Docker** -- required for the scip-php indexer
+- **Docker** -- required for the scip-php indexer, kloc-symfony, and the kloc-intelligence backing services (Neo4j + Qdrant)
 - **A PHP project** to analyze (with Composer dependencies installed)
+- *(kloc-symfony only)* the project must be a **Symfony 6.x or 7.x** app with `vendor/autoload.php` present
+- *(kloc-intelligence AI features only)* an OpenAI-compatible **LLM + embedding API key** (OpenRouter, Gemini, OpenAI, …)
 
 ## Step-by-step Setup
 
@@ -20,18 +27,30 @@ cd kloc
 
 ### 2. Fetch sub-projects
 
-The monorepo contains three sub-repositories: `kloc-cli`, `kloc-mapper`, and `scip-php`. The setup script clones or updates all of them:
+The monorepo is composed of several sub-repositories (listed in `repos.yml`). The setup script clones or updates all of them:
 
 ```bash
 ./setup.sh
 ```
 
+| Component | Role | Required? |
+|-----------|------|-----------|
+| `kloc-cli` | Stateless CLI that queries `sot.json` | yes |
+| `kloc-mapper` | Maps the SCIP index → `sot.json` | yes |
+| `scip-php` | Docker-based PHP SCIP indexer | yes (or `kloc-indexer-php`) |
+| `kloc-indexer-php` | Rust SCIP indexer — faster drop-in replacement for `scip-php` | optional |
+| `kloc-symfony` | Symfony framework extractor → `symfony-kloc.json` | optional |
+| `kloc-intelligence` | Neo4j/Qdrant-backed code-intelligence service | optional |
+| `kloc-reference-project-php` | PHP reference project for tests / experimentation | optional |
+
 To set up only a specific component:
 
 ```bash
-./setup.sh kloc-cli      # CLI query tool only
-./setup.sh kloc-mapper    # SCIP-to-SoT mapper only
-./setup.sh scip-php       # PHP indexer only
+./setup.sh kloc-cli            # CLI query tool only
+./setup.sh kloc-mapper         # SCIP-to-SoT mapper only
+./setup.sh scip-php            # PHP indexer only
+./setup.sh kloc-symfony        # Symfony framework extractor only
+./setup.sh kloc-intelligence   # Graph code-intelligence service only
 ```
 
 ### 3. Install kloc-cli
@@ -72,13 +91,60 @@ cd ..
 
 This builds a Docker image named `scip-php` that contains the PHP indexer.
 
+### 6. (Optional) Build the kloc-symfony Docker image
+
+Only needed if you want to extract Symfony framework architecture (`symfony-kloc.json`). The tool ships as a Docker image — no local PHP install required.
+
+```bash
+cd kloc-symfony
+docker build -t kloc-symfony .
+cd ..
+```
+
+This builds a Docker image named `kloc-symfony` (base `php:8.4-cli`, with `composer install --no-dev` baked in).
+
+### 7. (Optional) Set up kloc-intelligence
+
+Only needed if you want graph-backed queries, flow analysis, or AI features (explanations + semantic search). It needs Neo4j (and Qdrant for AI features), both provided via Docker Compose.
+
+```bash
+cd kloc-intelligence
+uv sync --all-extras                  # omit --all-extras to skip the AI deps
+cp .env.example .env                  # then edit LLM_API_KEY + EMBEDDING_API_KEY (only for enrich/search)
+docker compose up -d                  # starts Neo4j + Qdrant
+uv run kloc-intelligence schema ensure
+cd ..
+```
+
+Verify the installation:
+
+```bash
+cd kloc-intelligence && uv run kloc-intelligence --help && cd ..
+```
+
+See [kloc-intelligence.md](kloc-intelligence.md) for the full command reference.
+
 ## Indexing Your PHP Project
 
-The kloc pipeline has three stages:
+The core kloc pipeline has three stages:
 
 ```
 PHP project  -->  scip-php  -->  kloc-mapper  -->  kloc-cli
                (index.json)     (sot.json)       (queries)
+```
+
+Two optional branches plug in after the mapper:
+
+```
+                              sot.json
+                                 |
+                +----------------+-----------------+
+                |                                  |
+                v                                  v
+   (Symfony apps only)                   (graph + AI, persistent)
+   kloc-symfony                          kloc-intelligence
+   --> symfony-kloc.json  ------------>  (Neo4j + Qdrant)
+                                         --> CLI / MCP / Cypher
 ```
 
 ### Stage 1: Run scip-php on your PHP project
@@ -116,6 +182,35 @@ Options:
 
 Output: `sot.json` at the specified path.
 
+### Stage 2b (optional): Extract Symfony architecture with kloc-symfony
+
+If your project is a Symfony app, run kloc-symfony to produce `symfony-kloc.json` (routes, message handlers, event listeners, console commands, and cross-flow triggers). It boots the target's Symfony kernel and reads the compiled DI container, so it needs the target's `vendor/` to be installed.
+
+Using the wrapper script (builds the Docker image on first run):
+
+```bash
+./kloc-symfony/bin/kloc-symfony.sh /path/to/symfony-app /path/to/output /path/to/output/sot.json
+```
+
+Arguments:
+- `<project-dir>` -- path to the Symfony project root (required)
+- `[output-dir]` -- directory for `symfony-kloc.json` (default: `<project-dir>/.kloc`)
+- `[sot-path]` -- optional `sot.json` for `node_id` cross-referencing + trigger detection
+
+Or invoke the image directly:
+
+```bash
+docker run --rm \
+  -v /path/to/symfony-app:/input:ro \
+  -v /path/to/output:/output \
+  -v /path/to/output/sot.json:/sot.json:ro \
+  kloc-symfony extract /input -o /output/symfony-kloc.json --sot /sot.json --pretty
+```
+
+Output: `symfony-kloc.json`. It is consumed by kloc-intelligence (`import-flows`); kloc-cli does not read it.
+
+See [kloc-symfony.md](kloc-symfony.md) for details.
+
 ### Stage 3: Query with kloc-cli
 
 Now you can query your codebase:
@@ -134,6 +229,32 @@ uv run kloc-cli usages "App\Service\OrderService::createOrder()" -s /path/to/out
 ```
 
 See [cli.md](cli.md) for the full command reference.
+
+### Stage 3 (alternative): Query with kloc-intelligence
+
+For large codebases, persistent analysis, flow queries, or AI workflows, import `sot.json` into Neo4j once and query many times:
+
+```bash
+cd kloc-intelligence
+
+# Import the graph (clears the DB by default)
+uv run kloc-intelligence import /path/to/output/sot.json
+
+# Import Symfony flows (optional — only if you produced symfony-kloc.json)
+uv run kloc-intelligence import-flows /path/to/output/symfony-kloc.json
+
+# (Optional) enrich with LLM explanations + embeddings — needs API keys in .env
+uv run kloc-intelligence enrich
+uv run kloc-intelligence enrich-flows
+
+# Query
+uv run kloc-intelligence context "App\Service\OrderService::createOrder()" -d 2
+uv run kloc-intelligence flows "App\Controller\OrderController::create"
+uv run kloc-intelligence search "create a new customer order"
+cd ..
+```
+
+kloc-intelligence emits the same JSON contract as kloc-cli for the shared commands (`resolve`, `usages`, `deps`, `context`, `owners`, `inherit`, `overrides`). See [kloc-intelligence.md](kloc-intelligence.md) for the full command reference and MCP server setup.
 
 ## Configuration File
 
@@ -253,6 +374,7 @@ Binaries are placed in the `bin/` directory at the monorepo root.
 - On **macOS**, kloc-cli and kloc-mapper build natively using PyInstaller
 - On **Linux**, the build runs natively as well
 - To cross-compile a **Linux binary from macOS**, use the Docker-based build described in the component CLAUDE.md files
+- `kloc-symfony` and `kloc-intelligence` are registered in `repos.yml` but have no binary build step — `build.sh` reports them as "(no build needed)". Set them up as described in steps 6–7 above (Docker image / `uv sync`).
 
 ### Using the binaries
 
@@ -268,7 +390,7 @@ After building, you can use the binaries directly without `uv run`:
 
 ## Quick Start Summary
 
-For the impatient, here is the entire flow from zero to querying:
+For the impatient, here is the entire core flow from zero to querying:
 
 ```bash
 # 1. Clone and setup
@@ -292,4 +414,23 @@ cd ..
 # 5. Query
 cd kloc-cli
 uv run kloc-cli context "App\YourNamespace\YourClass" -s ../output/sot.json -d 2
+```
+
+### Optional add-ons
+
+```bash
+# Symfony architecture (only for Symfony apps) -> symfony-kloc.json
+cd kloc-symfony && docker build -t kloc-symfony . && cd ..
+./kloc-symfony/bin/kloc-symfony.sh /path/to/your/project ./output ./output/sot.json
+
+# Graph + AI code intelligence (Neo4j + Qdrant)
+cd kloc-intelligence
+uv sync --all-extras
+cp .env.example .env            # edit LLM_API_KEY + EMBEDDING_API_KEY for enrich/search
+docker compose up -d
+uv run kloc-intelligence schema ensure
+uv run kloc-intelligence import ../output/sot.json
+uv run kloc-intelligence import-flows ../output/symfony-kloc.json   # if you ran kloc-symfony
+uv run kloc-intelligence context "App\YourNamespace\YourClass" -d 2
+cd ..
 ```
