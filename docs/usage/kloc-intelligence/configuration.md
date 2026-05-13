@@ -69,6 +69,26 @@ LLM and embedding providers are configured **independently** — each has its ow
 
 `explain` / `enrich` / `enrich-flows` need `LLM_API_KEY`. `search` and the embedding side of `enrich` / `enrich-flows` need `EMBEDDING_API_KEY`. They are validated independently — `search` will not fail if `LLM_API_KEY` is missing, and vice versa.
 
+### Symfony flow filtering
+
+| Variable | Default | What it controls |
+| --- | --- | --- |
+| `KLOC_FLOW_NAMESPACES` | `App\` | Comma-separated FQN-prefix allow-list applied to `:Flow` entry classes during `import-flows`. Whitespace around list entries is stripped. Empty / unset falls back to the default. |
+
+Only `:Flow` entries (HTTP routes, message handlers, event subscribers, CLI commands) are namespace-filtered. `:Message`, `:Event`, and `:HttpClient` nodes are always imported regardless of the originating namespace — so the PayPal `:HttpClient` lands in the graph even though its class lives under `Symfony\Component\HttpClient`.
+
+Examples:
+
+```ini
+# Default — only keep flows whose entry class starts with App\
+KLOC_FLOW_NAMESPACES=App\
+
+# Keep multiple project namespaces
+KLOC_FLOW_NAMESPACES=App\,Domain\Orders\,Acme\
+```
+
+Empty / unset falls back to `App\`. To keep flows from every namespace, list each desired prefix explicitly — there is no "match all" wildcard.
+
 ## Provider recipes
 
 ### OpenRouter (single key, both surfaces)

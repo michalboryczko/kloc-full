@@ -49,7 +49,7 @@ Behaviors:
 - **Idempotent re-import**: MERGE-reconcile across all four labels. `:Flow.explanation` / `.explain_model` / `.explain_at` are preserved across re-imports. Orphan nodes (in DB but not in JSON) are removed.
 - **Qdrant survives**: the `flow_explain_embeddings` collection is never dropped. Orphan flow embeddings are pruned by `flow_id` filter only; unchanged flows keep their existing embedding.
 - **Legacy sweep**: any `FLOW_TRIGGERS` edges left over from v2 imports are deleted on every run.
-- **App-namespace filter**: only flows with `App\` entry FQNs are imported. Vendor/framework flows are dropped. Messages / events / http_clients are universal — no namespace filter applies to them.
+- **Namespace filter (configurable)**: only flows whose entry FQN starts with one of the prefixes in `KLOC_FLOW_NAMESPACES` are imported (default `App\`). Set the env var to a comma-separated list to keep multiple project namespaces (e.g. `App\,Acme\,Domain\Orders\`). Vendor / framework flows are dropped by default. Messages / events / http_clients are universal — the namespace filter applies to flows only. See [configuration.md](configuration.md#symfony-flow-filtering).
 
 After flow import, run `kloc-intelligence flows` to confirm the flow count and `kloc-intelligence messages` / `events` / `http-clients` to inspect the new node sets.
 
