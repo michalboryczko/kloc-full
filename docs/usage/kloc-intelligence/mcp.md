@@ -25,7 +25,7 @@ The server runs over stdio — no TCP port. Spawn it as a child process and read
 
 With multiple projects configured, every tool call must include `"project": "my-app"` to disambiguate. With one project, `project` is optional (the server picks the only entry).
 
-## Tool catalog (16 tools)
+## Tool catalog (22 tools)
 
 | Tool | Equivalent CLI | One-line purpose |
 | --- | --- | --- |
@@ -37,8 +37,14 @@ With multiple projects configured, every tool call must include `"project": "my-
 | `kloc_inherit` | `inherit` | Walk EXTENDS / IMPLEMENTS. |
 | `kloc_overrides` | `overrides` | Walk OVERRIDES. |
 | `kloc_import` | `import` | Load `sot.json`. |
-| `kloc_import_flows` | `import-flows` | Load `symfony-kloc.json`. |
-| `kloc_flows` | `flows` | List / inspect `:Flow` nodes. |
+| `kloc_import_flows` | `import-flows` | Load `symfony-kloc.json` (v3 — flows + messages + events + http_clients). |
+| `kloc_flows` | `flows` | List / inspect `:Flow` nodes (dispatches_in/_out). |
+| `kloc_messages` | `messages` | List `:Message` nodes with source/target counts. |
+| `kloc_message` | `messages <id>` | Detail for one `:Message`. |
+| `kloc_events` | `events` | List `:Event` nodes with source/target counts. |
+| `kloc_event` | `events <id>` | Detail for one `:Event`. |
+| `kloc_http_clients` | `http-clients` | List `:HttpClient` nodes with source counts. |
+| `kloc_http_client` | `http-clients <id>` | Detail for one `:HttpClient`. |
 | `kloc_enrich` | `enrich` | Batch enrichment of Class/Method nodes. |
 | `kloc_enrich_flows` | `enrich-flows` | Generate business-process summaries for flows. |
 | `kloc_explain` | `explain` | LLM explanation for one node. |
@@ -111,6 +117,29 @@ Any MCP-aware client that supports stdio-spawned servers can use the same `comma
 // Output: tree-structured ContextResult (target + usedBy[] + uses[] + types + owners)
 ```
 
+### kloc_import_flows (v3)
+
+```json
+// Input
+{"path": "/path/to/symfony-kloc.json"}
+
+// Output
+{"status": "ok",
+ "flows_upserted": 10, "flows_deleted": 0,
+ "messages_upserted": 2, "messages_deleted": 0,
+ "events_upserted": 2, "events_deleted": 0,
+ "http_clients_upserted": 1, "http_clients_deleted": 0,
+ "flow_entry_edges": 10, "flow_entry_class_edges": 10,
+ "emits_flow_message_edges": 2, "emits_flow_event_edges": 2,
+ "emits_call_message_edges": 2, "emits_call_event_edges": 2,
+ "uses_http_flow_edges": 1, "uses_http_call_edges": 1,
+ "handled_by_message_edges": 1, "handled_by_event_edges": 2,
+ "of_type_message_edges": 2, "of_type_event_edges": 2, "of_type_http_edges": 0,
+ "qdrant_points_deleted": 0, "legacy_flow_triggers_deleted": 0}
+```
+
+Idempotent: preserves `:Flow.explanation`/`.explain_model`/`.explain_at` across re-imports. Orphan flow Qdrant points are filter-deleted by `flow_id`; the collection is never dropped.
+
 ### kloc_flows
 
 ```json
@@ -121,6 +150,71 @@ Any MCP-aware client that supports stdio-spawned servers can use the same `comma
 {"flow_id": "flow:http:App\\...::create"}
 
 // Output: discriminated union — {mode: "list"|"detail"|"candidates", ...}
+// detail.flow has `dispatches_out: {messages, events, http_clients}` and
+// `dispatches_in: {messages, events}`. NO `triggers_in`/`triggers_out`.
+```
+
+### kloc_messages / kloc_message
+
+```json
+// kloc_messages — no args needed (lists all)
+{}
+
+// kloc_message — detail by id
+{"id": "message:App\\Ui\\Messenger\\Message\\OrderCreatedMessage"}
+
+// kloc_message — partial match returns candidates
+{"id": "OrderCreated"}
+
+// Output (kloc_messages list)
+{"mode": "list", "messages": [
+   {"id": "message:...AuditLogMessage", "fqn": "...", "transports": [],
+    "sources_count": 1, "targets_count": 0}, ...]}
+
+// Output (kloc_message detail)
+{"mode": "detail", "message": {
+   "id": "message:...OrderCreatedMessage", "fqn": "...", "transports": ["sync"],
+   "sources": [{"flow_id": "...", "caller_method_fqn": "...",
+                "call_node_id": "...", "caller_method_node_id": "..."}],
+   "targets": [{"flow_id": "flow:message:...OrderCreatedHandler::__invoke"}],
+   "of_type_class_fqn": "..."}}
+```
+
+### kloc_events / kloc_event
+
+```json
+// kloc_events — no args
+{}
+
+// kloc_event
+{"id": "event:App\\Event\\OrderCreatedEvent"}
+
+// Detail shape: targets carry priority
+{"mode": "detail", "event": {
+   "id": "event:...", "fqn": "...",
+   "sources": [{"flow_id": "...", "caller_method_fqn": "..."}],
+   "targets": [{"flow_id": "...", "priority": 0}],
+   "of_type_class_fqn": "..."}}
+```
+
+### kloc_http_clients / kloc_http_client
+
+```json
+// kloc_http_clients — no args
+{}
+
+// kloc_http_client — by id or service_id
+{"id": "http_client:paypal.client"}
+{"id": "paypal.client"}
+
+// Detail (vendor class — no OF_TYPE edge)
+{"mode": "detail", "http_client": {
+   "id": "http_client:paypal.client", "service_id": "paypal.client",
+   "base_uri": "https://api.paypal.com",
+   "class_fqn": "Symfony\\Component\\HttpClient\\UriTemplateHttpClient",
+   "sources": [{"flow_id": "...", "caller_method_fqn": "...",
+                "call_node_id": "...", "caller_method_node_id": "..."}],
+   "of_type_class_fqn": null}}
 ```
 
 ### kloc_enrich_flows

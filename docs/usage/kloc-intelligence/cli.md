@@ -22,13 +22,23 @@ uv run kloc-intelligence import /path/to/sot.json --no-validate
 
 Loads the SoT into Neo4j as `:Node` + per-kind labels with the 13 edge types (USES, CONTAINS, EXTENDS, …). `--clear` (default true) wipes existing data first.
 
-### `import-flows` — load Symfony flows
+### `import-flows` — load Symfony flows (v3.0)
 
 ```bash
 uv run kloc-intelligence import-flows /path/to/.kloc/symfony-kloc.json
 ```
 
-Imports `:Flow` nodes (one per HTTP route, message handler, event subscriber, CLI command) plus `FLOW_ENTRY` and `FLOW_TRIGGERS` edges. Always clears existing flows; deterministic from the input file.
+Imports the v3.0 `symfony-kloc.json` shape:
+- `:Flow`        — one per HTTP route, message handler, event subscriber, CLI command
+- `:Message`     — one per dispatched message class
+- `:Event`       — one per dispatched event class
+- `:HttpClient`  — one per outbound HTTP integration
+
+Edges written: `FLOW_ENTRY` (Flow→Method), `FLOW_ENTRY_CLASS` (Flow→Class), `EMITS` (Flow/Call→Message/Event), `USES_HTTP_CLIENT` (Flow/Call→HttpClient), `HANDLED_BY` (Message/Event→Flow), `OF_TYPE` (entity→Class).
+
+**Idempotent**: re-running on the same JSON preserves enrichment props on `:Flow` (`explanation`, `explain_model`, `explain_at`). Orphan flows (in DB but not in JSON) have their Qdrant points in `flow_explain_embeddings` removed by `flow_id` filter — the collection itself is never dropped. The legacy v2 `FLOW_TRIGGERS` edge type is cleaned up on every run.
+
+Requires `QDRANT_URL` (and optionally `QDRANT_API_KEY`) in the env for the Qdrant filter-delete; the Neo4j-only path runs fine without them.
 
 ### `flows` — list or inspect flows
 
@@ -43,8 +53,81 @@ uv run kloc-intelligence flows --json                                  # machine
 
 The JSON response is a discriminated union with `mode`:
 - `list` — array of flows (filtered by `--type` if provided)
-- `detail` — full info for one flow including entry, triggers in/out, and the LLM-authored business-process summary (after `enrich-flows`)
+- `detail` — full info for one flow including entry, **`dispatches_out`** (messages/events/http_clients emitted by the flow) and **`dispatches_in`** (messages/events whose handler is this flow), plus the LLM-authored business-process summary (after `enrich-flows`).
 - `candidates` — partial match returned multiple flows
+
+Example detail JSON shape:
+
+```json
+{
+  "mode": "detail",
+  "flow": {
+    "flow_id": "flow:http:App\\Ui\\Rest\\Controller\\PaymentController::verify",
+    "type": "http",
+    "name": "POST /api/payments/{id}/verify",
+    "entry": { "fqn": "...", "method_node_id": "...", "file": "...", "start_line": 14, "end_line": 32 },
+    "dispatches_out": {
+      "messages": [{ "id": "message:App\\...AuditLogMessage", "fqn": "...", "transports": [],
+                     "caller_method_fqn": "App\\...PaymentController::verify()",
+                     "call_node_id": "node:call:...", "target_flow_ids": [] }],
+      "events": [],
+      "http_clients": [{ "id": "http_client:paypal.client", "service_id": "paypal.client",
+                         "base_uri": "https://api.paypal.com",
+                         "class_fqn": "Symfony\\Component\\HttpClient\\UriTemplateHttpClient",
+                         "caller_method_fqn": "App\\Service\\PaypalGateway::verify()",
+                         "call_node_id": "node:call:..." }]
+    },
+    "dispatches_in": { "messages": [], "events": [] }
+  }
+}
+```
+
+### `messages` — list or inspect dispatched messages
+
+```bash
+uv run kloc-intelligence messages                                      # list all
+uv run kloc-intelligence messages OrderCreated                         # candidates
+uv run kloc-intelligence messages "message:App\\Ui\\Messenger\\Message\\OrderCreatedMessage"
+uv run kloc-intelligence messages OrderCreated --json
+```
+
+JSON `detail` mode:
+
+```json
+{
+  "mode": "detail",
+  "message": {
+    "id": "message:App\\Ui\\Messenger\\Message\\OrderCreatedMessage",
+    "fqn": "App\\Ui\\Messenger\\Message\\OrderCreatedMessage",
+    "transports": ["sync"],
+    "sources": [{ "flow_id": "...", "caller_method_fqn": "...", "call_node_id": "...",
+                  "caller_method_node_id": "..." }],
+    "targets": [{ "flow_id": "flow:message:App\\...OrderCreatedHandler::__invoke" }],
+    "of_type_class_fqn": "App\\Ui\\Messenger\\Message\\OrderCreatedMessage"
+  }
+}
+```
+
+### `events` — list or inspect dispatched events
+
+```bash
+uv run kloc-intelligence events                                        # list all
+uv run kloc-intelligence events OrderCreatedEvent                      # detail
+uv run kloc-intelligence events OrderCreated --json                    # candidates
+```
+
+JSON `detail` mode includes `targets[].priority` (Symfony subscriber priority).
+
+### `http-clients` — list or inspect outbound HTTP integrations
+
+```bash
+uv run kloc-intelligence http-clients                                  # list all
+uv run kloc-intelligence http-clients paypal                           # candidates
+uv run kloc-intelligence http-clients "http_client:paypal.client"      # detail
+uv run kloc-intelligence http-clients paypal --json
+```
+
+Vendor HTTP clients (e.g. `Symfony\Component\HttpClient\UriTemplateHttpClient`) carry `class_fqn` as a property; `of_type_class_fqn` is `null` because the vendor class is not in the SoT graph.
 
 ## Symbol resolution
 
