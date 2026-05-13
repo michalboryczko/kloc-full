@@ -26,8 +26,6 @@ The core pipeline is **kloc-indexer-php -> kloc-mapper -> kloc-cli**. `kloc-symf
 
 Sub-repos (`kloc-cli`, `kloc-mapper`, `kloc-indexer-php`, `kloc-symfony`, `kloc-intelligence`, `kloc-reference-project-php`) are managed via `repos.yml` and cloned by `setup.sh`. `kloc-contracts` lives directly in this repository.
 
-> The legacy `scip-php` PHP indexer is deprecated and replaced by `kloc-indexer-php`. It is no longer listed in `repos.yml` (so `setup.sh` won't fetch it) or built by `build.sh`. `kloc.sh` / `kloc-dev.sh` still accept `--scip-php` as an escape hatch if you clone `scip-php/` manually, but it is otherwise unsupported and undocumented.
-
 ## Prerequisites
 
 - Python 3.11+ with [uv](https://github.com/astral-sh/uv)

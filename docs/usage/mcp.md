@@ -10,7 +10,7 @@ The server runs over stdio using JSON-RPC 2.0. It supports single-project and mu
 
 - Python 3.12+
 - `uv` package manager
-- A generated `sot.json` file for your project (produced by the kloc pipeline: PHP source -> scip-php -> kloc-mapper -> sot.json)
+- A generated `sot.json` file for your project (produced by the kloc pipeline: PHP source -> kloc-indexer-php -> kloc-mapper -> sot.json)
 
 ### Single project
 

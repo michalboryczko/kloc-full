@@ -4,15 +4,13 @@ set -euo pipefail
 # kloc-dev: Full pipeline wrapper for development
 # Indexes reference project -> maps to sot.json -> runs kloc-cli
 #
-# By default uses the Rust indexer (kloc-indexer-php). Pass --scip-php to use
-# the legacy Docker-based scip-php indexer.
+# Uses the Rust indexer (kloc-indexer-php).
 #
 # Usage:
 #   ./kloc-dev.sh context "App\Service\OrderService" --depth 2 --impl
 #   ./kloc-dev.sh context "App\Service\OrderService" --id=my-test --depth 2
 #   ./kloc-dev.sh resolve "App\Entity\Order" --id=my-test
 #   ./kloc-dev.sh context "App\Service\OrderService" --internal-all
-#   ./kloc-dev.sh context "App\Service\OrderService" --scip-php
 #
 # Artifacts are stored in: artifacts/kloc-dev/{id}/
 # When --id is provided and artifacts exist, the index/map steps are skipped.
@@ -25,8 +23,6 @@ ARTIFACTS_BASE="$SCRIPT_DIR/artifacts/$SCRIPT_NAME"
 
 RUN_ID=""
 INTERNAL_ALL=""
-# Default to Rust indexer; --scip-php opts out
-USE_RUST_INDEXER="1"
 PASSTHROUGH_ARGS=()
 
 for arg in "$@"; do
@@ -37,26 +33,18 @@ for arg in "$@"; do
         --internal-all)
             INTERNAL_ALL="--internal-all"
             ;;
-        --rust-indexer)
-            USE_RUST_INDEXER="1"
-            ;;
-        --scip-php|--legacy-indexer)
-            USE_RUST_INDEXER=""
-            ;;
         *)
             PASSTHROUGH_ARGS+=("$arg")
             ;;
     esac
 done
 
-# Validate --rust-indexer: check binary exists
+# Validate Rust indexer binary exists
 RUST_INDEXER_BIN="$SCRIPT_DIR/kloc-indexer-php/target/release/kloc-indexer-php"
-if [[ -n "$USE_RUST_INDEXER" ]]; then
-    if [[ ! -x "$RUST_INDEXER_BIN" ]]; then
-        echo "Error: Rust indexer not found at $RUST_INDEXER_BIN"
-        echo "Build it first: cd kloc-indexer-php && cargo build --release"
-        exit 1
-    fi
+if [[ ! -x "$RUST_INDEXER_BIN" ]]; then
+    echo "Error: kloc-indexer-php not found at $RUST_INDEXER_BIN"
+    echo "Build it first: cd kloc-indexer-php && cargo build --release"
+    exit 1
 fi
 
 # Generate ID if not provided
@@ -79,19 +67,11 @@ if [[ -f "$INDEX_FILE" ]]; then
     echo "[1/3] Index exists, skipping indexing"
 else
     mkdir -p "$ARTIFACT_DIR"
-    if [[ -n "$USE_RUST_INDEXER" ]]; then
-        echo "[1/3] Generating SCIP index (Rust indexer)..."
-        "$RUST_INDEXER_BIN" \
-            -d "$SCRIPT_DIR/kloc-reference-project-php" \
-            -o "$INDEX_FILE" \
-            $INTERNAL_ALL
-    else
-        echo "[1/3] Generating SCIP index (scip-php)..."
-        "$SCRIPT_DIR/scip-php/bin/scip-php.sh" \
-            -d "$SCRIPT_DIR/kloc-reference-project-php" \
-            -o "$ARTIFACT_DIR" \
-            $INTERNAL_ALL
-    fi
+    echo "[1/3] Generating SCIP index (kloc-indexer-php)..."
+    "$RUST_INDEXER_BIN" \
+        -d "$SCRIPT_DIR/kloc-reference-project-php" \
+        -o "$INDEX_FILE" \
+        $INTERNAL_ALL
     echo ""
 fi
 

@@ -7,7 +7,6 @@ set -euo pipefail
 # Usage:
 #   ./setup.sh              # Setup all repos
 #   ./setup.sh kloc-cli     # Setup only kloc-cli
-#   ./setup.sh scip-php     # Setup only scip-php
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"

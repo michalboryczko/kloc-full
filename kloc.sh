@@ -35,7 +35,7 @@ show_help() {
     echo "kloc - PHP code intelligence pipeline"
     echo ""
     echo "Usage:"
-    echo "  kloc.sh index --project <name> -d <project-dir> [--internal-all] [--scip-php]"
+    echo "  kloc.sh index --project <name> -d <project-dir> [--internal-all] [--experimental]"
     echo "  kloc.sh cli   --project <name> <command> [args...]"
     echo ""
     echo "Commands:"
@@ -46,9 +46,7 @@ show_help() {
     echo "  --project <name>    Project name (used for data directory)"
     echo "  -d <path>           PHP project directory to index (index mode)"
     echo "  --internal-all      Treat vendor packages as internal (index mode)"
-    echo "  --experimental      Include experimental call kinds (index mode, scip-php only)"
-    echo "  --scip-php          Use legacy scip-php indexer instead of Rust indexer"
-    echo "  --rust-indexer      Use Rust indexer (default — kept for backwards compat)"
+    echo "  --experimental      Include experimental call kinds (index mode)"
     echo "  -h, --help          Show this help"
     echo ""
     echo "Data stored in: data/<project_name>/"
@@ -83,8 +81,6 @@ PROJECT=""
 PROJECT_DIR=""
 INTERNAL_ALL=""
 EXPERIMENTAL=""
-# Default to Rust indexer; --scip-php opts out
-USE_RUST_INDEXER="1"
 CLI_ARGS=()
 PARSING_PROJECT=false
 PARSING_DIR=false
@@ -128,20 +124,6 @@ for arg in "$@"; do
                 CLI_ARGS+=("$arg")
             fi
             ;;
-        --rust-indexer)
-            if [[ "$COMMAND" == "index" ]]; then
-                USE_RUST_INDEXER="1"
-            else
-                CLI_ARGS+=("$arg")
-            fi
-            ;;
-        --scip-php|--legacy-indexer)
-            if [[ "$COMMAND" == "index" ]]; then
-                USE_RUST_INDEXER=""
-            else
-                CLI_ARGS+=("$arg")
-            fi
-            ;;
         *)
             CLI_ARGS+=("$arg")
             ;;
@@ -163,7 +145,7 @@ SOT_FILE="$DATA_DIR/sot.json"
 
 case "$COMMAND" in
     index)
-        # --- Index mode: scip-php + kloc-mapper ---
+        # --- Index mode: kloc-indexer-php + kloc-mapper ---
         if [[ -z "$PROJECT_DIR" ]]; then
             echo "Error: -d <project-dir> is required for index command"
             exit 1
@@ -178,28 +160,20 @@ case "$COMMAND" in
         echo ""
 
         # Step 1: Generate SCIP index
-        if [[ -n "$USE_RUST_INDEXER" ]]; then
-            RUST_INDEXER_BIN="$SCRIPT_DIR/kloc-indexer-php/target/release/kloc-indexer-php"
-            if [[ ! -x "$RUST_INDEXER_BIN" ]] && [[ -f "$BIN_DIR/kloc-indexer-php" ]]; then
-                RUST_INDEXER_BIN="$BIN_DIR/kloc-indexer-php"
-            fi
-            if [[ ! -x "$RUST_INDEXER_BIN" ]]; then
-                echo "Error: Rust indexer not found. Build with: cd kloc-indexer-php && cargo build --release"
-                exit 1
-            fi
-            echo "[1/2] Generating SCIP index (Rust indexer)..."
-            "$RUST_INDEXER_BIN" \
-                -d "$PROJECT_DIR" \
-                -o "$INDEX_FILE" \
-                $INTERNAL_ALL
-        else
-            echo "[1/2] Generating SCIP index (scip-php)..."
-            "$SCRIPT_DIR/scip-php/bin/scip-php.sh" \
-                -d "$PROJECT_DIR" \
-                -o "$DATA_DIR" \
-                $INTERNAL_ALL \
-                $EXPERIMENTAL
+        RUST_INDEXER_BIN="$SCRIPT_DIR/kloc-indexer-php/target/release/kloc-indexer-php"
+        if [[ ! -x "$RUST_INDEXER_BIN" ]] && [[ -f "$BIN_DIR/kloc-indexer-php" ]]; then
+            RUST_INDEXER_BIN="$BIN_DIR/kloc-indexer-php"
         fi
+        if [[ ! -x "$RUST_INDEXER_BIN" ]]; then
+            echo "Error: kloc-indexer-php not found. Build with: cd kloc-indexer-php && cargo build --release"
+            exit 1
+        fi
+        echo "[1/2] Generating SCIP index (kloc-indexer-php)..."
+        "$RUST_INDEXER_BIN" \
+            -d "$PROJECT_DIR" \
+            -o "$INDEX_FILE" \
+            $INTERNAL_ALL \
+            $EXPERIMENTAL
         echo ""
 
         if [[ ! -f "$INDEX_FILE" ]]; then

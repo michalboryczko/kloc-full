@@ -7,8 +7,6 @@ The core pipeline is **kloc-indexer-php → kloc-mapper → kloc-cli**. Two opti
 - **kloc-symfony** — extracts Symfony framework architecture (routes, DI, message handlers, event listeners, console commands, flows) as `symfony-kloc.json`. Only relevant if your project is a Symfony app. See [kloc-symfony.md](kloc-symfony.md).
 - **kloc-intelligence** — a graph-native code-intelligence service backed by Neo4j (plus Qdrant for AI features). Imports `sot.json` (and optionally `symfony-kloc.json`) once, then answers the same queries as kloc-cli plus multi-hop Cypher traversals, flow analysis, and semantic search. See [kloc-intelligence.md](kloc-intelligence.md).
 
-> The legacy Docker-based `scip-php` indexer is deprecated and replaced by `kloc-indexer-php`. It is no longer fetched by `setup.sh` or built by `build.sh`; `kloc.sh` / `kloc-dev.sh` still accept `--scip-php` if you clone `scip-php/` yourself.
-
 ## Prerequisites
 
 - **Python 3.12+** -- required for kloc-cli and kloc-mapper (kloc-intelligence needs 3.11+)
