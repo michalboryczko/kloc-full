@@ -43,14 +43,15 @@ Performance: ~1 second per 100K nodes on a default Neo4j heap. For graphs >500K 
 uv run kloc-intelligence import-flows /path/to/.kloc/symfony-kloc.json
 ```
 
-Adds `:Flow` nodes (one per HTTP route, message handler, event subscriber, CLI command) joined to the structural graph via `FLOW_ENTRY` (Flow → entry Method) and `FLOW_TRIGGERS` (Flow → Flow, when one dispatches a message/event another handles).
+Loads the v3 schema: `:Flow` nodes (one per HTTP route, message handler, event subscriber, CLI command) plus first-class `:Message`, `:Event`, and `:HttpClient` nodes for dispatched messages, dispatched events, and outbound HTTP integrations. Wired via `FLOW_ENTRY` / `FLOW_ENTRY_CLASS` to the structural graph; `EMITS`, `USES_HTTP_CLIENT`, `HANDLED_BY`, and `OF_TYPE` between flow-subgraph nodes. The v2 `FLOW_TRIGGERS` edge type is gone — Flow→Flow links are now derived in two hops via `(source:Flow)-[:EMITS]->(:Message|:Event)-[:HANDLED_BY]->(target:Flow)`.
 
 Behaviors:
-- Re-imports always clear existing `:Flow` nodes first. There is no `--no-clear` because flows are deterministic from `symfony-kloc.json`.
-- App-namespace filter: only flows with `App\` entry FQNs are imported. Vendor/framework flows are dropped.
-- Each call also deletes three legacy Qdrant collections (`flow_business_embeddings`, `flow_technical_embeddings`, `flow_search_embeddings`) — leftovers from a defunct design, idempotent on fresh installs.
+- **Idempotent re-import**: MERGE-reconcile across all four labels. `:Flow.explanation` / `.explain_model` / `.explain_at` are preserved across re-imports. Orphan nodes (in DB but not in JSON) are removed.
+- **Qdrant survives**: the `flow_explain_embeddings` collection is never dropped. Orphan flow embeddings are pruned by `flow_id` filter only; unchanged flows keep their existing embedding.
+- **Legacy sweep**: any `FLOW_TRIGGERS` edges left over from v2 imports are deleted on every run.
+- **App-namespace filter**: only flows with `App\` entry FQNs are imported. Vendor/framework flows are dropped. Messages / events / http_clients are universal — no namespace filter applies to them.
 
-After flow import, run `kloc-intelligence flows` to confirm the count.
+After flow import, run `kloc-intelligence flows` to confirm the flow count and `kloc-intelligence messages` / `events` / `http-clients` to inspect the new node sets.
 
 ## Step 4 — Enrich nodes (optional, AI)
 
