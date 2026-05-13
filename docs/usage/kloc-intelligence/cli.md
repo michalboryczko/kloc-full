@@ -194,12 +194,13 @@ uv run kloc-intelligence explain "OrderService" --force            # regenerate
 ```bash
 uv run kloc-intelligence search "validate order before checkout"
 uv run kloc-intelligence search "places where we charge a customer" --limit 5
-uv run kloc-intelligence search "process customer orders" --collection both
+uv run kloc-intelligence search "process customer orders" --collection all
+uv run kloc-intelligence search "what triggers OrderPlaced" --collection flows
 ```
 
 Embeds the query and searches all three collections (`code_embeddings`, `explain_embeddings`, `flow_explain_embeddings`) by cosine similarity. Dedupes by `node_id`, returns top `--limit` (default 10).
 
-`--collection code|explain|both` narrows the search.
+`--collection code|explain|flows|all` narrows the search (default `all`).
 
 ## MCP server
 

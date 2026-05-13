@@ -137,7 +137,7 @@ Any MCP-aware client that supports stdio-spawned servers can use the same `comma
 
 ```json
 // Input
-{"query": "validate order before checkout", "limit": 10, "collection": "both"}
+{"query": "validate order before checkout", "limit": 10, "collection": "all"}
 
 // Output
 {"query": "...", "hits": [{"score": 0.87, "kind": "Flow"|"Class"|"Method",
@@ -145,7 +145,7 @@ Any MCP-aware client that supports stdio-spawned servers can use the same `comma
                           "collection": "code_embeddings"|"explain_embeddings"|"flow_explain_embeddings"}, ...]}
 ```
 
-`kloc_search` automatically queries all three Qdrant collections and merges results — flows enriched via `enrich-flows` will appear in the top hits for business-process queries.
+`collection` accepts `code`, `explain`, `flows`, or `all` (default). `all` queries every Qdrant collection and merges results — flows enriched via `enrich-flows` appear in the top hits for business-process queries. Use `flows` to scope to flow summaries only.
 
 ### kloc_source / kloc_chunks
 
